@@ -14,9 +14,10 @@ namespace UADVanillaPlus.Harmony;
 internal static class DesignHullColorProofPatch
 {
     // Existing channels (HullSide/Barbette/Superstructure/Gun) tint by part type via
-    // PaintAreaFor. Experimental channels (Deck/Bottom/Barrel/Trim/Roof) classify per-
-    // material so a single part can have its deck, bottom, barrels, trim, and roof
-    // tinted independently of the part's primary area.
+    // PaintAreaFor. Experimental channels (Deck/Bottom/Roof) classify per-material so
+    // a single part can have its deck, bottom, and roof tinted independently of the
+    // part's primary area. OtherMetal is a final-fallback catch-all that tints any
+    // metallic-looking material the named channels did NOT claim.
     internal enum PaintArea
     {
         HullSide,
@@ -25,9 +26,8 @@ internal static class DesignHullColorProofPatch
         Gun,
         Deck,
         Bottom,
-        Barrel,
-        Trim,
         Roof,
+        OtherMetal,
     }
 
     private readonly struct PaintProfile
@@ -280,9 +280,10 @@ internal static class DesignHullColorProofPatch
     // in ClassifyMaterialArea decides disambiguation between overlapping tokens.
     private static readonly string[] DeckTokens = { "deck", "wood", "plank", "floor" };
     private static readonly string[] BottomTokens = { "hull_bottom", "bottom", "underwater", "keel", "waterline" };
-    private static readonly string[] BarrelTokens = { "barrel" };
-    private static readonly string[] TrimTokens = { "rail", "rope", "chain", "ladder", "anchor", "vent" };
     private static readonly string[] RoofTokens = { "roofing", "roof" };
+    private static readonly string[] OtherMetalTokens = { "metal", "steel_", "steelboard", "steel_board", "armor", "armour", "body", "iron", "brass", "bronze" };
+    private static readonly HashSet<string> LoggedOtherMetalSamples = new(StringComparer.OrdinalIgnoreCase);
+    private const int OtherMetalSampleLogLimit = 40;
 
     // Shared defaults for the experimental channels — used when no per-nation override
     // is configured. Vivid + distinct so the user can see which surface each channel paints.
@@ -290,10 +291,11 @@ internal static class DesignHullColorProofPatch
     {
         [PaintArea.Deck] = Profile(0.83f, 0.65f, 0.42f, 212, 166, 107, 0.45f, "deck_teak"),
         [PaintArea.Bottom] = Profile(0.45f, 0.10f, 0.10f, 115, 26, 26, 0.70f, "bottom_antifouling"),
-        // Vivid identification colors so the user can see at-a-glance which surface each paints.
-        [PaintArea.Barrel] = Profile(0.71f, 0.56f, 0.13f, 181, 143, 33, 0.55f, "barrel_brass"),
-        [PaintArea.Trim] = Profile(0.84f, 0.48f, 0.13f, 215, 122, 33, 0.55f, "trim_orange"),
-        [PaintArea.Roof] = Profile(0.48f, 0.25f, 0.63f, 122, 64, 160, 0.55f, "roof_purple"),
+        [PaintArea.Roof] = Profile(0.32f, 0.32f, 0.34f, 82, 82, 87, 0.55f, "roof_gunmetal"),
+        // Vivid identification color so the user can see at-a-glance which surfaces fall
+        // through to OtherMetal. Materials caught here are logged so we can learn token
+        // patterns and promote them into named channels later.
+        [PaintArea.OtherMetal] = Profile(0.16f, 0.82f, 0.82f, 41, 209, 209, 0.65f, "othermetal_cyan"),
     };
 
     // Per-nation override storage for experimental channels. Mirrors the existing
@@ -939,9 +941,8 @@ internal static class DesignHullColorProofPatch
         {
             case "deck": area = PaintArea.Deck; return true;
             case "bottom": area = PaintArea.Bottom; return true;
-            case "barrel": area = PaintArea.Barrel; return true;
-            case "trim": area = PaintArea.Trim; return true;
             case "roof": area = PaintArea.Roof; return true;
+            case "othermetal": area = PaintArea.OtherMetal; return true;
             default: area = PaintArea.HullSide; return false;
         }
     }
@@ -954,9 +955,8 @@ internal static class DesignHullColorProofPatch
             PaintArea.Gun or PaintArea.Barbette => "gun",
             PaintArea.Deck => "deck",
             PaintArea.Bottom => "bottom",
-            PaintArea.Barrel => "barrel",
-            PaintArea.Trim => "trim",
             PaintArea.Roof => "roof",
+            PaintArea.OtherMetal => "othermetal",
             _ => string.Empty,
         };
 
@@ -970,9 +970,8 @@ internal static class DesignHullColorProofPatch
             "gun" or "guns" => "gun",
             "deck" or "wood" or "plank" or "floor" => "deck",
             "bottom" or "hull_bottom" or "underwater" or "keel" or "waterline" => "bottom",
-            "barrel" => "barrel",
-            "trim" or "rail" or "rope" or "chain" or "ladder" or "anchor" or "vent" => "trim",
             "roof" or "roofing" => "roof",
+            "othermetal" or "other_metal" or "metal" => "othermetal",
             _ => string.Empty
         };
     }
@@ -1065,11 +1064,10 @@ internal static class DesignHullColorProofPatch
         PaintArea.HullSide,
         PaintArea.Superstructure,
         PaintArea.Gun,
-        PaintArea.Barrel,
         PaintArea.Deck,
         PaintArea.Bottom,
-        PaintArea.Trim,
         PaintArea.Roof,
+        PaintArea.OtherMetal,
     };
 
     internal static bool TryResolveAllNationPaintColors(string key, out Dictionary<PaintArea, Color32> colors)
@@ -2091,6 +2089,14 @@ internal static class DesignHullColorProofPatch
                 areaForMaterial = primaryArea;
                 profileForMaterial = primaryProfile;
             }
+            else if (LooksLikeOtherMetalMaterial(material))
+            {
+                // Final fallback for metallic surfaces the named classifiers did not claim.
+                // Log a sample so we can learn what's landing here.
+                areaForMaterial = PaintArea.OtherMetal;
+                profileForMaterial = ProfileFor(scheme, nationKey, PaintArea.OtherMetal);
+                LogOtherMetalSample(material);
+            }
             else
             {
                 skippedMaterialCount++;
@@ -2636,8 +2642,6 @@ internal static class DesignHullColorProofPatch
             PaintArea.Barbette => LooksLikeBarbetteMaterial(materialText),
             PaintArea.Deck => ContainsAny(materialText, DeckTokens),
             PaintArea.Bottom => ContainsAny(materialText, BottomTokens),
-            PaintArea.Barrel => ContainsAny(materialText, BarrelTokens),
-            PaintArea.Trim => ContainsAny(materialText, TrimTokens),
             PaintArea.Roof => ContainsAny(materialText, RoofTokens),
             _ => LooksLikePaintedSideMaterial(materialText)
         };
@@ -2645,9 +2649,9 @@ internal static class DesignHullColorProofPatch
         return decision;
     }
 
-    // Checks the experimental per-material channels (Deck, Bottom, Barrel, Trim, Roof).
-    // The four primary channels (HullSide/Barbette/Superstructure/Gun) keep their per-part
-    // dispatch so shared tokens (steel_/metal/armor) don't bleed between them.
+    // Checks the experimental per-material channels (Deck, Bottom, Roof). The four primary
+    // channels (HullSide/Barbette/Superstructure/Gun) keep their per-part dispatch so shared
+    // tokens (steel_/metal/armor) don't bleed between them.
     private static PaintArea? ClassifyExperimentalMaterialArea(Material material)
     {
         Material source = OriginalMaterial(material);
@@ -2655,13 +2659,49 @@ internal static class DesignHullColorProofPatch
         if (string.IsNullOrEmpty(materialText))
             return null;
 
-        // Specific tokens first.
-        if (ContainsAny(materialText, BarrelTokens)) return PaintArea.Barrel;
         if (ContainsAny(materialText, BottomTokens)) return PaintArea.Bottom;
-        if (ContainsAny(materialText, TrimTokens)) return PaintArea.Trim;
         if (ContainsAny(materialText, RoofTokens)) return PaintArea.Roof;
         if (ContainsAny(materialText, DeckTokens)) return PaintArea.Deck;
         return null;
+    }
+
+    // Last-resort fallback: any material that escaped the named classifiers but looks
+    // metallic. Used so deck-mounted fittings, gun barrels, and other small metal objects
+    // we have not yet identified by name pattern can still be tinted as a group.
+    private static bool LooksLikeOtherMetalMaterial(Material material)
+    {
+        Material source = OriginalMaterial(material);
+        string materialText = MaterialSearchText(source);
+        if (string.IsNullOrEmpty(materialText))
+            return false;
+        return ContainsAny(materialText, OtherMetalTokens);
+    }
+
+    // Logs the first N unique material names that fall through to OtherMetal so we can
+    // see what patterns are landing here and promote them to named channels later.
+    private static void LogOtherMetalSample(Material material)
+    {
+        if (LoggedOtherMetalSamples.Count >= OtherMetalSampleLogLimit)
+            return;
+
+        try
+        {
+            Material source = OriginalMaterial(material);
+            if (source == null)
+                return;
+            string sourceName = source.name ?? "<material>";
+            string textures = MaterialTextureNames(source);
+            string key = $"{sourceName}|{textures}";
+            if (!LoggedOtherMetalSamples.Add(key))
+                return;
+
+            Melon<UADVanillaPlusMod>.Logger.Msg(
+                $"UADVP ship paint OtherMetal sample #{LoggedOtherMetalSamples.Count}: material='{sourceName}'; textures='{textures}'.");
+        }
+        catch
+        {
+            // Logging is best-effort; never crash the painter over diagnostics.
+        }
     }
 
     // Resolves the active profile for a given nation + paint area. Hull/Super/Gun/Barbette
