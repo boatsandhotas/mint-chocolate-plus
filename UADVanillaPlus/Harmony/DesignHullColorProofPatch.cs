@@ -312,6 +312,15 @@ internal static class DesignHullColorProofPatch
     private static readonly Dictionary<string, Dictionary<PaintArea, PaintProfile>> ConfiguredNationExtraOverrides
         = new(StringComparer.OrdinalIgnoreCase);
 
+    // Per-class (per-design) overrides: maps a design Ship's Guid string to its
+    // per-channel paint overrides. Layered on top of nation overrides and built-in
+    // defaults — only the channels explicitly set for this design replace the
+    // nation/default values. Populated lazily as ships of new design Guids are painted.
+    private static readonly Dictionary<string, Dictionary<PaintArea, PaintProfile>> ConfiguredDesignPaintOverrides
+        = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly HashSet<string> ResolvedDesignKeys
+        = new(StringComparer.OrdinalIgnoreCase);
+
     private static int HullDetailedLogCount;
     private static int BarbetteDetailedLogCount;
     private static int SuperstructureDetailedLogCount;
@@ -761,6 +770,7 @@ internal static class DesignHullColorProofPatch
                 return;
 
             ShipPaintScheme scheme = SchemeFor(part, out string nationKey);
+            string designKey = ResolveDesignKey(part);
             // Cache/signature key still uses a stable area so cache invalidation behaves
             // the same on damage/refit. For unclassified parts we use HullSide as the
             // signature area; per-material profiles are looked up below regardless.
@@ -790,7 +800,7 @@ internal static class DesignHullColorProofPatch
                 if (materials == null || materials.Length == 0)
                     continue;
 
-                PaintedMaterialSet paintedMaterials = GetOrCreateMultiAreaPaintedMaterialSet(materials, hasPrimary, cacheArea, primaryProfile, scheme, nationKey);
+                PaintedMaterialSet paintedMaterials = GetOrCreateMultiAreaPaintedMaterialSet(materials, hasPrimary, cacheArea, primaryProfile, scheme, nationKey, designKey);
                 changedMaterialCount += paintedMaterials.PaintedMaterialCount;
                 skippedMaterialCount += paintedMaterials.SkippedMaterialCount;
 
@@ -862,6 +872,8 @@ internal static class DesignHullColorProofPatch
 
         ConfiguredNationPaintSchemes.Clear();
         ConfiguredNationExtraOverrides.Clear();
+        ConfiguredDesignPaintOverrides.Clear();
+        ResolvedDesignKeys.Clear();
         foreach (NationPaintDefinition definition in NationPaintDefinitions)
         {
             string rawValue = ModSettings.NationShipPaintString(definition.Key);
@@ -1206,6 +1218,90 @@ internal static class DesignHullColorProofPatch
         }
 
         return false;
+    }
+
+    // Resolves the design Ship (the "class") currently being edited in the constructor.
+    // PlayerController.Instance.Ship in constructor mode IS the design template, so its
+    // Guid identifies the class and its name is the class name.
+    internal static bool TryResolveCurrentConstructorDesign(out string designKey, out string designName)
+    {
+        designKey = string.Empty;
+        designName = string.Empty;
+
+        Ship? ship = PlayerController.Instance?.Ship;
+        if (ship == null)
+            return false;
+
+        try
+        {
+            string id = ship.id.ToString();
+            if (string.IsNullOrWhiteSpace(id))
+                return false;
+            designKey = id;
+            designName = SafeShipName(ship);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    // Returns layered effective colors for a (nation, design) pair: design overrides on
+    // top of nation overrides/scheme on top of built-in defaults.
+    internal static bool TryResolveLayeredPaintColors(string nationKey, string designKey, out Dictionary<PaintArea, Color32> colors)
+    {
+        if (!TryResolveAllNationPaintColors(nationKey, out colors))
+            return false;
+
+        EnsureDesignPaintOverridesLoaded(designKey);
+        if (!string.IsNullOrEmpty(designKey)
+            && ConfiguredDesignPaintOverrides.TryGetValue(designKey, out Dictionary<PaintArea, PaintProfile>? designOverrides)
+            && designOverrides != null)
+        {
+            foreach (KeyValuePair<PaintArea, PaintProfile> entry in designOverrides)
+                colors[entry.Key] = Color32FromColor(entry.Value.MaterialColor);
+        }
+        return true;
+    }
+
+    // Returns the per-design overrides as a color dictionary (only channels the design
+    // explicitly customized). Empty dict if the design has no overrides.
+    internal static bool TryResolveDesignPaintOverrides(string designKey, out Dictionary<PaintArea, Color32> colors)
+    {
+        colors = new Dictionary<PaintArea, Color32>();
+        if (string.IsNullOrEmpty(designKey))
+            return false;
+        EnsureDesignPaintOverridesLoaded(designKey);
+        if (ConfiguredDesignPaintOverrides.TryGetValue(designKey, out Dictionary<PaintArea, PaintProfile>? designOverrides)
+            && designOverrides != null)
+        {
+            foreach (KeyValuePair<PaintArea, PaintProfile> entry in designOverrides)
+                colors[entry.Key] = Color32FromColor(entry.Value.MaterialColor);
+        }
+        return true;
+    }
+
+    // Promotes a design's overrides to the nation's overrides — copies whatever channels
+    // the design has customized into the nation's saved paint string so future ships of
+    // any class (with no per-class override of their own) pick them up.
+    internal static bool PromoteDesignToNation(string designKey, string nationKey)
+    {
+        if (string.IsNullOrEmpty(designKey) || string.IsNullOrEmpty(nationKey))
+            return false;
+
+        if (!TryResolveDesignPaintOverrides(designKey, out Dictionary<PaintArea, Color32> designColors)
+            || designColors.Count == 0)
+            return false;
+
+        if (!TryResolveAllNationPaintColors(nationKey, out Dictionary<PaintArea, Color32> nationColors))
+            return false;
+
+        foreach (KeyValuePair<PaintArea, Color32> entry in designColors)
+            nationColors[entry.Key] = entry.Value;
+
+        string serialized = BuildNationPaintString(nationColors);
+        return ModSettings.SetNationShipPaintString(nationKey, serialized);
     }
 
     private static bool TryParseHexColor(string value, out Color32 color)
@@ -2068,9 +2164,9 @@ internal static class DesignHullColorProofPatch
     // match, fall back to the part's primary area + its original ShouldPaintMaterial
     // classifier (only when hasPrimary). Finally OtherMetal catches any unmatched metallic
     // material so we can identify unclassified surfaces (gun barrels, deck fittings).
-    private static PaintedMaterialSet GetOrCreateMultiAreaPaintedMaterialSet(Material[] materials, bool hasPrimary, PaintArea primaryArea, PaintProfile primaryProfile, ShipPaintScheme scheme, string nationKey)
+    private static PaintedMaterialSet GetOrCreateMultiAreaPaintedMaterialSet(Material[] materials, bool hasPrimary, PaintArea primaryArea, PaintProfile primaryProfile, ShipPaintScheme scheme, string nationKey, string designKey)
     {
-        string key = MultiAreaCacheKey(materials, hasPrimary, primaryArea, primaryProfile, scheme, nationKey);
+        string key = MultiAreaCacheKey(materials, hasPrimary, primaryArea, primaryProfile, scheme, nationKey, designKey);
         if (PaintedMaterialSets.TryGetValue(key, out PaintedMaterialSet? cachedSet))
         {
             if (IsUsablePaintedMaterialSet(cachedSet))
@@ -2106,19 +2202,21 @@ internal static class DesignHullColorProofPatch
             if (experimental.HasValue)
             {
                 areaForMaterial = experimental.Value;
-                profileForMaterial = ProfileFor(scheme, nationKey, experimental.Value);
+                profileForMaterial = ProfileFor(scheme, nationKey, designKey, experimental.Value);
             }
             else if (hasPrimary && ShouldPaintMaterial(material, primaryArea))
             {
+                // Per-class override may replace Hull/Super/Gun/Barbette too — go through
+                // ProfileFor so design overrides win over the nation scheme's profile.
                 areaForMaterial = primaryArea;
-                profileForMaterial = primaryProfile;
+                profileForMaterial = ProfileFor(scheme, nationKey, designKey, primaryArea);
             }
             else if (LooksLikeOtherMetalMaterial(material))
             {
                 // Final fallback for metallic surfaces the named classifiers did not claim.
                 // Log a sample so we can learn what's landing here.
                 areaForMaterial = PaintArea.OtherMetal;
-                profileForMaterial = ProfileFor(scheme, nationKey, PaintArea.OtherMetal);
+                profileForMaterial = ProfileFor(scheme, nationKey, designKey, PaintArea.OtherMetal);
                 LogOtherMetalSample(material);
             }
             else
@@ -2151,7 +2249,7 @@ internal static class DesignHullColorProofPatch
         return set;
     }
 
-    private static string MultiAreaCacheKey(Material[] materials, bool hasPrimary, PaintArea primaryArea, PaintProfile primaryProfile, ShipPaintScheme scheme, string nationKey)
+    private static string MultiAreaCacheKey(Material[] materials, bool hasPrimary, PaintArea primaryArea, PaintProfile primaryProfile, ShipPaintScheme scheme, string nationKey, string designKey)
     {
         List<string> materialKeys = new(materials.Length);
         foreach (Material material in materials)
@@ -2164,8 +2262,8 @@ internal static class DesignHullColorProofPatch
             materialKeys.Add(MaterialSourceKey(OriginalMaterial(material)));
         }
 
-        // Encode the primary area+profile (which governs HullSide/Super/Gun/Barbette tinting)
-        // and the per-nation experimental overrides so the cache invalidates on any change.
+        // Encode the primary area+profile, plus per-nation experimental overrides AND
+        // per-design overrides so the cache invalidates on any change to either.
         string extrasFingerprint = string.Empty;
         if (!string.IsNullOrEmpty(nationKey)
             && ConfiguredNationExtraOverrides.TryGetValue(nationKey, out Dictionary<PaintArea, PaintProfile>? overrides)
@@ -2179,7 +2277,20 @@ internal static class DesignHullColorProofPatch
             extrasFingerprint = string.Join(",", parts);
         }
 
-        return $"multi|hasPrimary={hasPrimary}|{primaryArea}|{primaryProfile.Suffix}|{scheme.Id}|{nationKey}|{extrasFingerprint}|{string.Join(",", materialKeys)}";
+        string designFingerprint = string.Empty;
+        if (!string.IsNullOrEmpty(designKey)
+            && ConfiguredDesignPaintOverrides.TryGetValue(designKey, out Dictionary<PaintArea, PaintProfile>? designOverrides)
+            && designOverrides != null
+            && designOverrides.Count > 0)
+        {
+            List<string> parts = new(designOverrides.Count);
+            foreach (KeyValuePair<PaintArea, PaintProfile> entry in designOverrides)
+                parts.Add($"{entry.Key}={entry.Value.Suffix}");
+            parts.Sort(StringComparer.Ordinal);
+            designFingerprint = string.Join(",", parts);
+        }
+
+        return $"multi|hasPrimary={hasPrimary}|{primaryArea}|{primaryProfile.Suffix}|{scheme.Id}|{nationKey}|{extrasFingerprint}|design:{designKey}|{designFingerprint}|{string.Join(",", materialKeys)}";
     }
 
     private static Material? GetOrCreatePaintMaterial(Material material, PaintArea paintArea, PaintProfile profile)
@@ -2791,11 +2902,20 @@ internal static class DesignHullColorProofPatch
         }
     }
 
-    // Resolves the active profile for a given nation + paint area. Hull/Super/Gun/Barbette
-    // come from the ShipPaintScheme; experimental channels fall to per-nation override or
-    // the shared default.
-    private static PaintProfile ProfileFor(ShipPaintScheme scheme, string nationKey, PaintArea area)
+    // Resolves the active profile for a given nation + design + paint area. Precedence:
+    //   1. Per-class (per-design) override — top priority, applies to any channel.
+    //   2. Per-nation scheme — used for Hull/Super/Gun/Barbette and as nation extras.
+    //   3. Shared default extras — for experimental channels with no override anywhere.
+    private static PaintProfile ProfileFor(ShipPaintScheme scheme, string nationKey, string designKey, PaintArea area)
     {
+        // Per-class top priority for any channel the design has customized.
+        EnsureDesignPaintOverridesLoaded(designKey);
+        if (!string.IsNullOrEmpty(designKey)
+            && ConfiguredDesignPaintOverrides.TryGetValue(designKey, out Dictionary<PaintArea, PaintProfile>? designOverrides)
+            && designOverrides != null
+            && designOverrides.TryGetValue(area, out PaintProfile designProfile))
+            return designProfile;
+
         switch (area)
         {
             case PaintArea.HullSide:
@@ -2814,6 +2934,104 @@ internal static class DesignHullColorProofPatch
         return DefaultExtraProfiles.TryGetValue(area, out PaintProfile def)
             ? def
             : scheme.Profile(PaintArea.HullSide);
+    }
+
+    // Lazy-loads a design's saved per-class paint overrides on first encounter. Cache is
+    // cleared in EnsureNationPaintSchemeCache when the paint settings revision bumps so
+    // changes via the picker propagate without a full reload.
+    private static void EnsureDesignPaintOverridesLoaded(string designKey)
+    {
+        if (string.IsNullOrEmpty(designKey) || ResolvedDesignKeys.Contains(designKey))
+            return;
+
+        string raw = ModSettings.DesignShipPaintString(designKey);
+        if (!string.IsNullOrWhiteSpace(raw))
+        {
+            Dictionary<PaintArea, PaintProfile> overrides = ParseDesignPaintString(designKey, raw);
+            if (overrides.Count > 0)
+                ConfiguredDesignPaintOverrides[designKey] = overrides;
+        }
+        ResolvedDesignKeys.Add(designKey);
+    }
+
+    private static Dictionary<PaintArea, PaintProfile> ParseDesignPaintString(string designKey, string raw)
+    {
+        Dictionary<PaintArea, PaintProfile> result = new();
+        foreach (string field in raw.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            int separator = field.IndexOf('=');
+            if (separator <= 0 || separator >= field.Length - 1)
+                continue;
+
+            string key = NormalizePaintFieldKey(field[..separator]);
+            if (string.IsNullOrEmpty(key))
+                continue;
+
+            if (!TryParseHexColor(field[(separator + 1)..], out Color32 color))
+                continue;
+
+            if (!TryAreaFromAnyKey(key, out PaintArea area))
+                continue;
+
+            PaintProfile fallback = DefaultExtraProfiles.TryGetValue(area, out PaintProfile def)
+                ? def
+                : DefaultScheme.HullSide;
+            result[area] = CustomProfile(color, fallback, designKey, key);
+        }
+        return result;
+    }
+
+    private static bool TryAreaFromAnyKey(string key, out PaintArea area)
+    {
+        switch (key)
+        {
+            case "hull": area = PaintArea.HullSide; return true;
+            case "super": area = PaintArea.Superstructure; return true;
+            case "gun": area = PaintArea.Gun; return true;
+        }
+        return TryExtraAreaFromKey(key, out area);
+    }
+
+    // Resolves the per-class (design Ship) Guid for the ship a part belongs to. Returns
+    // the design's id for built ships, or the ship's own id when it IS the design
+    // (e.g. the design currently being edited in the constructor).
+    internal static string ResolveDesignKey(Part part)
+    {
+        Ship? ship = part?.ship;
+        if (ship == null)
+            return string.Empty;
+
+        try
+        {
+            if (ship.isDesign)
+                return ship.id.ToString();
+            Ship? design = ship.design;
+            if (design != null)
+                return design.id.ToString();
+        }
+        catch
+        {
+            // Ship lifecycle can leave .id / .design transiently inaccessible.
+        }
+        return string.Empty;
+    }
+
+    internal static string ResolveDesignDisplayName(Part part)
+    {
+        Ship? ship = part?.ship;
+        if (ship == null)
+            return string.Empty;
+        try
+        {
+            Ship? design = ship.isDesign ? ship : ship.design;
+            if (design == null)
+                return SafeShipName(ship);
+            return SafeShipName(design);
+        }
+        catch
+        {
+            return string.Empty;
+        }
     }
 
     private static bool LooksLikePaintedSideMaterial(string materialText)
