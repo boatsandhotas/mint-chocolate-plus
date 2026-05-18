@@ -2,6 +2,7 @@ using HarmonyLib;
 using Il2Cpp;
 using Il2CppTMPro;
 using MelonLoader;
+using PaintArea = UADVanillaPlus.Harmony.DesignHullColorProofPatch.PaintArea;
 using UADVanillaPlus.GameData;
 using UnityEngine;
 using UnityEngine.UI;
@@ -21,13 +22,6 @@ internal static class InGameOptionsMenuPatch
         ShipDesign,
         Experimental,
         NationShipPaints,
-    }
-
-    private enum PaintChannel
-    {
-        Hull,
-        Super,
-        Gun,
     }
 
     private const string ButtonName = "UADVP_OptionsButton";
@@ -85,9 +79,7 @@ internal static class InGameOptionsMenuPatch
     private static Sprite? paintIconSprite;
 
     private static GameObject? constructorPaintPanel;
-    private static Image? panelHullSwatch;
-    private static Image? panelSuperSwatch;
-    private static Image? panelGunSwatch;
+    private static readonly Dictionary<PaintArea, Image> panelSwatches = new();
     private static string panelNationKey = string.Empty;
 
     private static GameObject? paintPicker;
@@ -100,7 +92,7 @@ internal static class InGameOptionsMenuPatch
     private static InputField? pickerHexInput;
     private static Text? pickerValueText;
     private static DesignHullColorProofPatch.NationPaintUiInfo pickerNation;
-    private static PaintChannel pickerChannel;
+    private static PaintArea pickerChannel;
     private static Color32 pickerOriginalChannelColor;
     private static float pickerCurrentH;
     private static float pickerCurrentS;
@@ -535,7 +527,7 @@ internal static class InGameOptionsMenuPatch
 
     private static void AddNationShipPaintRow(Transform parent, DesignHullColorProofPatch.NationPaintUiInfo nation)
     {
-        if (!DesignHullColorProofPatch.TryResolveNationPaintColors(nation.Key, out Color32 hull, out Color32 super, out Color32 gun))
+        if (!DesignHullColorProofPatch.TryResolveAllNationPaintColors(nation.Key, out Dictionary<PaintArea, Color32> colors))
             return;
 
         GameObject row = new($"{NationShipPaintsSectionName}_{nation.Key}");
@@ -545,7 +537,7 @@ internal static class InGameOptionsMenuPatch
 
         HorizontalLayoutGroup rowLayout = row.AddComponent<HorizontalLayoutGroup>();
         rowLayout.padding = new RectOffset { left = 8, right = 8, top = 2, bottom = 2 };
-        rowLayout.spacing = 8f;
+        rowLayout.spacing = 4f;
         rowLayout.childAlignment = TextAnchor.MiddleLeft;
         rowLayout.childControlHeight = true;
         rowLayout.childControlWidth = true;
@@ -554,11 +546,16 @@ internal static class InGameOptionsMenuPatch
         AddLayout(row, minHeight: 30f, preferredHeight: 30f, flexibleWidth: 1f);
 
         Text label = AddText(row.transform, $"{nation.Label}:", 12, TextAnchor.MiddleLeft);
-        AddLayout(label.gameObject, minWidth: 120f, preferredWidth: 120f, flexibleWidth: 0f);
+        AddLayout(label.gameObject, minWidth: 100f, preferredWidth: 100f, flexibleWidth: 0f);
 
-        AddPaintSwatch(row.transform, nation, PaintChannel.Hull, hull);
-        AddPaintSwatch(row.transform, nation, PaintChannel.Super, super);
-        AddPaintSwatch(row.transform, nation, PaintChannel.Gun, gun);
+        // 14 swatches across all channels — picker UI is intentionally sloppy/wide during
+        // experimentation. Tooltip on each swatch identifies its channel.
+        foreach (PaintArea area in DesignHullColorProofPatch.AllPickerChannels)
+        {
+            if (!colors.TryGetValue(area, out Color32 channelColor))
+                continue;
+            AddPaintSwatch(row.transform, nation, area, channelColor);
+        }
 
         GameObject spacer = new("UADVP_PaintRowSpacer");
         spacer.transform.SetParent(row.transform, false);
@@ -567,33 +564,18 @@ internal static class InGameOptionsMenuPatch
         spacerImage.raycastTarget = false;
         AddLayout(spacer, minWidth: 4f, flexibleWidth: 1f);
 
-        AddActionButton(row.transform, "Reset", () => ResetNationShipPaintString(nation), width: 64f);
+        AddActionButton(row.transform, "Reset", () => ResetNationShipPaintString(nation), width: 56f);
     }
 
-    private static void AddPaintSwatch(Transform parent, DesignHullColorProofPatch.NationPaintUiInfo nation, PaintChannel channel, Color32 color)
+    private static void AddPaintSwatch(Transform parent, DesignHullColorProofPatch.NationPaintUiInfo nation, PaintArea channel, Color32 color)
     {
-        GameObject group = new($"UADVP_PaintSwatchGroup_{nation.Key}_{channel}");
-        group.transform.SetParent(parent, false);
-        Image groupImage = group.AddComponent<Image>();
-        groupImage.color = new Color(0f, 0f, 0f, 0f);
-        groupImage.raycastTarget = false;
-        HorizontalLayoutGroup groupLayout = group.AddComponent<HorizontalLayoutGroup>();
-        groupLayout.spacing = 4f;
-        groupLayout.childAlignment = TextAnchor.MiddleLeft;
-        groupLayout.childControlHeight = true;
-        groupLayout.childControlWidth = true;
-        groupLayout.childForceExpandHeight = false;
-        groupLayout.childForceExpandWidth = false;
-        AddLayout(group, minHeight: 26f, preferredHeight: 26f, flexibleWidth: 0f);
-
-        Text labelText = AddText(group.transform, ChannelLabel(channel), 12, TextAnchor.MiddleRight);
-        AddLayout(labelText.gameObject, minWidth: 42f, preferredWidth: 42f, flexibleWidth: 0f);
-
+        // Compact swatch (no inline label) — channel name shows via tooltip. Keeps the
+        // row width manageable now that we expose all 14 channels per nation.
         GameObject swatchObject = new($"UADVP_Swatch_{nation.Key}_{channel}");
-        swatchObject.transform.SetParent(group.transform, false);
+        swatchObject.transform.SetParent(parent, false);
         Image border = swatchObject.AddComponent<Image>();
         border.color = SwatchBorder;
-        AddLayout(swatchObject, minWidth: 56f, preferredWidth: 56f, minHeight: 22f, preferredHeight: 22f);
+        AddLayout(swatchObject, minWidth: 24f, preferredWidth: 24f, minHeight: 24f, preferredHeight: 24f, flexibleWidth: 0f);
 
         GameObject swatchFill = new("Fill");
         swatchFill.transform.SetParent(swatchObject.transform, false);
@@ -611,7 +593,7 @@ internal static class InGameOptionsMenuPatch
         button.onClick.RemoveAllListeners();
         button.onClick.AddListener(new System.Action(() => OpenPaintPicker(nation, channel)));
 
-        AddTooltip(swatchObject, $"{nation.Label} {ChannelLabel(channel)}\nCurrent: {HexFor(color)}\nClick to pick a color.");
+        AddTooltip(swatchObject, $"{nation.Label} — {ChannelLabel(channel)}\nCurrent: {HexFor(color)}\nClick to pick a color.");
     }
 
     private static void AddSegmentedOption(Transform parent, string name, string label, string tooltip, bool interactable, params (string Label, bool Selected, Action OnPress)[] segments)
@@ -1470,7 +1452,7 @@ internal static class InGameOptionsMenuPatch
             return;
         }
 
-        if (!DesignHullColorProofPatch.TryResolveNationPaintColors(nation.Key, out Color32 hull, out Color32 super, out Color32 gun))
+        if (!DesignHullColorProofPatch.TryResolveAllNationPaintColors(nation.Key, out Dictionary<PaintArea, Color32> colors))
             return;
 
         GameObject? popupRoot = FindPath("Global/Ui/UiMain/Popup");
@@ -1492,7 +1474,7 @@ internal static class InGameOptionsMenuPatch
         panelRect.anchorMax = new Vector2(1f, 1f);
         panelRect.pivot = new Vector2(1f, 1f);
         panelRect.anchoredPosition = new Vector2(-18f, -90f);
-        panelRect.sizeDelta = new Vector2(320f, 110f);
+        panelRect.sizeDelta = new Vector2(460f, 110f);
 
         VerticalLayoutGroup layout = constructorPaintPanel.AddComponent<VerticalLayoutGroup>();
         layout.padding = new RectOffset { left = 12, right = 12, top = 10, bottom = 10 };
@@ -1528,7 +1510,7 @@ internal static class InGameOptionsMenuPatch
         swatchRowImage.color = new Color(0f, 0f, 0f, 0f);
         swatchRowImage.raycastTarget = false;
         HorizontalLayoutGroup swatchLayout = swatchRow.AddComponent<HorizontalLayoutGroup>();
-        swatchLayout.spacing = 8f;
+        swatchLayout.spacing = 4f;
         swatchLayout.childAlignment = TextAnchor.MiddleLeft;
         swatchLayout.childControlHeight = true;
         swatchLayout.childControlWidth = true;
@@ -1536,38 +1518,27 @@ internal static class InGameOptionsMenuPatch
         swatchLayout.childForceExpandWidth = false;
         AddLayout(swatchRow, minHeight: 30f, preferredHeight: 30f, flexibleWidth: 1f);
 
-        panelHullSwatch = AddPanelSwatch(swatchRow.transform, nation, PaintChannel.Hull, hull);
-        panelSuperSwatch = AddPanelSwatch(swatchRow.transform, nation, PaintChannel.Super, super);
-        panelGunSwatch = AddPanelSwatch(swatchRow.transform, nation, PaintChannel.Gun, gun);
+        panelSwatches.Clear();
+        foreach (PaintArea area in DesignHullColorProofPatch.AllPickerChannels)
+        {
+            if (!colors.TryGetValue(area, out Color32 channelColor))
+                continue;
+            Image swatchImage = AddPanelSwatch(swatchRow.transform, nation, area, channelColor);
+            panelSwatches[area] = swatchImage;
+        }
 
         constructorPaintPanel.transform.SetAsLastSibling();
         Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP ship paints panel opened for {nation.Label}.");
     }
 
-    private static Image AddPanelSwatch(Transform parent, DesignHullColorProofPatch.NationPaintUiInfo nation, PaintChannel channel, Color32 color)
+    private static Image AddPanelSwatch(Transform parent, DesignHullColorProofPatch.NationPaintUiInfo nation, PaintArea channel, Color32 color)
     {
-        GameObject group = new($"UADVP_PanelSwatchGroup_{channel}");
-        group.transform.SetParent(parent, false);
-        Image groupImage = group.AddComponent<Image>();
-        groupImage.color = new Color(0f, 0f, 0f, 0f);
-        groupImage.raycastTarget = false;
-        HorizontalLayoutGroup groupLayout = group.AddComponent<HorizontalLayoutGroup>();
-        groupLayout.spacing = 4f;
-        groupLayout.childAlignment = TextAnchor.MiddleLeft;
-        groupLayout.childControlHeight = true;
-        groupLayout.childControlWidth = true;
-        groupLayout.childForceExpandHeight = false;
-        groupLayout.childForceExpandWidth = false;
-        AddLayout(group, minHeight: 26f, preferredHeight: 26f, flexibleWidth: 0f);
-
-        Text labelText = AddText(group.transform, ChannelLabel(channel), 12, TextAnchor.MiddleRight);
-        AddLayout(labelText.gameObject, minWidth: 38f, preferredWidth: 38f, flexibleWidth: 0f);
-
+        // Compact, label-less swatch — tooltip identifies the channel.
         GameObject swatchObject = new($"UADVP_PanelSwatch_{channel}");
-        swatchObject.transform.SetParent(group.transform, false);
+        swatchObject.transform.SetParent(parent, false);
         Image border = swatchObject.AddComponent<Image>();
         border.color = SwatchBorder;
-        AddLayout(swatchObject, minWidth: 50f, preferredWidth: 50f, minHeight: 22f, preferredHeight: 22f);
+        AddLayout(swatchObject, minWidth: 26f, preferredWidth: 26f, minHeight: 26f, preferredHeight: 26f, flexibleWidth: 0f);
 
         GameObject fillObject = new("Fill");
         fillObject.transform.SetParent(swatchObject.transform, false);
@@ -1585,7 +1556,7 @@ internal static class InGameOptionsMenuPatch
         button.onClick.RemoveAllListeners();
         button.onClick.AddListener(new System.Action(() => OpenPaintPicker(nation, channel)));
 
-        AddTooltip(swatchObject, $"{nation.Label} {ChannelLabel(channel)}\nCurrent: {HexFor(color)}\nClick to pick a color.");
+        AddTooltip(swatchObject, $"{nation.Label} — {ChannelLabel(channel)}\nCurrent: {HexFor(color)}\nClick to pick a color.");
         return fill;
     }
 
@@ -1598,11 +1569,13 @@ internal static class InGameOptionsMenuPatch
             CloseConstructorPaintPanel();
             return;
         }
-        if (!DesignHullColorProofPatch.TryResolveNationPaintColors(panelNationKey, out Color32 hull, out Color32 super, out Color32 gun))
+        if (!DesignHullColorProofPatch.TryResolveAllNationPaintColors(panelNationKey, out Dictionary<PaintArea, Color32> colors))
             return;
-        if (panelHullSwatch != null) panelHullSwatch.color = hull;
-        if (panelSuperSwatch != null) panelSuperSwatch.color = super;
-        if (panelGunSwatch != null) panelGunSwatch.color = gun;
+        foreach (KeyValuePair<PaintArea, Image> entry in panelSwatches)
+        {
+            if (colors.TryGetValue(entry.Key, out Color32 c))
+                entry.Value.color = c;
+        }
     }
 
     private static void CloseConstructorPaintPanel()
@@ -1615,31 +1588,26 @@ internal static class InGameOptionsMenuPatch
         ClosePaintPicker();
         UnityEngine.Object.Destroy(constructorPaintPanel);
         constructorPaintPanel = null;
-        panelHullSwatch = null;
-        panelSuperSwatch = null;
-        panelGunSwatch = null;
+        panelSwatches.Clear();
         panelNationKey = string.Empty;
     }
 
-    private static void OpenPaintPicker(DesignHullColorProofPatch.NationPaintUiInfo nation, PaintChannel channel)
+    private static void OpenPaintPicker(DesignHullColorProofPatch.NationPaintUiInfo nation, PaintArea channel)
     {
         ClosePaintPicker();
 
-        if (!DesignHullColorProofPatch.TryResolveNationPaintColors(nation.Key, out Color32 hull, out Color32 super, out Color32 gun))
+        if (!DesignHullColorProofPatch.TryResolveAllNationPaintColors(nation.Key, out Dictionary<PaintArea, Color32> colors))
             return;
 
         GameObject? popupRoot = FindPath("Global/Ui/UiMain/Popup");
         if (popupRoot == null)
             return;
 
+        if (!colors.TryGetValue(channel, out Color32 current))
+            current = new Color32(128, 128, 128, 255);
+
         pickerNation = nation;
         pickerChannel = channel;
-        Color32 current = channel switch
-        {
-            PaintChannel.Super => super,
-            PaintChannel.Gun => gun,
-            _ => hull,
-        };
         pickerOriginalChannelColor = current;
 
         // Seed HSV state from the channel's current RGB color.
@@ -1950,17 +1918,11 @@ internal static class InGameOptionsMenuPatch
 
     private static void CommitPaintPickerColor(Color32 picked)
     {
-        if (!DesignHullColorProofPatch.TryResolveNationPaintColors(pickerNation.Key, out Color32 hull, out Color32 super, out Color32 gun))
+        if (!DesignHullColorProofPatch.TryResolveAllNationPaintColors(pickerNation.Key, out Dictionary<PaintArea, Color32> colors))
             return;
 
-        switch (pickerChannel)
-        {
-            case PaintChannel.Hull: hull = picked; break;
-            case PaintChannel.Super: super = picked; break;
-            case PaintChannel.Gun: gun = picked; break;
-        }
-
-        string serialized = DesignHullColorProofPatch.BuildNationPaintString(hull, super, gun);
+        colors[pickerChannel] = picked;
+        string serialized = DesignHullColorProofPatch.BuildNationPaintString(colors);
         if (ModSettings.SetNationShipPaintString(pickerNation.Key, serialized, logChange: false))
             DesignHullColorProofPatch.ApplyNationPaintSettingsChange("live picker drag");
     }
@@ -2013,14 +1975,9 @@ internal static class InGameOptionsMenuPatch
 
     private static void ApplyPaintPicker()
     {
-        if (DesignHullColorProofPatch.TryResolveNationPaintColors(pickerNation.Key, out Color32 hull, out Color32 super, out Color32 gun))
+        if (DesignHullColorProofPatch.TryResolveAllNationPaintColors(pickerNation.Key, out Dictionary<PaintArea, Color32> colors)
+            && colors.TryGetValue(pickerChannel, out Color32 channelColor))
         {
-            Color32 channelColor = pickerChannel switch
-            {
-                PaintChannel.Super => super,
-                PaintChannel.Gun => gun,
-                _ => hull,
-            };
             Melon<UADVanillaPlusMod>.Logger.Msg(
                 $"UADVP option: Nation Ship Paints applied {pickerNation.Label} {ChannelLabel(pickerChannel)} = {HexFor(channelColor)}.");
         }
@@ -2033,15 +1990,10 @@ internal static class InGameOptionsMenuPatch
 
     private static void CancelPaintPicker()
     {
-        if (DesignHullColorProofPatch.TryResolveNationPaintColors(pickerNation.Key, out Color32 hull, out Color32 super, out Color32 gun))
+        if (DesignHullColorProofPatch.TryResolveAllNationPaintColors(pickerNation.Key, out Dictionary<PaintArea, Color32> colors))
         {
-            switch (pickerChannel)
-            {
-                case PaintChannel.Hull: hull = pickerOriginalChannelColor; break;
-                case PaintChannel.Super: super = pickerOriginalChannelColor; break;
-                case PaintChannel.Gun: gun = pickerOriginalChannelColor; break;
-            }
-            string serialized = DesignHullColorProofPatch.BuildNationPaintString(hull, super, gun);
+            colors[pickerChannel] = pickerOriginalChannelColor;
+            string serialized = DesignHullColorProofPatch.BuildNationPaintString(colors);
             if (ModSettings.SetNationShipPaintString(pickerNation.Key, serialized, logChange: false))
                 DesignHullColorProofPatch.ApplyNationPaintSettingsChange("picker cancel revert");
         }
@@ -2054,15 +2006,10 @@ internal static class InGameOptionsMenuPatch
 
     private static void LoadPaintPickerChannelDefault()
     {
-        if (!DesignHullColorProofPatch.TryGetDefaultNationPaintColors(pickerNation.Key, out Color32 hull, out Color32 super, out Color32 gun))
+        if (!DesignHullColorProofPatch.TryGetAllDefaultNationPaintColors(pickerNation.Key, out Dictionary<PaintArea, Color32> defaults))
             return;
-
-        Color32 fallback = pickerChannel switch
-        {
-            PaintChannel.Super => super,
-            PaintChannel.Gun => gun,
-            _ => hull,
-        };
+        if (!defaults.TryGetValue(pickerChannel, out Color32 fallback))
+            return;
 
         Color.RGBToHSV((Color)fallback, out pickerCurrentH, out pickerCurrentS, out pickerCurrentV);
         if (pickerCurrentV <= 0.001f)
@@ -2096,11 +2043,24 @@ internal static class InGameOptionsMenuPatch
         pickerWheelDragging = false;
     }
 
-    private static string ChannelLabel(PaintChannel channel)
+    private static string ChannelLabel(PaintArea channel)
         => channel switch
         {
-            PaintChannel.Super => "Super",
-            PaintChannel.Gun => "Guns",
+            PaintArea.HullSide => "Hull",
+            PaintArea.Superstructure => "Super",
+            PaintArea.Gun => "Guns",
+            PaintArea.Barbette => "Barbette",
+            PaintArea.Deck => "Deck",
+            PaintArea.Bottom => "Bottom",
+            PaintArea.Boat => "Boat",
+            PaintArea.Trim => "Trim",
+            PaintArea.Flag => "Flag",
+            PaintArea.Roof => "Roof",
+            PaintArea.Smoke => "Smoke",
+            PaintArea.Glass => "Glass",
+            PaintArea.Crew => "Crew",
+            PaintArea.Canvas => "Canvas",
+            PaintArea.Propeller => "Prop",
             _ => "Hull",
         };
 
