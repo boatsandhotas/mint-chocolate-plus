@@ -27,7 +27,9 @@ internal static class DesignHullColorProofPatch
         Bottom,
         Roof,
         Barrel,
-        Flag,
+        // Enum stays "Banner" internally; user-facing label is "Trim" (see ChannelLabel).
+        // The Banner token list catches material name "banner" — the value the channel
+        // actually paints. Keeping the internal name + field key avoids a save migration.
         Banner,
     }
 
@@ -284,7 +286,6 @@ internal static class DesignHullColorProofPatch
     // Channel is labeled "Details" in the UI. Catches MetalRoofing-textured details_2
     // pieces.
     private static readonly string[] RoofTokens = { "roofing", "roof" };
-    private static readonly string[] FlagTokens = { "flag" };
     private static readonly string[] BannerTokens = { "banner" };
     // Channel labeled "Barrel" in the UI. The token list is unchanged from when it was
     // called "Detail" — empirically "details_*" materials are the gun barrels and small
@@ -306,7 +307,6 @@ internal static class DesignHullColorProofPatch
         // Flag/Banner are kept distinct (rather than lumped into Details) so the user
         // can decide which to keep after testing. Default to a neutral steel grey so
         // they look "right" if untouched, but the user can pick anything via the picker.
-        [PaintArea.Flag] = Profile(0.32f, 0.32f, 0.34f, 82, 82, 87, 0.55f, "flag_grey"),
         [PaintArea.Banner] = Profile(0.32f, 0.32f, 0.34f, 82, 82, 87, 0.55f, "banner_grey"),
     };
 
@@ -977,7 +977,6 @@ internal static class DesignHullColorProofPatch
             case "bottom": area = PaintArea.Bottom; return true;
             case "roof": area = PaintArea.Roof; return true;
             case "barrel": area = PaintArea.Barrel; return true;
-            case "flag": area = PaintArea.Flag; return true;
             case "banner": area = PaintArea.Banner; return true;
             default: area = PaintArea.HullSide; return false;
         }
@@ -993,7 +992,6 @@ internal static class DesignHullColorProofPatch
             PaintArea.Bottom => "bottom",
             PaintArea.Roof => "roof",
             PaintArea.Barrel => "barrel",
-            PaintArea.Flag => "flag",
             PaintArea.Banner => "banner",
             _ => string.Empty,
         };
@@ -1012,8 +1010,8 @@ internal static class DesignHullColorProofPatch
             // "detail"/"details" accepted as legacy aliases so paint strings saved before
             // the rename still load correctly.
             "barrel" or "detail" or "details" => "barrel",
-            "flag" => "flag",
-            "banner" => "banner",
+            // "trim" is the user-facing label; saved field key is still "banner".
+            "banner" or "trim" => "banner",
             _ => string.Empty
         };
     }
@@ -1110,7 +1108,6 @@ internal static class DesignHullColorProofPatch
         PaintArea.Bottom,
         PaintArea.Roof,
         PaintArea.Barrel,
-        PaintArea.Flag,
         PaintArea.Banner,
     };
 
@@ -2792,7 +2789,6 @@ internal static class DesignHullColorProofPatch
             PaintArea.Bottom => ContainsAny(materialText, BottomTokens),
             PaintArea.Roof => ContainsAny(materialText, RoofTokens),
             PaintArea.Barrel => ContainsAny(materialText, BarrelTokens),
-            PaintArea.Flag => ContainsAny(materialText, FlagTokens),
             PaintArea.Banner => ContainsAny(materialText, BannerTokens),
             _ => LooksLikePaintedSideMaterial(materialText)
         };
@@ -2811,9 +2807,8 @@ internal static class DesignHullColorProofPatch
             return null;
 
         if (ContainsAny(materialText, BottomTokens)) return PaintArea.Bottom;
-        // Flag/Banner are checked before Roof so a "flag" material name doesn't get
+        // Banner is checked before Roof so a "banner" material name doesn't get
         // intercepted by some texture-name token in Roof's list.
-        if (ContainsAny(materialText, FlagTokens)) return PaintArea.Flag;
         if (ContainsAny(materialText, BannerTokens)) return PaintArea.Banner;
         // Roof checks "roof"/"roofing" — matches details_2's MetalRoofing texture name
         // before Barrel's "details_" token gets a chance to claim it.

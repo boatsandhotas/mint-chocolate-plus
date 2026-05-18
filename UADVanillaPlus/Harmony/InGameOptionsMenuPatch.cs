@@ -1493,8 +1493,8 @@ internal static class InGameOptionsMenuPatch
         panelRect.pivot = new Vector2(1f, 1f);
         panelRect.anchoredPosition = new Vector2(-18f, -90f);
         // Dual-row when a design context resolves; collapse to a single nation row
-        // otherwise. Width grows with the channel count (9 swatches + label + buttons).
-        panelRect.sizeDelta = new Vector2(hasDesign ? 580f : 380f, hasDesign ? 172f : 130f);
+        // otherwise. Width grows with the channel count (8 swatches + label + buttons).
+        panelRect.sizeDelta = new Vector2(hasDesign ? 540f : 350f, hasDesign ? 172f : 130f);
 
         VerticalLayoutGroup layout = constructorPaintPanel.AddComponent<VerticalLayoutGroup>();
         layout.padding = new RectOffset { left = 12, right = 12, top = 10, bottom = 10 };
@@ -1613,8 +1613,7 @@ internal static class InGameOptionsMenuPatch
             PaintArea.Bottom => "Bottom",
             PaintArea.Roof => "Detail",
             PaintArea.Barrel => "Barrel",
-            PaintArea.Flag => "Flag",
-            PaintArea.Banner => "Banner",
+            PaintArea.Banner => "Trim",
             _ => "?",
         };
 
@@ -2345,8 +2344,7 @@ internal static class InGameOptionsMenuPatch
             // "Details" because in practice the channel catches deck-fitting details.
             PaintArea.Roof => "Details",
             PaintArea.Barrel => "Barrel",
-            PaintArea.Flag => "Flag",
-            PaintArea.Banner => "Banner",
+            PaintArea.Banner => "Trim",
             _ => "Hull",
         };
 
