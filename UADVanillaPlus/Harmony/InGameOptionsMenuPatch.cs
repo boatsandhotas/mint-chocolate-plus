@@ -1474,7 +1474,7 @@ internal static class InGameOptionsMenuPatch
         panelRect.anchorMax = new Vector2(1f, 1f);
         panelRect.pivot = new Vector2(1f, 1f);
         panelRect.anchoredPosition = new Vector2(-18f, -90f);
-        panelRect.sizeDelta = new Vector2(300f, 110f);
+        panelRect.sizeDelta = new Vector2(280f, 110f);
 
         VerticalLayoutGroup layout = constructorPaintPanel.AddComponent<VerticalLayoutGroup>();
         layout.padding = new RectOffset { left = 12, right = 12, top = 10, bottom = 10 };
@@ -2053,8 +2053,7 @@ internal static class InGameOptionsMenuPatch
             PaintArea.Deck => "Deck",
             PaintArea.Bottom => "Bottom",
             PaintArea.Roof => "Roof",
-            PaintArea.Detail => "Detail",
-            PaintArea.OtherMetal => "Other Metal",
+            PaintArea.Barrel => "Barrel",
             _ => "Hull",
         };
 
