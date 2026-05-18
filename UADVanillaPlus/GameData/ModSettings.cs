@@ -29,6 +29,7 @@ internal static class ModSettings
     private const string ExperimentalNationShipPaintsEnabledKey = "uadvp_experimental_nation_ship_paints_enabled";
     private const string BattleRuntimeDiagnosticsEnabledKey = "uadvp_battle_runtime_diagnostics_enabled";
     private const string NationShipPaintStringKeyPrefix = "uadvp_nation_ship_paint_";
+    private const string DesignShipPaintStringKeyPrefix = "uadvp_design_ship_paint_";
     private const string OldPanamaCanalEarlyEnabledKey = "uadvp_panama_canal_early_enabled";
 
     private static bool? portStrikeBalanced;
@@ -423,6 +424,36 @@ internal static class ModSettings
         return true;
     }
 
+    // Per-class paint storage keyed by the design Ship's Guid string. Layered on top of
+    // nation paints at resolve time so a design only needs to store the channels it
+    // explicitly customizes.
+    internal static string DesignShipPaintString(string designKey)
+        => string.IsNullOrEmpty(designKey)
+            ? string.Empty
+            : PlayerPrefs.GetString(DesignShipPaintPreferenceKey(designKey), string.Empty);
+
+    internal static bool SetDesignShipPaintString(string designKey, string value)
+        => SetDesignShipPaintString(designKey, value, logChange: true);
+
+    internal static bool SetDesignShipPaintString(string designKey, string value, bool logChange)
+    {
+        if (string.IsNullOrEmpty(designKey))
+            return false;
+        string preferenceKey = DesignShipPaintPreferenceKey(designKey);
+        string storedValue = value ?? string.Empty;
+        string currentValue = PlayerPrefs.GetString(preferenceKey, string.Empty);
+        if (string.Equals(currentValue, storedValue, StringComparison.Ordinal))
+            return false;
+
+        PlayerPrefs.SetString(preferenceKey, storedValue);
+        PlayerPrefs.Save();
+        nationShipPaintsRevision++;
+        if (logChange)
+            Melon<UADVanillaPlusMod>.Logger.Msg(
+                $"UADVP option: Design Ship Paints updated for design {designKey}.");
+        return true;
+    }
+
     internal static bool DesignAccuracyPenaltiesBalanced
         => DesignAccuracyPenaltyMode != AccuracyPenaltyMode.Vanilla;
 
@@ -609,6 +640,9 @@ internal static class ModSettings
 
     private static string NationShipPaintPreferenceKey(string nationKey)
         => NationShipPaintStringKeyPrefix + NormalizeNationPaintKey(nationKey);
+
+    private static string DesignShipPaintPreferenceKey(string designKey)
+        => DesignShipPaintStringKeyPrefix + designKey;
 
     private static string NormalizeNationPaintKey(string nationKey)
     {
