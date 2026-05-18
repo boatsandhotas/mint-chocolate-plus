@@ -404,6 +404,9 @@ internal static class ModSettings
         => PlayerPrefs.GetString(NationShipPaintPreferenceKey(nationKey), string.Empty);
 
     internal static bool SetNationShipPaintString(string nationKey, string value)
+        => SetNationShipPaintString(nationKey, value, logChange: true);
+
+    internal static bool SetNationShipPaintString(string nationKey, string value, bool logChange)
     {
         string preferenceKey = NationShipPaintPreferenceKey(nationKey);
         string storedValue = value ?? string.Empty;
@@ -414,8 +417,9 @@ internal static class ModSettings
         PlayerPrefs.SetString(preferenceKey, storedValue);
         PlayerPrefs.Save();
         nationShipPaintsRevision++;
-        Melon<UADVanillaPlusMod>.Logger.Msg(
-            $"UADVP option: Nation Ship Paints updated {NormalizeNationPaintKey(nationKey)} paint string.");
+        if (logChange)
+            Melon<UADVanillaPlusMod>.Logger.Msg(
+                $"UADVP option: Nation Ship Paints updated {NormalizeNationPaintKey(nationKey)} paint string.");
         return true;
     }
 

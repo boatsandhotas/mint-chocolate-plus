@@ -911,6 +911,103 @@ internal static class DesignHullColorProofPatch
            $"super={HexString(Color32FromColor(definition.BuiltInScheme.Superstructure.MaterialColor))}; " +
            $"gun={HexString(Color32FromColor(definition.BuiltInScheme.Gun.MaterialColor))}";
 
+    internal static bool TryResolveNationPaintColors(string key, out Color32 hull, out Color32 super, out Color32 gun)
+    {
+        NationPaintDefinition? definition = null;
+        foreach (NationPaintDefinition candidate in NationPaintDefinitions)
+        {
+            if (string.Equals(candidate.Key, key, StringComparison.OrdinalIgnoreCase))
+            {
+                definition = candidate;
+                break;
+            }
+        }
+
+        if (definition == null)
+        {
+            hull = super = gun = default;
+            return false;
+        }
+
+        hull = Color32FromColor(definition.BuiltInScheme.HullSide.MaterialColor);
+        super = Color32FromColor(definition.BuiltInScheme.Superstructure.MaterialColor);
+        gun = Color32FromColor(definition.BuiltInScheme.Gun.MaterialColor);
+
+        string raw = ModSettings.NationShipPaintString(definition.Key);
+        if (string.IsNullOrWhiteSpace(raw))
+            return true;
+
+        foreach (string field in raw.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            int separator = field.IndexOf('=');
+            if (separator <= 0 || separator >= field.Length - 1)
+                continue;
+
+            string normalized = NormalizePaintFieldKey(field[..separator]);
+            if (string.IsNullOrEmpty(normalized))
+                continue;
+
+            if (!TryParseHexColor(field[(separator + 1)..], out Color32 color))
+                continue;
+
+            switch (normalized)
+            {
+                case "hull": hull = color; break;
+                case "super": super = color; break;
+                case "gun": gun = color; break;
+            }
+        }
+
+        return true;
+    }
+
+    internal static bool TryGetDefaultNationPaintColors(string key, out Color32 hull, out Color32 super, out Color32 gun)
+    {
+        foreach (NationPaintDefinition candidate in NationPaintDefinitions)
+        {
+            if (string.Equals(candidate.Key, key, StringComparison.OrdinalIgnoreCase))
+            {
+                hull = Color32FromColor(candidate.BuiltInScheme.HullSide.MaterialColor);
+                super = Color32FromColor(candidate.BuiltInScheme.Superstructure.MaterialColor);
+                gun = Color32FromColor(candidate.BuiltInScheme.Gun.MaterialColor);
+                return true;
+            }
+        }
+
+        hull = super = gun = default;
+        return false;
+    }
+
+    internal static string BuildNationPaintString(Color32 hull, Color32 super, Color32 gun)
+        => $"hull={HexString(hull)}; super={HexString(super)}; gun={HexString(gun)}";
+
+    internal static bool TryResolveCurrentConstructorNation(out NationPaintUiInfo info)
+    {
+        info = default;
+        Player? player = PlayerController.Instance;
+        if (player == null)
+            return false;
+
+        string playerKey = PlayerKey(player);
+        if (string.IsNullOrWhiteSpace(playerKey))
+            return false;
+
+        foreach (NationPaintDefinition definition in NationPaintDefinitions)
+        {
+            if (!ContainsAny(playerKey, definition.MatchTokens))
+                continue;
+
+            info = new NationPaintUiInfo(
+                definition.Key,
+                definition.Label,
+                ModSettings.NationShipPaintString(definition.Key),
+                BuiltInPaintString(definition));
+            return true;
+        }
+
+        return false;
+    }
+
     private static bool TryParseHexColor(string value, out Color32 color)
     {
         color = default;
