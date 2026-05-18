@@ -279,7 +279,10 @@ internal static class DesignHullColorProofPatch
     // in ClassifyMaterialArea decides disambiguation between overlapping tokens.
     private static readonly string[] DeckTokens = { "deck", "wood", "plank", "floor" };
     private static readonly string[] BottomTokens = { "hull_bottom", "bottom", "underwater", "keel", "waterline" };
-    private static readonly string[] RoofTokens = { "roofing", "roof" };
+    // Channel is labeled "Details" in the UI. Catches MetalRoofing-textured details_2
+    // pieces, plus banner/flag fabric overlays that share textures with steel super
+    // pieces (which made them read as "plain metal" before they had a paint channel).
+    private static readonly string[] RoofTokens = { "roofing", "roof", "banner", "flag" };
     // Channel labeled "Barrel" in the UI. The token list is unchanged from when it was
     // called "Detail" — empirically "details_*" materials are the gun barrels and small
     // deck fittings that escape the other classifiers.
@@ -913,9 +916,10 @@ internal static class DesignHullColorProofPatch
             string key = NormalizePaintFieldKey(field[..separator]);
             if (string.IsNullOrWhiteSpace(key))
             {
-                scheme = definition.BuiltInScheme;
-                error = $"Unknown color key '{field[..separator]}'.";
-                return false;
+                // Skip rather than fail — saved paint strings may carry legacy field
+                // names from removed channels (e.g. "trim"). Failing the entire parse
+                // would silently revert the nation to its built-in scheme.
+                continue;
             }
 
             if (!TryParseHexColor(field[(separator + 1)..], out Color32 color))
