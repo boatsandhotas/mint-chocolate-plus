@@ -286,6 +286,8 @@ internal static class DesignHullColorProofPatch
     private const int OtherMetalSampleLogLimit = 40;
     private static readonly HashSet<string> LoggedUnclassifiedPartSamples = new(StringComparer.OrdinalIgnoreCase);
     private const int UnclassifiedPartSampleLogLimit = 30;
+    private static readonly HashSet<string> LoggedUnmatchedMaterialSamples = new(StringComparer.OrdinalIgnoreCase);
+    private const int UnmatchedMaterialSampleLogLimit = 60;
 
     // Shared defaults for the experimental channels — used when no per-nation override
     // is configured. Vivid + distinct so the user can see which surface each channel paints.
@@ -2108,6 +2110,10 @@ internal static class DesignHullColorProofPatch
             }
             else
             {
+                // Nothing matched. Log the material so we can see what its name+texture
+                // look like — this is where gun barrels, deck fittings, and other things
+                // we have not yet identified by token pattern are hiding.
+                LogUnmatchedMaterial(material, hasPrimary, primaryArea);
                 skippedMaterialCount++;
                 paintedMaterials[i] = material;
                 continue;
@@ -2704,6 +2710,36 @@ internal static class DesignHullColorProofPatch
 
             Melon<UADVanillaPlusMod>.Logger.Msg(
                 $"UADVP ship paint unclassified part sample #{LoggedUnclassifiedPartSamples.Count}: part='{partName}'; ship='{shipName}'.");
+        }
+        catch
+        {
+            // Diagnostics only.
+        }
+    }
+
+    // Logs the first N unique material names that fall through ALL classifier tiers
+    // (experimental, primary, AND OtherMetal). These are the materials we are silently
+    // skipping — the most likely place gun-barrel and deck-fitting materials hide if
+    // their names don't contain any token we know about.
+    private static void LogUnmatchedMaterial(Material material, bool hasPrimary, PaintArea primaryArea)
+    {
+        if (LoggedUnmatchedMaterialSamples.Count >= UnmatchedMaterialSampleLogLimit)
+            return;
+
+        try
+        {
+            Material source = OriginalMaterial(material);
+            if (source == null)
+                return;
+            string sourceName = source.name ?? "<material>";
+            string textures = MaterialTextureNames(source);
+            string key = $"{sourceName}|{textures}";
+            if (!LoggedUnmatchedMaterialSamples.Add(key))
+                return;
+
+            string primaryDescriptor = hasPrimary ? primaryArea.ToString() : "<unclassified>";
+            Melon<UADVanillaPlusMod>.Logger.Msg(
+                $"UADVP ship paint UNMATCHED sample #{LoggedUnmatchedMaterialSamples.Count}: primary={primaryDescriptor}; material='{sourceName}'; textures='{textures}'.");
         }
         catch
         {
