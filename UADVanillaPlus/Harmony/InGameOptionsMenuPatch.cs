@@ -2052,15 +2052,6 @@ internal static class InGameOptionsMenuPatch
             PaintArea.Barbette => "Barbette",
             PaintArea.Deck => "Deck",
             PaintArea.Bottom => "Bottom",
-            PaintArea.Boat => "Boat",
-            PaintArea.Trim => "Trim",
-            PaintArea.Flag => "Flag",
-            PaintArea.Roof => "Roof",
-            PaintArea.Smoke => "Smoke",
-            PaintArea.Glass => "Glass",
-            PaintArea.Crew => "Crew",
-            PaintArea.Canvas => "Canvas",
-            PaintArea.Propeller => "Prop",
             _ => "Hull",
         };
 

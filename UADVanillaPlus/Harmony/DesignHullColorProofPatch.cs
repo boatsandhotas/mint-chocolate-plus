@@ -13,9 +13,9 @@ namespace UADVanillaPlus.Harmony;
 [HarmonyPatch(typeof(Part))]
 internal static class DesignHullColorProofPatch
 {
-    // Existing channels (HullSide/Barbette/Superstructure/Gun) tint by part type.
-    // Experimental channels (Deck...Propeller) classify per-material via token match so
-    // a Hull part can have its deck/bottom/rails/etc. tinted with independent profiles.
+    // Existing channels (HullSide/Barbette/Superstructure/Gun) tint by part type via
+    // PaintAreaFor. Experimental channels (Deck/Bottom) classify per-material so a Hull
+    // part can have its deck and bottom tinted separately from its hull-side belt.
     internal enum PaintArea
     {
         HullSide,
@@ -24,15 +24,6 @@ internal static class DesignHullColorProofPatch
         Gun,
         Deck,
         Bottom,
-        Boat,
-        Trim,
-        Flag,
-        Roof,
-        Smoke,
-        Glass,
-        Crew,
-        Canvas,
-        Propeller,
     }
 
     private readonly struct PaintProfile
@@ -285,15 +276,6 @@ internal static class DesignHullColorProofPatch
     // in ClassifyMaterialArea decides disambiguation between overlapping tokens.
     private static readonly string[] DeckTokens = { "deck", "wood", "plank", "floor" };
     private static readonly string[] BottomTokens = { "hull_bottom", "bottom", "underwater", "keel", "waterline" };
-    private static readonly string[] BoatTokens = { "lifeboat", "boat" };
-    private static readonly string[] TrimTokens = { "rail", "rope", "chain", "ladder", "anchor", "vent" };
-    private static readonly string[] FlagTokens = { "flag" };
-    private static readonly string[] RoofTokens = { "roofing", "roof" };
-    private static readonly string[] SmokeTokens = { "smoke" };
-    private static readonly string[] GlassTokens = { "window", "glass" };
-    private static readonly string[] CrewTokens = { "crew" };
-    private static readonly string[] CanvasTokens = { "canvas" };
-    private static readonly string[] PropellerTokens = { "propeller" };
 
     // Shared defaults for the experimental channels — used when no per-nation override
     // is configured. Vivid + distinct so the user can see which surface each channel paints.
@@ -301,15 +283,6 @@ internal static class DesignHullColorProofPatch
     {
         [PaintArea.Deck] = Profile(0.83f, 0.65f, 0.42f, 212, 166, 107, 0.45f, "deck_teak"),
         [PaintArea.Bottom] = Profile(0.45f, 0.10f, 0.10f, 115, 26, 26, 0.70f, "bottom_antifouling"),
-        [PaintArea.Boat] = Profile(0.78f, 0.72f, 0.55f, 199, 184, 140, 0.40f, "boat_canvas"),
-        [PaintArea.Trim] = Profile(0.28f, 0.28f, 0.28f, 71, 71, 71, 0.60f, "trim_gunmetal"),
-        [PaintArea.Flag] = Profile(0.85f, 0.15f, 0.18f, 217, 38, 46, 0.55f, "flag_red"),
-        [PaintArea.Roof] = Profile(0.22f, 0.22f, 0.24f, 56, 56, 61, 0.65f, "roof_charcoal"),
-        [PaintArea.Smoke] = Profile(0.30f, 0.30f, 0.30f, 77, 77, 77, 0.45f, "smoke_grey"),
-        [PaintArea.Glass] = Profile(0.50f, 0.78f, 0.92f, 128, 199, 235, 0.55f, "glass_skyblue"),
-        [PaintArea.Crew] = Profile(0.18f, 0.28f, 0.55f, 46, 71, 140, 0.55f, "crew_navy"),
-        [PaintArea.Canvas] = Profile(0.92f, 0.88f, 0.78f, 235, 224, 199, 0.40f, "canvas_offwhite"),
-        [PaintArea.Propeller] = Profile(0.72f, 0.55f, 0.18f, 184, 140, 46, 0.50f, "propeller_bronze"),
     };
 
     // Per-nation override storage for experimental channels. Mirrors the existing
@@ -784,7 +757,7 @@ internal static class DesignHullColorProofPatch
                 if (materials == null || materials.Length == 0)
                     continue;
 
-                PaintedMaterialSet paintedMaterials = GetOrCreateMultiAreaPaintedMaterialSet(materials, scheme, nationKey);
+                PaintedMaterialSet paintedMaterials = GetOrCreateMultiAreaPaintedMaterialSet(materials, paintArea.Value, primaryProfile, scheme, nationKey);
                 changedMaterialCount += paintedMaterials.PaintedMaterialCount;
                 skippedMaterialCount += paintedMaterials.SkippedMaterialCount;
 
@@ -955,15 +928,6 @@ internal static class DesignHullColorProofPatch
         {
             case "deck": area = PaintArea.Deck; return true;
             case "bottom": area = PaintArea.Bottom; return true;
-            case "boat": area = PaintArea.Boat; return true;
-            case "trim": area = PaintArea.Trim; return true;
-            case "flag": area = PaintArea.Flag; return true;
-            case "roof": area = PaintArea.Roof; return true;
-            case "smoke": area = PaintArea.Smoke; return true;
-            case "glass": area = PaintArea.Glass; return true;
-            case "crew": area = PaintArea.Crew; return true;
-            case "canvas": area = PaintArea.Canvas; return true;
-            case "propeller": area = PaintArea.Propeller; return true;
             default: area = PaintArea.HullSide; return false;
         }
     }
@@ -976,15 +940,6 @@ internal static class DesignHullColorProofPatch
             PaintArea.Gun or PaintArea.Barbette => "gun",
             PaintArea.Deck => "deck",
             PaintArea.Bottom => "bottom",
-            PaintArea.Boat => "boat",
-            PaintArea.Trim => "trim",
-            PaintArea.Flag => "flag",
-            PaintArea.Roof => "roof",
-            PaintArea.Smoke => "smoke",
-            PaintArea.Glass => "glass",
-            PaintArea.Crew => "crew",
-            PaintArea.Canvas => "canvas",
-            PaintArea.Propeller => "propeller",
             _ => string.Empty,
         };
 
@@ -994,20 +949,10 @@ internal static class DesignHullColorProofPatch
         return normalized switch
         {
             "hull" => "hull",
-            "super" or "superstructure" => "super",
+            "super" or "superstructure" or "top" => "super",
             "gun" or "guns" => "gun",
-            "top" => "roof", // legacy alias; "top" used to map to super but is rare in saved strings
             "deck" or "wood" or "plank" or "floor" => "deck",
             "bottom" or "hull_bottom" or "underwater" or "keel" or "waterline" => "bottom",
-            "boat" or "lifeboat" => "boat",
-            "trim" or "rail" or "rope" or "chain" or "ladder" or "anchor" or "vent" => "trim",
-            "flag" => "flag",
-            "roof" or "roofing" => "roof",
-            "smoke" => "smoke",
-            "glass" or "window" => "glass",
-            "crew" => "crew",
-            "canvas" => "canvas",
-            "propeller" or "prop" => "propeller",
             _ => string.Empty
         };
     }
@@ -1102,15 +1047,6 @@ internal static class DesignHullColorProofPatch
         PaintArea.Gun,
         PaintArea.Deck,
         PaintArea.Bottom,
-        PaintArea.Boat,
-        PaintArea.Trim,
-        PaintArea.Flag,
-        PaintArea.Roof,
-        PaintArea.Smoke,
-        PaintArea.Glass,
-        PaintArea.Crew,
-        PaintArea.Canvas,
-        PaintArea.Propeller,
     };
 
     internal static bool TryResolveAllNationPaintColors(string key, out Dictionary<PaintArea, Color32> colors)
@@ -2083,9 +2019,13 @@ internal static class DesignHullColorProofPatch
     // Multi-area variant: classify each material independently and tint it with the
     // matched channel's profile. A single part can therefore have hull-side, deck,
     // bottom, trim, etc. each painted with their own color.
-    private static PaintedMaterialSet GetOrCreateMultiAreaPaintedMaterialSet(Material[] materials, ShipPaintScheme scheme, string nationKey)
+    // For each material: try the experimental channels (Deck/Bottom) first. If none match,
+    // fall back to the part's primary area + its original ShouldPaintMaterial classifier.
+    // This preserves vanilla per-part behavior for HullSide/Super/Gun/Barbette so changing
+    // the gun color cannot bleed into the hull or superstructure.
+    private static PaintedMaterialSet GetOrCreateMultiAreaPaintedMaterialSet(Material[] materials, PaintArea primaryArea, PaintProfile primaryProfile, ShipPaintScheme scheme, string nationKey)
     {
-        string key = MultiAreaCacheKey(materials, scheme, nationKey);
+        string key = MultiAreaCacheKey(materials, primaryArea, primaryProfile, scheme, nationKey);
         if (PaintedMaterialSets.TryGetValue(key, out PaintedMaterialSet? cachedSet))
         {
             if (IsUsablePaintedMaterialSet(cachedSet))
@@ -2115,16 +2055,27 @@ internal static class DesignHullColorProofPatch
                 material = originalMaterial;
             }
 
-            PaintArea? area = ClassifyMaterialArea(material);
-            if (area == null)
+            PaintArea areaForMaterial;
+            PaintProfile profileForMaterial;
+            PaintArea? experimental = ClassifyExperimentalMaterialArea(material);
+            if (experimental.HasValue)
+            {
+                areaForMaterial = experimental.Value;
+                profileForMaterial = ProfileFor(scheme, nationKey, experimental.Value);
+            }
+            else if (ShouldPaintMaterial(material, primaryArea))
+            {
+                areaForMaterial = primaryArea;
+                profileForMaterial = primaryProfile;
+            }
+            else
             {
                 skippedMaterialCount++;
                 paintedMaterials[i] = material;
                 continue;
             }
 
-            PaintProfile profile = ProfileFor(scheme, nationKey, area.Value);
-            Material? paintedMaterial = GetOrCreatePaintMaterial(material, area.Value, profile);
+            Material? paintedMaterial = GetOrCreatePaintMaterial(material, areaForMaterial, profileForMaterial);
             if (paintedMaterial == null)
             {
                 skippedMaterialCount++;
@@ -2143,7 +2094,7 @@ internal static class DesignHullColorProofPatch
         return set;
     }
 
-    private static string MultiAreaCacheKey(Material[] materials, ShipPaintScheme scheme, string nationKey)
+    private static string MultiAreaCacheKey(Material[] materials, PaintArea primaryArea, PaintProfile primaryProfile, ShipPaintScheme scheme, string nationKey)
     {
         List<string> materialKeys = new(materials.Length);
         foreach (Material material in materials)
@@ -2156,8 +2107,8 @@ internal static class DesignHullColorProofPatch
             materialKeys.Add(MaterialSourceKey(OriginalMaterial(material)));
         }
 
-        // Include the scheme id (encodes hull/super/gun) and a hash of the per-nation
-        // extras override so cache invalidates when any channel's color changes.
+        // Encode the primary area+profile (which governs HullSide/Super/Gun/Barbette tinting)
+        // and the per-nation experimental overrides so the cache invalidates on any change.
         string extrasFingerprint = string.Empty;
         if (!string.IsNullOrEmpty(nationKey)
             && ConfiguredNationExtraOverrides.TryGetValue(nationKey, out Dictionary<PaintArea, PaintProfile>? overrides)
@@ -2171,7 +2122,7 @@ internal static class DesignHullColorProofPatch
             extrasFingerprint = string.Join(",", parts);
         }
 
-        return $"multi|{scheme.Id}|{nationKey}|{extrasFingerprint}|{string.Join(",", materialKeys)}";
+        return $"multi|{primaryArea}|{primaryProfile.Suffix}|{scheme.Id}|{nationKey}|{extrasFingerprint}|{string.Join(",", materialKeys)}";
     }
 
     private static Material? GetOrCreatePaintMaterial(Material material, PaintArea paintArea, PaintProfile profile)
@@ -2662,48 +2613,25 @@ internal static class DesignHullColorProofPatch
             PaintArea.Barbette => LooksLikeBarbetteMaterial(materialText),
             PaintArea.Deck => ContainsAny(materialText, DeckTokens),
             PaintArea.Bottom => ContainsAny(materialText, BottomTokens),
-            PaintArea.Boat => ContainsAny(materialText, BoatTokens),
-            PaintArea.Trim => ContainsAny(materialText, TrimTokens),
-            PaintArea.Flag => ContainsAny(materialText, FlagTokens),
-            PaintArea.Roof => ContainsAny(materialText, RoofTokens),
-            PaintArea.Smoke => ContainsAny(materialText, SmokeTokens),
-            PaintArea.Glass => ContainsAny(materialText, GlassTokens),
-            PaintArea.Crew => ContainsAny(materialText, CrewTokens),
-            PaintArea.Canvas => ContainsAny(materialText, CanvasTokens),
-            PaintArea.Propeller => ContainsAny(materialText, PropellerTokens),
             _ => LooksLikePaintedSideMaterial(materialText)
         };
         PaintMaterialCandidateCache[key] = decision;
         return decision;
     }
 
-    // Returns the first matching paint area for a material in priority order. Order is
-    // most-specific-first so a deck-wood material doesn't fall through to HullSide.
-    private static PaintArea? ClassifyMaterialArea(Material material)
+    // Checks only the experimental per-material channels (Deck, Bottom). The existing
+    // four channels (HullSide/Barbette/Superstructure/Gun) keep their per-part dispatch
+    // so cross-channel material tokens (steel_/metal/armor) don't bleed between Gun and
+    // Barbette etc.
+    private static PaintArea? ClassifyExperimentalMaterialArea(Material material)
     {
         Material source = OriginalMaterial(material);
         string materialText = MaterialSearchText(source);
         if (string.IsNullOrEmpty(materialText))
             return null;
 
-        // Experimental specific-token channels first.
-        if (ContainsAny(materialText, FlagTokens)) return PaintArea.Flag;
-        if (ContainsAny(materialText, SmokeTokens)) return PaintArea.Smoke;
-        if (ContainsAny(materialText, GlassTokens)) return PaintArea.Glass;
-        if (ContainsAny(materialText, CanvasTokens)) return PaintArea.Canvas;
-        if (ContainsAny(materialText, CrewTokens)) return PaintArea.Crew;
-        if (ContainsAny(materialText, PropellerTokens)) return PaintArea.Propeller;
-        if (ContainsAny(materialText, RoofTokens)) return PaintArea.Roof;
         if (ContainsAny(materialText, BottomTokens)) return PaintArea.Bottom;
-        if (ContainsAny(materialText, BoatTokens)) return PaintArea.Boat;
-        if (ContainsAny(materialText, TrimTokens)) return PaintArea.Trim;
         if (ContainsAny(materialText, DeckTokens)) return PaintArea.Deck;
-
-        // Existing channels (use the classifiers with their cross-skip lists).
-        if (LooksLikeBarbetteMaterial(materialText)) return PaintArea.Barbette;
-        if (LooksLikeGunMaterial(materialText)) return PaintArea.Gun;
-        if (LooksLikeSuperstructureMaterial(materialText)) return PaintArea.Superstructure;
-        if (LooksLikePaintedSideMaterial(materialText)) return PaintArea.HullSide;
         return null;
     }
 
