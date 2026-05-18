@@ -341,6 +341,7 @@ internal static class DesignHullColorProofPatch
     private static int DamagePaintPolicyLogCount;
     private static int LodRendererLogCount;
     private static int MissedGunLodRendererLogCount;
+    private static int MissedChildRendererLogCount;
     private static int NationPaintSettingsLogCount;
     private static int PendingCampaignBattleCountryMapLogCount;
     private static int ResolvedNationPaintRevision = -1;
@@ -352,6 +353,11 @@ internal static class DesignHullColorProofPatch
     private const int MaxApplicationLogsPerArea = 4;
     private const int MaxLodRendererLogs = 8;
     private const int MaxMissedGunLodRendererLogs = 12;
+    // Caps the diagnostic that logs renderers found under a Part that are NOT in
+    // part.visualRenderers and DON'T look like LOD siblings — i.e. decorative meshes
+    // (ladders, vents, davits, AA fittings) that the painter silently skips today.
+    // Generous cap because each grey deck object spans multiple LODs.
+    private const int MaxMissedChildRendererLogs = 60;
     private const int BattleRepaintCandidateWarningThreshold = 240;
     private const int BattleRepaintBattleReadyWaitAttempts = 60;
     private const float BattleRepaintBattleReadyWaitDelaySeconds = 0.2f;
@@ -1736,8 +1742,9 @@ internal static class DesignHullColorProofPatch
         AppliedRendererSignatureByPart.Remove(PaintPartKey(part, PaintArea.Gun, DefaultScheme.Gun));
     }
 
-    private static IEnumerable<Renderer> HullRenderers(Part part)
+    private static List<Renderer> HullRenderers(Part part)
     {
+        List<Renderer> result = new();
         HashSet<int> seen = new();
         bool yieldedVisualRenderer = false;
 
@@ -1748,7 +1755,7 @@ internal static class DesignHullColorProofPatch
                 if (renderer != null && seen.Add(renderer.GetInstanceID()))
                 {
                     yieldedVisualRenderer = true;
-                    yield return renderer;
+                    result.Add(renderer);
                 }
             }
         }
@@ -1760,21 +1767,28 @@ internal static class DesignHullColorProofPatch
                 LogMissedGunChildRenderers(part, seen);
 
             foreach (Renderer lodRenderer in LodRenderers(part, seen))
-                yield return lodRenderer;
+                result.Add(lodRenderer);
 
-            yield break;
+            // After visual + LOD enumeration, anything still under the part's
+            // GameObject that we didn't pick up is a "missed child renderer" — the
+            // remaining suspect set for grey deck decorations.
+            LogMissedChildRenderers(part, seen);
+
+            return result;
         }
 
         GameObject root = part.gameObject;
         if (root == null)
-            yield break;
+            return result;
 
         Renderer[] renderers = root.GetComponentsInChildren<Renderer>(true);
         foreach (Renderer renderer in renderers)
         {
             if (renderer != null && seen.Add(renderer.GetInstanceID()))
-                yield return renderer;
+                result.Add(renderer);
         }
+
+        return result;
     }
 
     private static IEnumerable<Renderer> LodRenderers(Part part, HashSet<int> seen)
@@ -1839,6 +1853,51 @@ internal static class DesignHullColorProofPatch
                 $"materials={materialNames}.");
 
             if (MissedGunLodRendererLogCount >= MaxMissedGunLodRendererLogs)
+                break;
+        }
+    }
+
+    // Generalized version of LogMissedGunChildRenderers — runs after visual + LOD
+    // enumeration, so the only renderers it captures are decorative meshes the
+    // painter currently drops on the floor (typical suspects: deck ladders,
+    // vent cowls, davits, secondary AA fittings). The captured material names
+    // tell us what new tokens or part-type tweaks we need.
+    private static void LogMissedChildRenderers(Part part, HashSet<int> seenRendererIds)
+    {
+        if (MissedChildRendererLogCount >= MaxMissedChildRendererLogs)
+            return;
+
+        GameObject root = part.gameObject;
+        if (root == null)
+            return;
+
+        Renderer[] renderers = root.GetComponentsInChildren<Renderer>(true);
+        Transform rootTransform = root.transform;
+        PaintArea? paintArea = PaintAreaFor(part);
+        string areaLabel = paintArea.HasValue ? AreaLabel(paintArea.Value) : "unclassified";
+
+        foreach (Renderer renderer in renderers)
+        {
+            if (renderer == null || seenRendererIds.Contains(renderer.GetInstanceID()))
+                continue;
+
+            Transform rendererTransform = renderer.transform;
+            if (RendererPathLooksLikeLod(renderer, rootTransform))
+                continue;
+
+            string rendererPath = TransformPath(rendererTransform, rootTransform);
+            string parentPath = rendererTransform != null && rendererTransform.parent != null
+                ? TransformPath(rendererTransform.parent, rootTransform)
+                : "<none>";
+            string materialNames = RendererMaterialNames(renderer);
+
+            MissedChildRendererLogCount++;
+            Melon<UADVanillaPlusMod>.Logger.Msg(
+                $"UADVP ship paint proof: missed child renderer (part={areaLabel}) on {SafePartName(part.data)}; " +
+                $"renderer={rendererPath}; parent={parentPath}; activeSelf={renderer.gameObject.activeSelf}; " +
+                $"activeInHierarchy={renderer.gameObject.activeInHierarchy}; materials={materialNames}.");
+
+            if (MissedChildRendererLogCount >= MaxMissedChildRendererLogs)
                 break;
         }
     }
