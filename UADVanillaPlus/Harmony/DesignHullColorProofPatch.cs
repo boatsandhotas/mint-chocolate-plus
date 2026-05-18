@@ -27,6 +27,8 @@ internal static class DesignHullColorProofPatch
         Bottom,
         Roof,
         Barrel,
+        Flag,
+        Banner,
     }
 
     private readonly struct PaintProfile
@@ -280,9 +282,10 @@ internal static class DesignHullColorProofPatch
     private static readonly string[] DeckTokens = { "deck", "wood", "plank", "floor" };
     private static readonly string[] BottomTokens = { "hull_bottom", "bottom", "underwater", "keel", "waterline" };
     // Channel is labeled "Details" in the UI. Catches MetalRoofing-textured details_2
-    // pieces, plus banner/flag fabric overlays that share textures with steel super
-    // pieces (which made them read as "plain metal" before they had a paint channel).
-    private static readonly string[] RoofTokens = { "roofing", "roof", "banner", "flag" };
+    // pieces.
+    private static readonly string[] RoofTokens = { "roofing", "roof" };
+    private static readonly string[] FlagTokens = { "flag" };
+    private static readonly string[] BannerTokens = { "banner" };
     // Channel labeled "Barrel" in the UI. The token list is unchanged from when it was
     // called "Detail" — empirically "details_*" materials are the gun barrels and small
     // deck fittings that escape the other classifiers.
@@ -299,9 +302,12 @@ internal static class DesignHullColorProofPatch
         [PaintArea.Deck] = Profile(0.83f, 0.65f, 0.42f, 212, 166, 107, 0.45f, "deck_teak"),
         [PaintArea.Bottom] = Profile(0.45f, 0.10f, 0.10f, 115, 26, 26, 0.70f, "bottom_antifouling"),
         [PaintArea.Roof] = Profile(0.32f, 0.32f, 0.34f, 82, 82, 87, 0.55f, "roof_gunmetal"),
-        // Barrel catches `details_3`/`details_4` materials (untextured small metal bits
-        // — empirically the gun barrels). Default gunmetal grey matching Roof.
         [PaintArea.Barrel] = Profile(0.32f, 0.32f, 0.34f, 82, 82, 87, 0.55f, "barrel_gunmetal"),
+        // Flag/Banner are kept distinct (rather than lumped into Details) so the user
+        // can decide which to keep after testing. Default to a neutral steel grey so
+        // they look "right" if untouched, but the user can pick anything via the picker.
+        [PaintArea.Flag] = Profile(0.32f, 0.32f, 0.34f, 82, 82, 87, 0.55f, "flag_grey"),
+        [PaintArea.Banner] = Profile(0.32f, 0.32f, 0.34f, 82, 82, 87, 0.55f, "banner_grey"),
     };
 
     // Per-nation override storage for experimental channels. Mirrors the existing
@@ -971,6 +977,8 @@ internal static class DesignHullColorProofPatch
             case "bottom": area = PaintArea.Bottom; return true;
             case "roof": area = PaintArea.Roof; return true;
             case "barrel": area = PaintArea.Barrel; return true;
+            case "flag": area = PaintArea.Flag; return true;
+            case "banner": area = PaintArea.Banner; return true;
             default: area = PaintArea.HullSide; return false;
         }
     }
@@ -985,6 +993,8 @@ internal static class DesignHullColorProofPatch
             PaintArea.Bottom => "bottom",
             PaintArea.Roof => "roof",
             PaintArea.Barrel => "barrel",
+            PaintArea.Flag => "flag",
+            PaintArea.Banner => "banner",
             _ => string.Empty,
         };
 
@@ -995,13 +1005,15 @@ internal static class DesignHullColorProofPatch
         {
             "hull" => "hull",
             "super" or "superstructure" or "top" => "super",
-            "gun" or "guns" => "gun",
+            "gun" or "guns" or "turret" or "turrets" => "gun",
             "deck" or "wood" or "plank" or "floor" => "deck",
             "bottom" or "hull_bottom" or "underwater" or "keel" or "waterline" => "bottom",
             "roof" or "roofing" => "roof",
             // "detail"/"details" accepted as legacy aliases so paint strings saved before
             // the rename still load correctly.
             "barrel" or "detail" or "details" => "barrel",
+            "flag" => "flag",
+            "banner" => "banner",
             _ => string.Empty
         };
     }
@@ -1098,6 +1110,8 @@ internal static class DesignHullColorProofPatch
         PaintArea.Bottom,
         PaintArea.Roof,
         PaintArea.Barrel,
+        PaintArea.Flag,
+        PaintArea.Banner,
     };
 
     internal static bool TryResolveAllNationPaintColors(string key, out Dictionary<PaintArea, Color32> colors)
@@ -2778,6 +2792,8 @@ internal static class DesignHullColorProofPatch
             PaintArea.Bottom => ContainsAny(materialText, BottomTokens),
             PaintArea.Roof => ContainsAny(materialText, RoofTokens),
             PaintArea.Barrel => ContainsAny(materialText, BarrelTokens),
+            PaintArea.Flag => ContainsAny(materialText, FlagTokens),
+            PaintArea.Banner => ContainsAny(materialText, BannerTokens),
             _ => LooksLikePaintedSideMaterial(materialText)
         };
         PaintMaterialCandidateCache[key] = decision;
@@ -2795,6 +2811,10 @@ internal static class DesignHullColorProofPatch
             return null;
 
         if (ContainsAny(materialText, BottomTokens)) return PaintArea.Bottom;
+        // Flag/Banner are checked before Roof so a "flag" material name doesn't get
+        // intercepted by some texture-name token in Roof's list.
+        if (ContainsAny(materialText, FlagTokens)) return PaintArea.Flag;
+        if (ContainsAny(materialText, BannerTokens)) return PaintArea.Banner;
         // Roof checks "roof"/"roofing" — matches details_2's MetalRoofing texture name
         // before Barrel's "details_" token gets a chance to claim it.
         if (ContainsAny(materialText, RoofTokens)) return PaintArea.Roof;

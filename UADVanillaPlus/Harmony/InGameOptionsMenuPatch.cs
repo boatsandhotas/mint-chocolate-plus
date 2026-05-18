@@ -1461,8 +1461,15 @@ internal static class InGameOptionsMenuPatch
 
         bool hasDesign = DesignHullColorProofPatch.TryResolveCurrentConstructorDesign(out string designKey, out string designName);
 
-        if (!DesignHullColorProofPatch.TryResolveLayeredPaintColors(nation.Key, hasDesign ? designKey : string.Empty, out Dictionary<PaintArea, Color32> nationLayeredColors))
+        // Nation row shows the pure nation colors (so the user can see what's stored
+        // for the country independent of any per-class override). Class row shows the
+        // layered effective colors (so the user sees what the class actually looks like
+        // in-game once both layers are applied).
+        if (!DesignHullColorProofPatch.TryResolveAllNationPaintColors(nation.Key, out Dictionary<PaintArea, Color32> nationColors))
             return;
+        Dictionary<PaintArea, Color32> classLayeredColors = nationColors;
+        if (hasDesign)
+            DesignHullColorProofPatch.TryResolveLayeredPaintColors(nation.Key, designKey, out classLayeredColors);
 
         GameObject? popupRoot = FindPath("Global/Ui/UiMain/Popup");
         if (popupRoot == null)
@@ -1486,8 +1493,8 @@ internal static class InGameOptionsMenuPatch
         panelRect.pivot = new Vector2(1f, 1f);
         panelRect.anchoredPosition = new Vector2(-18f, -90f);
         // Dual-row when a design context resolves; collapse to a single nation row
-        // otherwise. Width matches the 7-swatch layout after the OtherMetal removal.
-        panelRect.sizeDelta = new Vector2(hasDesign ? 480f : 280f, hasDesign ? 152f : 110f);
+        // otherwise. Width grows with the channel count (9 swatches + label + buttons).
+        panelRect.sizeDelta = new Vector2(hasDesign ? 580f : 380f, hasDesign ? 172f : 130f);
 
         VerticalLayoutGroup layout = constructorPaintPanel.AddComponent<VerticalLayoutGroup>();
         layout.padding = new RectOffset { left = 12, right = 12, top = 10, bottom = 10 };
@@ -1519,11 +1526,15 @@ internal static class InGameOptionsMenuPatch
         AddLayout(titleText.gameObject, flexibleWidth: 1f);
         AddActionButton(headerRow.transform, "Close", CloseConstructorPaintPanel, width: 56f);
 
-        // Nation row: "USA:" + 8 swatches + Reset.
+        // Channel header row: small text labels aligned over each swatch column so the
+        // user can identify channels without hovering.
+        BuildPanelChannelHeader(constructorPaintPanel.transform);
+
+        // Nation row: shows the pure nation paint values.
         BuildPanelTargetRow(
             parent: constructorPaintPanel.transform,
             label: $"{nation.Label}:",
-            colors: nationLayeredColors,
+            colors: nationColors,
             swatchStorage: panelSwatches,
             onSwatchClick: (channel, color) => OpenPaintPicker(nation, channel),
             actionButtons: new[] { ("Reset", new Action(() => ResetNationShipPaintString(nation))) });
@@ -1536,7 +1547,7 @@ internal static class InGameOptionsMenuPatch
             BuildPanelTargetRow(
                 parent: constructorPaintPanel.transform,
                 label: TruncateClassLabel(panelDesignName),
-                colors: nationLayeredColors,
+                colors: classLayeredColors,
                 swatchStorage: panelClassSwatches,
                 onSwatchClick: (channel, color) => OpenPaintPicker(nation, channel, panelDesignKey, panelDesignName),
                 actionButtons: new[]
@@ -1557,6 +1568,55 @@ internal static class InGameOptionsMenuPatch
                 : $"UADVP ship paints panel opened for {nation.Label} (no design context)."
         );
     }
+
+    private static void BuildPanelChannelHeader(Transform parent)
+    {
+        GameObject row = new("UADVP_PanelChannelHeader");
+        row.transform.SetParent(parent, false);
+        Image rowImage = row.AddComponent<Image>();
+        rowImage.color = new Color(0f, 0f, 0f, 0f);
+        rowImage.raycastTarget = false;
+        HorizontalLayoutGroup rowLayout = row.AddComponent<HorizontalLayoutGroup>();
+        rowLayout.spacing = 4f;
+        rowLayout.childAlignment = TextAnchor.MiddleLeft;
+        rowLayout.childControlHeight = true;
+        rowLayout.childControlWidth = true;
+        rowLayout.childForceExpandHeight = false;
+        rowLayout.childForceExpandWidth = false;
+        AddLayout(row, minHeight: 16f, preferredHeight: 16f, flexibleWidth: 1f);
+
+        // Aligns with the row-label width (92) in BuildPanelTargetRow.
+        GameObject leadSpacer = new("Spacer");
+        leadSpacer.transform.SetParent(row.transform, false);
+        Image leadImage = leadSpacer.AddComponent<Image>();
+        leadImage.color = new Color(0f, 0f, 0f, 0f);
+        leadImage.raycastTarget = false;
+        AddLayout(leadSpacer, minWidth: 92f, preferredWidth: 92f, flexibleWidth: 0f);
+
+        foreach (PaintArea area in DesignHullColorProofPatch.AllPickerChannels)
+        {
+            Text label = AddText(row.transform, ShortChannelLabel(area), 9, TextAnchor.MiddleCenter);
+            AddLayout(label.gameObject, minWidth: 26f, preferredWidth: 26f, minHeight: 14f, preferredHeight: 14f, flexibleWidth: 0f);
+        }
+    }
+
+    // Short labels (max 6 chars) so the channel-header row above the swatches stays
+    // readable at 9pt with 26-px column width.
+    private static string ShortChannelLabel(PaintArea channel)
+        => channel switch
+        {
+            PaintArea.HullSide => "Hull",
+            PaintArea.Superstructure => "Super",
+            PaintArea.Gun => "Turret",
+            PaintArea.Barbette => "Barb",
+            PaintArea.Deck => "Deck",
+            PaintArea.Bottom => "Bottom",
+            PaintArea.Roof => "Detail",
+            PaintArea.Barrel => "Barrel",
+            PaintArea.Flag => "Flag",
+            PaintArea.Banner => "Banner",
+            _ => "?",
+        };
 
     private static string TruncateClassLabel(string name)
     {
@@ -1721,15 +1781,21 @@ internal static class InGameOptionsMenuPatch
             CloseConstructorPaintPanel();
             return;
         }
-        // Nation row uses layered colors (the user sees what ships actually look like
-        // when both nation and class overrides are in play).
-        if (DesignHullColorProofPatch.TryResolveLayeredPaintColors(panelNationKey, panelDesignKey, out Dictionary<PaintArea, Color32> layered))
+        // Nation row shows the pure nation colors (what's stored for the country).
+        // Class row shows the layered effective colors (what the class actually looks
+        // like once both layers are applied).
+        if (DesignHullColorProofPatch.TryResolveAllNationPaintColors(panelNationKey, out Dictionary<PaintArea, Color32> nationOnly))
         {
             foreach (KeyValuePair<PaintArea, Image> entry in panelSwatches)
             {
-                if (layered.TryGetValue(entry.Key, out Color32 c))
+                if (nationOnly.TryGetValue(entry.Key, out Color32 c))
                     entry.Value.color = c;
             }
+        }
+
+        if (panelClassSwatches.Count > 0
+            && DesignHullColorProofPatch.TryResolveLayeredPaintColors(panelNationKey, panelDesignKey, out Dictionary<PaintArea, Color32> layered))
+        {
             foreach (KeyValuePair<PaintArea, Image> entry in panelClassSwatches)
             {
                 if (layered.TryGetValue(entry.Key, out Color32 c))
@@ -2271,7 +2337,7 @@ internal static class InGameOptionsMenuPatch
         {
             PaintArea.HullSide => "Hull",
             PaintArea.Superstructure => "Super",
-            PaintArea.Gun => "Guns",
+            PaintArea.Gun => "Turrets",
             PaintArea.Barbette => "Barbette",
             PaintArea.Deck => "Deck",
             PaintArea.Bottom => "Bottom",
@@ -2279,6 +2345,8 @@ internal static class InGameOptionsMenuPatch
             // "Details" because in practice the channel catches deck-fitting details.
             PaintArea.Roof => "Details",
             PaintArea.Barrel => "Barrel",
+            PaintArea.Flag => "Flag",
+            PaintArea.Banner => "Banner",
             _ => "Hull",
         };
 
