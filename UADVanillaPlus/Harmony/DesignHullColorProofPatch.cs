@@ -2105,12 +2105,12 @@ internal static class DesignHullColorProofPatch
             }
             else if (!hasPrimary && LooksLikePaintedSideMaterial(MaterialSearchText(OriginalMaterial(material))))
             {
-                // Unclassified parts (e.g. deck torpedo tubes) sit on top of the hull and
-                // their metal materials should follow the ship's hull color. Without this
-                // fallback their `steel_*` materials would never tint and the user sees
-                // "metallic features still showing as metal".
-                areaForMaterial = PaintArea.HullSide;
-                profileForMaterial = ProfileFor(scheme, nationKey, PaintArea.HullSide);
+                // Unclassified parts (e.g. deck torpedo tubes) sit on the deck and read
+                // visually as "miscellaneous detail metal" — route their `steel_*` etc.
+                // materials into the Roof/Details channel, which already covers other
+                // deck-fitting metal like Metal-Roofing-textured pieces.
+                areaForMaterial = PaintArea.Roof;
+                profileForMaterial = ProfileFor(scheme, nationKey, PaintArea.Roof);
             }
             else
             {
