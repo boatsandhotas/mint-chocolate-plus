@@ -289,7 +289,7 @@ internal static class DesignHullColorProofPatch
     private static readonly HashSet<string> LoggedUnclassifiedPartSamples = new(StringComparer.OrdinalIgnoreCase);
     private const int UnclassifiedPartSampleLogLimit = 30;
     private static readonly HashSet<string> LoggedUnmatchedMaterialSamples = new(StringComparer.OrdinalIgnoreCase);
-    private const int UnmatchedMaterialSampleLogLimit = 60;
+    private const int UnmatchedMaterialSampleLogLimit = 150;
 
     // Shared defaults for the experimental channels — used when no per-nation override
     // is configured. Vivid + distinct so the user can see which surface each channel paints.
@@ -460,6 +460,10 @@ internal static class DesignHullColorProofPatch
     {
         ResolvedNationPaintRevision = -1;
         ConfiguredNationPaintSchemes.Clear();
+        // Reset diagnostic sample sets so a fresh test session captures new entries.
+        LoggedUnmatchedMaterialSamples.Clear();
+        LoggedOtherMetalSamples.Clear();
+        LoggedUnclassifiedPartSamples.Clear();
 
         if (!IsEnabled)
         {
