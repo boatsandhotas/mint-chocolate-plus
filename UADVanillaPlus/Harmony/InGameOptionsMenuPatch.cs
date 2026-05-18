@@ -80,6 +80,9 @@ internal static class InGameOptionsMenuPatch
 
     private static GameObject? constructorPaintPanel;
     private static readonly Dictionary<PaintArea, Image> panelSwatches = new();
+    private static readonly Dictionary<PaintArea, Image> panelClassSwatches = new();
+    private static string panelDesignKey = string.Empty;
+    private static string panelDesignName = string.Empty;
     private static string panelNationKey = string.Empty;
 
     private static GameObject? paintPicker;
@@ -94,6 +97,10 @@ internal static class InGameOptionsMenuPatch
     private static DesignHullColorProofPatch.NationPaintUiInfo pickerNation;
     private static PaintArea pickerChannel;
     private static Color32 pickerOriginalChannelColor;
+    // When pickerDesignKey is non-empty, picker writes to the per-class override for that
+    // design Guid; otherwise it writes to the nation override (existing behavior).
+    private static string pickerDesignKey = string.Empty;
+    private static string pickerDesignName = string.Empty;
     private static float pickerCurrentH;
     private static float pickerCurrentS;
     private static float pickerCurrentV;
@@ -1452,7 +1459,9 @@ internal static class InGameOptionsMenuPatch
             return;
         }
 
-        if (!DesignHullColorProofPatch.TryResolveAllNationPaintColors(nation.Key, out Dictionary<PaintArea, Color32> colors))
+        bool hasDesign = DesignHullColorProofPatch.TryResolveCurrentConstructorDesign(out string designKey, out string designName);
+
+        if (!DesignHullColorProofPatch.TryResolveLayeredPaintColors(nation.Key, hasDesign ? designKey : string.Empty, out Dictionary<PaintArea, Color32> nationLayeredColors))
             return;
 
         GameObject? popupRoot = FindPath("Global/Ui/UiMain/Popup");
@@ -1460,6 +1469,8 @@ internal static class InGameOptionsMenuPatch
             return;
 
         panelNationKey = nation.Key;
+        panelDesignKey = hasDesign ? designKey : string.Empty;
+        panelDesignName = hasDesign ? designName : string.Empty;
         constructorPaintPanel = new GameObject("UADVP_ConstructorPaintPanel");
         constructorPaintPanel.transform.SetParent(popupRoot.transform, false);
 
@@ -1474,16 +1485,17 @@ internal static class InGameOptionsMenuPatch
         panelRect.anchorMax = new Vector2(1f, 1f);
         panelRect.pivot = new Vector2(1f, 1f);
         panelRect.anchoredPosition = new Vector2(-18f, -90f);
-        panelRect.sizeDelta = new Vector2(300f, 110f);
+        panelRect.sizeDelta = new Vector2(500f, hasDesign ? 152f : 110f);
 
         VerticalLayoutGroup layout = constructorPaintPanel.AddComponent<VerticalLayoutGroup>();
         layout.padding = new RectOffset { left = 12, right = 12, top = 10, bottom = 10 };
-        layout.spacing = 8f;
+        layout.spacing = 6f;
         layout.childControlHeight = true;
         layout.childControlWidth = true;
         layout.childForceExpandHeight = false;
         layout.childForceExpandWidth = true;
 
+        // Header row: title + close.
         GameObject headerRow = new("Header");
         headerRow.transform.SetParent(constructorPaintPanel.transform, false);
         Image headerImage = headerRow.AddComponent<Image>();
@@ -1498,37 +1510,175 @@ internal static class InGameOptionsMenuPatch
         headerLayout.childForceExpandWidth = false;
         AddLayout(headerRow, minHeight: 22f, preferredHeight: 22f, flexibleWidth: 1f);
 
-        Text titleText = AddText(headerRow.transform, $"Ship Paints — {nation.Label}", 13, TextAnchor.MiddleLeft);
+        string titleSuffix = hasDesign && !string.IsNullOrWhiteSpace(panelDesignName)
+            ? $" — {panelDesignName}"
+            : string.Empty;
+        Text titleText = AddText(headerRow.transform, $"Ship Paints{titleSuffix}", 13, TextAnchor.MiddleLeft);
         AddLayout(titleText.gameObject, flexibleWidth: 1f);
-
-        AddActionButton(headerRow.transform, "Reset", () => ResetNationShipPaintString(nation), width: 56f);
         AddActionButton(headerRow.transform, "Close", CloseConstructorPaintPanel, width: 56f);
 
-        GameObject swatchRow = new("Swatches");
-        swatchRow.transform.SetParent(constructorPaintPanel.transform, false);
-        Image swatchRowImage = swatchRow.AddComponent<Image>();
-        swatchRowImage.color = new Color(0f, 0f, 0f, 0f);
-        swatchRowImage.raycastTarget = false;
-        HorizontalLayoutGroup swatchLayout = swatchRow.AddComponent<HorizontalLayoutGroup>();
-        swatchLayout.spacing = 4f;
-        swatchLayout.childAlignment = TextAnchor.MiddleLeft;
-        swatchLayout.childControlHeight = true;
-        swatchLayout.childControlWidth = true;
-        swatchLayout.childForceExpandHeight = false;
-        swatchLayout.childForceExpandWidth = false;
-        AddLayout(swatchRow, minHeight: 30f, preferredHeight: 30f, flexibleWidth: 1f);
+        // Nation row: "USA:" + 8 swatches + Reset.
+        BuildPanelTargetRow(
+            parent: constructorPaintPanel.transform,
+            label: $"{nation.Label}:",
+            colors: nationLayeredColors,
+            swatchStorage: panelSwatches,
+            onSwatchClick: (channel, color) => OpenPaintPicker(nation, channel),
+            actionButtons: new[] { ("Reset", new Action(() => ResetNationShipPaintString(nation))) });
 
-        panelSwatches.Clear();
+        // Class row: only shown when we have a design context. Swatches show layered
+        // colors (so the user sees the effective look); clicking opens the picker pointed
+        // at the design override for that channel.
+        if (hasDesign)
+        {
+            BuildPanelTargetRow(
+                parent: constructorPaintPanel.transform,
+                label: TruncateClassLabel(panelDesignName),
+                colors: nationLayeredColors,
+                swatchStorage: panelClassSwatches,
+                onSwatchClick: (channel, color) => OpenPaintPicker(nation, channel, panelDesignKey, panelDesignName),
+                actionButtons: new[]
+                {
+                    ("Reset", new Action(() => ResetDesignPaintString(panelDesignKey, panelDesignName))),
+                    ("Promote ↑", new Action(() => PromoteDesignToNation(panelDesignKey, panelDesignName, nation))),
+                });
+        }
+        else
+        {
+            panelClassSwatches.Clear();
+        }
+
+        constructorPaintPanel.transform.SetAsLastSibling();
+        Melon<UADVanillaPlusMod>.Logger.Msg(
+            hasDesign
+                ? $"UADVP ship paints panel opened for {nation.Label}, class {panelDesignName} ({panelDesignKey})."
+                : $"UADVP ship paints panel opened for {nation.Label} (no design context)."
+        );
+    }
+
+    private static string TruncateClassLabel(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return "This Class:";
+        if (name.Length <= 22)
+            return $"{name}:";
+        return $"{name.Substring(0, 21).TrimEnd()}…:";
+    }
+
+    private static void BuildPanelTargetRow(
+        Transform parent,
+        string label,
+        Dictionary<PaintArea, Color32> colors,
+        Dictionary<PaintArea, Image> swatchStorage,
+        Action<PaintArea, Color32> onSwatchClick,
+        (string Label, Action OnPress)[] actionButtons)
+    {
+        GameObject row = new("UADVP_PanelTargetRow");
+        row.transform.SetParent(parent, false);
+        Image rowImage = row.AddComponent<Image>();
+        rowImage.color = new Color(0f, 0f, 0f, 0f);
+        rowImage.raycastTarget = false;
+        HorizontalLayoutGroup rowLayout = row.AddComponent<HorizontalLayoutGroup>();
+        rowLayout.spacing = 4f;
+        rowLayout.childAlignment = TextAnchor.MiddleLeft;
+        rowLayout.childControlHeight = true;
+        rowLayout.childControlWidth = true;
+        rowLayout.childForceExpandHeight = false;
+        rowLayout.childForceExpandWidth = false;
+        AddLayout(row, minHeight: 30f, preferredHeight: 30f, flexibleWidth: 1f);
+
+        Text labelText = AddText(row.transform, label, 12, TextAnchor.MiddleLeft);
+        AddLayout(labelText.gameObject, minWidth: 92f, preferredWidth: 92f, flexibleWidth: 0f);
+
+        swatchStorage.Clear();
         foreach (PaintArea area in DesignHullColorProofPatch.AllPickerChannels)
         {
             if (!colors.TryGetValue(area, out Color32 channelColor))
                 continue;
-            Image swatchImage = AddPanelSwatch(swatchRow.transform, nation, area, channelColor);
-            panelSwatches[area] = swatchImage;
+            Image fill = AddRawPanelSwatch(row.transform, area, channelColor, onSwatchClick);
+            swatchStorage[area] = fill;
         }
 
-        constructorPaintPanel.transform.SetAsLastSibling();
-        Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP ship paints panel opened for {nation.Label}.");
+        GameObject spacer = new("Spacer");
+        spacer.transform.SetParent(row.transform, false);
+        Image spacerImage = spacer.AddComponent<Image>();
+        spacerImage.color = new Color(0f, 0f, 0f, 0f);
+        spacerImage.raycastTarget = false;
+        AddLayout(spacer, minWidth: 4f, flexibleWidth: 1f);
+
+        foreach ((string actionLabel, Action onPress) in actionButtons)
+            AddActionButton(row.transform, actionLabel, onPress, width: actionLabel.Length > 6 ? 72f : 56f);
+    }
+
+    private static Image AddRawPanelSwatch(Transform parent, PaintArea channel, Color32 color, Action<PaintArea, Color32> onClick)
+    {
+        GameObject swatchObject = new($"UADVP_PanelSwatch_{channel}");
+        swatchObject.transform.SetParent(parent, false);
+        Image border = swatchObject.AddComponent<Image>();
+        border.color = SwatchBorder;
+        AddLayout(swatchObject, minWidth: 26f, preferredWidth: 26f, minHeight: 26f, preferredHeight: 26f, flexibleWidth: 0f);
+
+        GameObject fillObject = new("Fill");
+        fillObject.transform.SetParent(swatchObject.transform, false);
+        Image fill = fillObject.AddComponent<Image>();
+        fill.color = color;
+        fill.raycastTarget = false;
+        RectTransform fillRect = fillObject.GetComponent<RectTransform>();
+        fillRect.anchorMin = Vector2.zero;
+        fillRect.anchorMax = Vector2.one;
+        fillRect.offsetMin = new Vector2(1f, 1f);
+        fillRect.offsetMax = new Vector2(-1f, -1f);
+
+        Button button = swatchObject.AddComponent<Button>();
+        button.targetGraphic = border;
+        button.onClick.RemoveAllListeners();
+        button.onClick.AddListener(new System.Action(() => onClick(channel, color)));
+
+        AddTooltip(swatchObject, $"{ChannelLabel(channel)}\nCurrent: {HexFor(color)}\nClick to pick a color.");
+        return fill;
+    }
+
+    private static void ResetDesignPaintString(string designKey, string designName)
+    {
+        if (string.IsNullOrEmpty(designKey))
+            return;
+
+        ClosePaintPicker();
+        if (ModSettings.SetDesignShipPaintString(designKey, string.Empty))
+            DesignHullColorProofPatch.ApplyNationPaintSettingsChange($"design {designName} reset");
+
+        // Rebuild the panel since both target rows may have changed appearance.
+        if (constructorPaintPanel != null)
+        {
+            CloseConstructorPaintPanel();
+            OpenConstructorPaintPanel();
+        }
+    }
+
+    private static void PromoteDesignToNation(string designKey, string designName, DesignHullColorProofPatch.NationPaintUiInfo nation)
+    {
+        if (string.IsNullOrEmpty(designKey))
+            return;
+
+        ClosePaintPicker();
+        bool changed = DesignHullColorProofPatch.PromoteDesignToNation(designKey, nation.Key);
+        if (changed)
+        {
+            DesignHullColorProofPatch.ApplyNationPaintSettingsChange($"promote design {designName} to {nation.Label}");
+            Melon<UADVanillaPlusMod>.Logger.Msg(
+                $"UADVP ship paints: promoted design {designName} ({designKey}) overrides to nation {nation.Label}.");
+        }
+        else
+        {
+            Melon<UADVanillaPlusMod>.Logger.Msg(
+                $"UADVP ship paints: no per-class overrides to promote for {designName}.");
+        }
+
+        if (constructorPaintPanel != null)
+        {
+            CloseConstructorPaintPanel();
+            OpenConstructorPaintPanel();
+        }
     }
 
     private static Image AddPanelSwatch(Transform parent, DesignHullColorProofPatch.NationPaintUiInfo nation, PaintArea channel, Color32 color)
@@ -1569,12 +1719,20 @@ internal static class InGameOptionsMenuPatch
             CloseConstructorPaintPanel();
             return;
         }
-        if (!DesignHullColorProofPatch.TryResolveAllNationPaintColors(panelNationKey, out Dictionary<PaintArea, Color32> colors))
-            return;
-        foreach (KeyValuePair<PaintArea, Image> entry in panelSwatches)
+        // Nation row uses layered colors (the user sees what ships actually look like
+        // when both nation and class overrides are in play).
+        if (DesignHullColorProofPatch.TryResolveLayeredPaintColors(panelNationKey, panelDesignKey, out Dictionary<PaintArea, Color32> layered))
         {
-            if (colors.TryGetValue(entry.Key, out Color32 c))
-                entry.Value.color = c;
+            foreach (KeyValuePair<PaintArea, Image> entry in panelSwatches)
+            {
+                if (layered.TryGetValue(entry.Key, out Color32 c))
+                    entry.Value.color = c;
+            }
+            foreach (KeyValuePair<PaintArea, Image> entry in panelClassSwatches)
+            {
+                if (layered.TryGetValue(entry.Key, out Color32 c))
+                    entry.Value.color = c;
+            }
         }
     }
 
@@ -1589,14 +1747,26 @@ internal static class InGameOptionsMenuPatch
         UnityEngine.Object.Destroy(constructorPaintPanel);
         constructorPaintPanel = null;
         panelSwatches.Clear();
+        panelClassSwatches.Clear();
         panelNationKey = string.Empty;
+        panelDesignKey = string.Empty;
+        panelDesignName = string.Empty;
     }
 
     private static void OpenPaintPicker(DesignHullColorProofPatch.NationPaintUiInfo nation, PaintArea channel)
+        => OpenPaintPicker(nation, channel, string.Empty, string.Empty);
+
+    private static void OpenPaintPicker(DesignHullColorProofPatch.NationPaintUiInfo nation, PaintArea channel, string designKey, string designName)
     {
         ClosePaintPicker();
 
-        if (!DesignHullColorProofPatch.TryResolveAllNationPaintColors(nation.Key, out Dictionary<PaintArea, Color32> colors))
+        // When editing a design override, show the effective layered colors. The user
+        // sees the same color they see on the ship, and edits go into the design slot.
+        bool editingDesign = !string.IsNullOrEmpty(designKey);
+        bool resolved = editingDesign
+            ? DesignHullColorProofPatch.TryResolveLayeredPaintColors(nation.Key, designKey, out Dictionary<PaintArea, Color32> colors)
+            : DesignHullColorProofPatch.TryResolveAllNationPaintColors(nation.Key, out colors);
+        if (!resolved)
             return;
 
         GameObject? popupRoot = FindPath("Global/Ui/UiMain/Popup");
@@ -1609,6 +1779,8 @@ internal static class InGameOptionsMenuPatch
         pickerNation = nation;
         pickerChannel = channel;
         pickerOriginalChannelColor = current;
+        pickerDesignKey = editingDesign ? designKey : string.Empty;
+        pickerDesignName = editingDesign ? designName : string.Empty;
 
         // Seed HSV state from the channel's current RGB color.
         Color.RGBToHSV((Color)current, out pickerCurrentH, out pickerCurrentS, out pickerCurrentV);
@@ -1655,7 +1827,10 @@ internal static class InGameOptionsMenuPatch
         layout.childForceExpandHeight = false;
         layout.childForceExpandWidth = true;
 
-        AddText(window.transform, $"{nation.Label} — {ChannelLabel(channel)}", 14, TextAnchor.MiddleLeft);
+        string pickerTitle = editingDesign
+            ? $"{designName} — {ChannelLabel(channel)}  (class)"
+            : $"{nation.Label} — {ChannelLabel(channel)}  (nation)";
+        AddText(window.transform, pickerTitle, 14, TextAnchor.MiddleLeft);
         AddText(window.transform, "Drag the wheel; tweak brightness below. Live.", 10, TextAnchor.MiddleLeft);
 
         AddColorWheel(window.transform);
@@ -1720,7 +1895,10 @@ internal static class InGameOptionsMenuPatch
         UpdatePickerVisualsFromHSV(commitLive: false);
         PositionWheelHandle();
         paintPicker.transform.SetAsLastSibling();
-        Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP paint picker opened for {nation.Label} / {ChannelLabel(channel)} at {HexFor(current)}.");
+        Melon<UADVanillaPlusMod>.Logger.Msg(
+            editingDesign
+                ? $"UADVP paint picker opened for class {designName} ({designKey}) / {ChannelLabel(channel)} at {HexFor(current)}."
+                : $"UADVP paint picker opened for nation {nation.Label} / {ChannelLabel(channel)} at {HexFor(current)}.");
     }
 
     private static void AddColorWheel(Transform parent)
@@ -1918,13 +2096,26 @@ internal static class InGameOptionsMenuPatch
 
     private static void CommitPaintPickerColor(Color32 picked)
     {
+        if (!string.IsNullOrEmpty(pickerDesignKey))
+        {
+            // Class target: only the overridden channels go into the design's paint string.
+            if (!DesignHullColorProofPatch.TryResolveDesignPaintOverrides(pickerDesignKey, out Dictionary<PaintArea, Color32> designColors))
+                return;
+            designColors[pickerChannel] = picked;
+            string serialized = DesignHullColorProofPatch.BuildNationPaintString(designColors);
+            if (ModSettings.SetDesignShipPaintString(pickerDesignKey, serialized, logChange: false))
+                DesignHullColorProofPatch.ApplyNationPaintSettingsChange("live picker drag (class)");
+            return;
+        }
+
+        // Nation target.
         if (!DesignHullColorProofPatch.TryResolveAllNationPaintColors(pickerNation.Key, out Dictionary<PaintArea, Color32> colors))
             return;
 
         colors[pickerChannel] = picked;
-        string serialized = DesignHullColorProofPatch.BuildNationPaintString(colors);
-        if (ModSettings.SetNationShipPaintString(pickerNation.Key, serialized, logChange: false))
-            DesignHullColorProofPatch.ApplyNationPaintSettingsChange("live picker drag");
+        string serialized2 = DesignHullColorProofPatch.BuildNationPaintString(colors);
+        if (ModSettings.SetNationShipPaintString(pickerNation.Key, serialized2, logChange: false))
+            DesignHullColorProofPatch.ApplyNationPaintSettingsChange("live picker drag (nation)");
     }
 
     private static void UpdatePaintPickerWheelDrag()
@@ -1975,11 +2166,18 @@ internal static class InGameOptionsMenuPatch
 
     private static void ApplyPaintPicker()
     {
-        if (DesignHullColorProofPatch.TryResolveAllNationPaintColors(pickerNation.Key, out Dictionary<PaintArea, Color32> colors)
-            && colors.TryGetValue(pickerChannel, out Color32 channelColor))
+        bool editingDesign = !string.IsNullOrEmpty(pickerDesignKey);
+        Dictionary<PaintArea, Color32> effective;
+        if (editingDesign
+            ? DesignHullColorProofPatch.TryResolveLayeredPaintColors(pickerNation.Key, pickerDesignKey, out effective)
+            : DesignHullColorProofPatch.TryResolveAllNationPaintColors(pickerNation.Key, out effective))
         {
-            Melon<UADVanillaPlusMod>.Logger.Msg(
-                $"UADVP option: Nation Ship Paints applied {pickerNation.Label} {ChannelLabel(pickerChannel)} = {HexFor(channelColor)}.");
+            if (effective.TryGetValue(pickerChannel, out Color32 channelColor))
+            {
+                string targetLabel = editingDesign ? $"class {pickerDesignName}" : $"nation {pickerNation.Label}";
+                Melon<UADVanillaPlusMod>.Logger.Msg(
+                    $"UADVP option: Ship Paints applied {targetLabel} / {ChannelLabel(pickerChannel)} = {HexFor(channelColor)}.");
+            }
         }
 
         ClosePaintPicker();
@@ -1990,12 +2188,22 @@ internal static class InGameOptionsMenuPatch
 
     private static void CancelPaintPicker()
     {
-        if (DesignHullColorProofPatch.TryResolveAllNationPaintColors(pickerNation.Key, out Dictionary<PaintArea, Color32> colors))
+        if (!string.IsNullOrEmpty(pickerDesignKey))
+        {
+            if (DesignHullColorProofPatch.TryResolveDesignPaintOverrides(pickerDesignKey, out Dictionary<PaintArea, Color32> designColors))
+            {
+                designColors[pickerChannel] = pickerOriginalChannelColor;
+                string serialized = DesignHullColorProofPatch.BuildNationPaintString(designColors);
+                if (ModSettings.SetDesignShipPaintString(pickerDesignKey, serialized, logChange: false))
+                    DesignHullColorProofPatch.ApplyNationPaintSettingsChange("picker cancel revert (class)");
+            }
+        }
+        else if (DesignHullColorProofPatch.TryResolveAllNationPaintColors(pickerNation.Key, out Dictionary<PaintArea, Color32> colors))
         {
             colors[pickerChannel] = pickerOriginalChannelColor;
             string serialized = DesignHullColorProofPatch.BuildNationPaintString(colors);
             if (ModSettings.SetNationShipPaintString(pickerNation.Key, serialized, logChange: false))
-                DesignHullColorProofPatch.ApplyNationPaintSettingsChange("picker cancel revert");
+                DesignHullColorProofPatch.ApplyNationPaintSettingsChange("picker cancel revert (nation)");
         }
 
         ClosePaintPicker();
@@ -2006,8 +2214,19 @@ internal static class InGameOptionsMenuPatch
 
     private static void LoadPaintPickerChannelDefault()
     {
-        if (!DesignHullColorProofPatch.TryGetAllDefaultNationPaintColors(pickerNation.Key, out Dictionary<PaintArea, Color32> defaults))
+        // For class target: "Default" snaps the channel back to the nation's effective
+        // color (i.e. clears the per-class override visually). For nation target:
+        // "Default" snaps to the built-in nation scheme value.
+        Dictionary<PaintArea, Color32> defaults;
+        if (!string.IsNullOrEmpty(pickerDesignKey))
+        {
+            if (!DesignHullColorProofPatch.TryResolveAllNationPaintColors(pickerNation.Key, out defaults))
+                return;
+        }
+        else if (!DesignHullColorProofPatch.TryGetAllDefaultNationPaintColors(pickerNation.Key, out defaults))
+        {
             return;
+        }
         if (!defaults.TryGetValue(pickerChannel, out Color32 fallback))
             return;
 
@@ -2041,6 +2260,8 @@ internal static class InGameOptionsMenuPatch
         pickerHexInput = null;
         pickerValueText = null;
         pickerWheelDragging = false;
+        pickerDesignKey = string.Empty;
+        pickerDesignName = string.Empty;
     }
 
     private static string ChannelLabel(PaintArea channel)
