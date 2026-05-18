@@ -14,8 +14,9 @@ namespace UADVanillaPlus.Harmony;
 internal static class DesignHullColorProofPatch
 {
     // Existing channels (HullSide/Barbette/Superstructure/Gun) tint by part type via
-    // PaintAreaFor. Experimental channels (Deck/Bottom) classify per-material so a Hull
-    // part can have its deck and bottom tinted separately from its hull-side belt.
+    // PaintAreaFor. Experimental channels (Deck/Bottom/Barrel/Trim/Roof) classify per-
+    // material so a single part can have its deck, bottom, barrels, trim, and roof
+    // tinted independently of the part's primary area.
     internal enum PaintArea
     {
         HullSide,
@@ -24,6 +25,9 @@ internal static class DesignHullColorProofPatch
         Gun,
         Deck,
         Bottom,
+        Barrel,
+        Trim,
+        Roof,
     }
 
     private readonly struct PaintProfile
@@ -276,6 +280,9 @@ internal static class DesignHullColorProofPatch
     // in ClassifyMaterialArea decides disambiguation between overlapping tokens.
     private static readonly string[] DeckTokens = { "deck", "wood", "plank", "floor" };
     private static readonly string[] BottomTokens = { "hull_bottom", "bottom", "underwater", "keel", "waterline" };
+    private static readonly string[] BarrelTokens = { "barrel" };
+    private static readonly string[] TrimTokens = { "rail", "rope", "chain", "ladder", "anchor", "vent" };
+    private static readonly string[] RoofTokens = { "roofing", "roof" };
 
     // Shared defaults for the experimental channels — used when no per-nation override
     // is configured. Vivid + distinct so the user can see which surface each channel paints.
@@ -283,6 +290,10 @@ internal static class DesignHullColorProofPatch
     {
         [PaintArea.Deck] = Profile(0.83f, 0.65f, 0.42f, 212, 166, 107, 0.45f, "deck_teak"),
         [PaintArea.Bottom] = Profile(0.45f, 0.10f, 0.10f, 115, 26, 26, 0.70f, "bottom_antifouling"),
+        // Vivid identification colors so the user can see at-a-glance which surface each paints.
+        [PaintArea.Barrel] = Profile(0.71f, 0.56f, 0.13f, 181, 143, 33, 0.55f, "barrel_brass"),
+        [PaintArea.Trim] = Profile(0.84f, 0.48f, 0.13f, 215, 122, 33, 0.55f, "trim_orange"),
+        [PaintArea.Roof] = Profile(0.48f, 0.25f, 0.63f, 122, 64, 160, 0.55f, "roof_purple"),
     };
 
     // Per-nation override storage for experimental channels. Mirrors the existing
@@ -928,6 +939,9 @@ internal static class DesignHullColorProofPatch
         {
             case "deck": area = PaintArea.Deck; return true;
             case "bottom": area = PaintArea.Bottom; return true;
+            case "barrel": area = PaintArea.Barrel; return true;
+            case "trim": area = PaintArea.Trim; return true;
+            case "roof": area = PaintArea.Roof; return true;
             default: area = PaintArea.HullSide; return false;
         }
     }
@@ -940,6 +954,9 @@ internal static class DesignHullColorProofPatch
             PaintArea.Gun or PaintArea.Barbette => "gun",
             PaintArea.Deck => "deck",
             PaintArea.Bottom => "bottom",
+            PaintArea.Barrel => "barrel",
+            PaintArea.Trim => "trim",
+            PaintArea.Roof => "roof",
             _ => string.Empty,
         };
 
@@ -953,6 +970,9 @@ internal static class DesignHullColorProofPatch
             "gun" or "guns" => "gun",
             "deck" or "wood" or "plank" or "floor" => "deck",
             "bottom" or "hull_bottom" or "underwater" or "keel" or "waterline" => "bottom",
+            "barrel" => "barrel",
+            "trim" or "rail" or "rope" or "chain" or "ladder" or "anchor" or "vent" => "trim",
+            "roof" or "roofing" => "roof",
             _ => string.Empty
         };
     }
@@ -1045,8 +1065,11 @@ internal static class DesignHullColorProofPatch
         PaintArea.HullSide,
         PaintArea.Superstructure,
         PaintArea.Gun,
+        PaintArea.Barrel,
         PaintArea.Deck,
         PaintArea.Bottom,
+        PaintArea.Trim,
+        PaintArea.Roof,
     };
 
     internal static bool TryResolveAllNationPaintColors(string key, out Dictionary<PaintArea, Color32> colors)
@@ -2613,16 +2636,18 @@ internal static class DesignHullColorProofPatch
             PaintArea.Barbette => LooksLikeBarbetteMaterial(materialText),
             PaintArea.Deck => ContainsAny(materialText, DeckTokens),
             PaintArea.Bottom => ContainsAny(materialText, BottomTokens),
+            PaintArea.Barrel => ContainsAny(materialText, BarrelTokens),
+            PaintArea.Trim => ContainsAny(materialText, TrimTokens),
+            PaintArea.Roof => ContainsAny(materialText, RoofTokens),
             _ => LooksLikePaintedSideMaterial(materialText)
         };
         PaintMaterialCandidateCache[key] = decision;
         return decision;
     }
 
-    // Checks only the experimental per-material channels (Deck, Bottom). The existing
-    // four channels (HullSide/Barbette/Superstructure/Gun) keep their per-part dispatch
-    // so cross-channel material tokens (steel_/metal/armor) don't bleed between Gun and
-    // Barbette etc.
+    // Checks the experimental per-material channels (Deck, Bottom, Barrel, Trim, Roof).
+    // The four primary channels (HullSide/Barbette/Superstructure/Gun) keep their per-part
+    // dispatch so shared tokens (steel_/metal/armor) don't bleed between them.
     private static PaintArea? ClassifyExperimentalMaterialArea(Material material)
     {
         Material source = OriginalMaterial(material);
@@ -2630,7 +2655,11 @@ internal static class DesignHullColorProofPatch
         if (string.IsNullOrEmpty(materialText))
             return null;
 
+        // Specific tokens first.
+        if (ContainsAny(materialText, BarrelTokens)) return PaintArea.Barrel;
         if (ContainsAny(materialText, BottomTokens)) return PaintArea.Bottom;
+        if (ContainsAny(materialText, TrimTokens)) return PaintArea.Trim;
+        if (ContainsAny(materialText, RoofTokens)) return PaintArea.Roof;
         if (ContainsAny(materialText, DeckTokens)) return PaintArea.Deck;
         return null;
     }
