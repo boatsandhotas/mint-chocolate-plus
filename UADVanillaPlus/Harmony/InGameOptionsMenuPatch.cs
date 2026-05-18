@@ -97,7 +97,7 @@ internal static class InGameOptionsMenuPatch
     private static RectTransform? pickerWheelHandleRect;
     private static Slider? pickerValueSlider;
     private static Image? pickerPreviewFill;
-    private static Text? pickerHexText;
+    private static InputField? pickerHexInput;
     private static Text? pickerValueText;
     private static DesignHullColorProofPatch.NationPaintUiInfo pickerNation;
     private static PaintChannel pickerChannel;
@@ -1711,7 +1711,7 @@ internal static class InGameOptionsMenuPatch
         previewBox.transform.SetParent(previewRow.transform, false);
         Image previewBorder = previewBox.AddComponent<Image>();
         previewBorder.color = SwatchBorder;
-        AddLayout(previewBox, minWidth: 80f, preferredWidth: 80f, minHeight: 26f, preferredHeight: 26f);
+        AddLayout(previewBox, minWidth: 50f, preferredWidth: 50f, minHeight: 26f, preferredHeight: 26f);
 
         GameObject previewFillObject = new("Fill");
         previewFillObject.transform.SetParent(previewBox.transform, false);
@@ -1724,8 +1724,11 @@ internal static class InGameOptionsMenuPatch
         previewFillRect.offsetMin = new Vector2(1f, 1f);
         previewFillRect.offsetMax = new Vector2(-1f, -1f);
 
-        pickerHexText = AddText(previewRow.transform, HexFor(current), 12, TextAnchor.MiddleLeft);
-        AddLayout(pickerHexText.gameObject, minWidth: 90f, preferredWidth: 90f);
+        pickerHexInput = AddHexInput(previewRow.transform, HexFor(current), 86f);
+        pickerHexInput.onEndEdit.AddListener(new System.Action<string>(OnPaintPickerHexEntered));
+
+        AddPickerQuickSwatch(previewRow.transform, "BlackSwatch", new Color32(0, 0, 0, 255), () => SetPaintPickerHSV(0f, 0f, 0f), "Pure black (#000000)");
+        AddPickerQuickSwatch(previewRow.transform, "WhiteSwatch", new Color32(255, 255, 255, 255), () => SetPaintPickerHSV(0f, 0f, 1f), "Pure white (#FFFFFF)");
 
         GameObject buttonsRow = new("UADVP_PaintPickerButtons");
         buttonsRow.transform.SetParent(window.transform, false);
@@ -1929,8 +1932,8 @@ internal static class InGameOptionsMenuPatch
 
         if (pickerPreviewFill != null)
             pickerPreviewFill.color = color;
-        if (pickerHexText != null)
-            pickerHexText.text = HexFor(color);
+        if (pickerHexInput != null && !pickerHexInput.isFocused)
+            pickerHexInput.SetTextWithoutNotify(HexFor(color));
         if (pickerValueText != null)
             pickerValueText.text = Mathf.RoundToInt(pickerCurrentV * 100f) + "%";
         if (pickerWheelHandle != null)
@@ -2088,7 +2091,7 @@ internal static class InGameOptionsMenuPatch
         pickerWheelHandleRect = null;
         pickerValueSlider = null;
         pickerPreviewFill = null;
-        pickerHexText = null;
+        pickerHexInput = null;
         pickerValueText = null;
         pickerWheelDragging = false;
     }
@@ -2103,6 +2106,145 @@ internal static class InGameOptionsMenuPatch
 
     private static string HexFor(Color32 color)
         => $"#{color.r:X2}{color.g:X2}{color.b:X2}";
+
+    private static void SetPaintPickerHSV(float h, float s, float v)
+    {
+        pickerCurrentH = h;
+        pickerCurrentS = s;
+        pickerCurrentV = v;
+        if (pickerValueSlider != null)
+            pickerValueSlider.SetValueWithoutNotify(Mathf.Clamp(Mathf.RoundToInt(v * 255f), 0, 255));
+        UpdatePickerVisualsFromHSV(commitLive: true);
+    }
+
+    private static void OnPaintPickerHexEntered(string raw)
+    {
+        if (!TryParseHexInput(raw, out Color32 color))
+        {
+            // Invalid input — restore the field to the actual current hex.
+            if (pickerHexInput != null)
+            {
+                Color rgb = Color.HSVToRGB(pickerCurrentH, pickerCurrentS, pickerCurrentV);
+                Color32 currentColor = new(
+                    (byte)Mathf.Clamp(Mathf.RoundToInt(rgb.r * 255f), 0, 255),
+                    (byte)Mathf.Clamp(Mathf.RoundToInt(rgb.g * 255f), 0, 255),
+                    (byte)Mathf.Clamp(Mathf.RoundToInt(rgb.b * 255f), 0, 255),
+                    byte.MaxValue);
+                pickerHexInput.SetTextWithoutNotify(HexFor(currentColor));
+            }
+            return;
+        }
+
+        Color.RGBToHSV((Color)color, out float h, out float s, out float v);
+        if (v <= 0.001f)
+        {
+            h = 0f;
+            s = 0f;
+        }
+        SetPaintPickerHSV(h, s, v);
+    }
+
+    private static bool TryParseHexInput(string value, out Color32 color)
+    {
+        color = default;
+        string hex = (value ?? string.Empty).Trim();
+        if (hex.StartsWith("#", StringComparison.Ordinal))
+            hex = hex[1..];
+
+        if (hex.Length != 6)
+            return false;
+
+        try
+        {
+            color = new Color32(
+                Convert.ToByte(hex[..2], 16),
+                Convert.ToByte(hex.Substring(2, 2), 16),
+                Convert.ToByte(hex.Substring(4, 2), 16),
+                byte.MaxValue);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static InputField AddHexInput(Transform parent, string initialText, float width)
+    {
+        GameObject fieldObject = new("UADVP_HexInput");
+        fieldObject.transform.SetParent(parent, false);
+        Image image = fieldObject.AddComponent<Image>();
+        image.color = new Color(0.04f, 0.04f, 0.04f, 0.95f);
+        AddLayout(fieldObject, minWidth: width, preferredWidth: width, minHeight: 26f, preferredHeight: 26f, flexibleWidth: 0f);
+
+        InputField input = fieldObject.AddComponent<InputField>();
+        input.targetGraphic = image;
+        input.lineType = InputField.LineType.SingleLine;
+        input.contentType = InputField.ContentType.Standard;
+        input.characterValidation = InputField.CharacterValidation.None;
+        input.characterLimit = 7;
+        input.selectionColor = new Color(0.6f, 0.52f, 0.25f, 0.65f);
+
+        Text text = AddInputText(fieldObject.transform, "Text", Color.white, initialText, 12);
+        Text placeholder = AddInputText(fieldObject.transform, "Placeholder", new Color(0.72f, 0.72f, 0.68f, 0.72f), "#RRGGBB", 12);
+        input.textComponent = text;
+        input.placeholder = placeholder;
+        input.text = initialText;
+        return input;
+    }
+
+    private static Text AddInputText(Transform parent, string name, Color color, string text, int fontSize)
+    {
+        GameObject textObject = new(name);
+        textObject.transform.SetParent(parent, false);
+        Text uiText = textObject.AddComponent<Text>();
+        uiText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        uiText.fontSize = fontSize;
+        uiText.color = color;
+        uiText.alignment = TextAnchor.MiddleLeft;
+        uiText.text = text;
+        uiText.horizontalOverflow = HorizontalWrapMode.Overflow;
+        uiText.verticalOverflow = VerticalWrapMode.Overflow;
+        uiText.raycastTarget = false;
+
+        RectTransform? rect = textObject.GetComponent<RectTransform>();
+        if (rect != null)
+        {
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = new Vector2(6f, 1f);
+            rect.offsetMax = new Vector2(-6f, -1f);
+        }
+        return uiText;
+    }
+
+    private static Button AddPickerQuickSwatch(Transform parent, string name, Color32 color, Action onClick, string tooltip)
+    {
+        GameObject swatchObject = new(name);
+        swatchObject.transform.SetParent(parent, false);
+        Image border = swatchObject.AddComponent<Image>();
+        border.color = SwatchBorder;
+        AddLayout(swatchObject, minWidth: 24f, preferredWidth: 24f, minHeight: 24f, preferredHeight: 24f, flexibleWidth: 0f);
+
+        GameObject fillObject = new("Fill");
+        fillObject.transform.SetParent(swatchObject.transform, false);
+        Image fill = fillObject.AddComponent<Image>();
+        fill.color = color;
+        fill.raycastTarget = false;
+        RectTransform fillRect = fillObject.GetComponent<RectTransform>();
+        fillRect.anchorMin = Vector2.zero;
+        fillRect.anchorMax = Vector2.one;
+        fillRect.offsetMin = new Vector2(1f, 1f);
+        fillRect.offsetMax = new Vector2(-1f, -1f);
+
+        Button button = swatchObject.AddComponent<Button>();
+        button.targetGraphic = border;
+        button.onClick.RemoveAllListeners();
+        button.onClick.AddListener(new System.Action(onClick));
+
+        AddTooltip(swatchObject, tooltip);
+        return button;
+    }
 
     private static Sprite EnsurePaintIconSprite()
     {
