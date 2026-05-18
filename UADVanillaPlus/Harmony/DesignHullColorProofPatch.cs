@@ -2201,6 +2201,15 @@ internal static class DesignHullColorProofPatch
                 areaForMaterial = primaryArea;
                 profileForMaterial = ProfileFor(scheme, nationKey, designKey, primaryArea);
             }
+            else if (!hasPrimary && LooksLikePaintedSideMaterial(MaterialSearchText(OriginalMaterial(material))))
+            {
+                // Unclassified parts (e.g. deck torpedo tubes) sit on the deck and read
+                // visually as "miscellaneous detail metal" — route their `steel_*` etc.
+                // materials into the Roof/Details channel, which already covers other
+                // deck-fitting metal like Metal-Roofing-textured pieces.
+                areaForMaterial = PaintArea.Roof;
+                profileForMaterial = ProfileFor(scheme, nationKey, designKey, PaintArea.Roof);
+            }
             else
             {
                 // Nothing matched. Log the material so we can see what its name+texture

@@ -2275,7 +2275,9 @@ internal static class InGameOptionsMenuPatch
             PaintArea.Barbette => "Barbette",
             PaintArea.Deck => "Deck",
             PaintArea.Bottom => "Bottom",
-            PaintArea.Roof => "Roof",
+            // Roof is the internal name (token: roofing/roof); user-facing label is
+            // "Details" because in practice the channel catches deck-fitting details.
+            PaintArea.Roof => "Details",
             PaintArea.Barrel => "Barrel",
             _ => "Hull",
         };
