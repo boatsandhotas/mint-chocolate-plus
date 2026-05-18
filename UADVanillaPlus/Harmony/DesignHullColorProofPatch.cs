@@ -284,6 +284,8 @@ internal static class DesignHullColorProofPatch
     private static readonly string[] OtherMetalTokens = { "metal", "steel_", "steelboard", "steel_board", "armor", "armour", "body", "iron", "brass", "bronze" };
     private static readonly HashSet<string> LoggedOtherMetalSamples = new(StringComparer.OrdinalIgnoreCase);
     private const int OtherMetalSampleLogLimit = 40;
+    private static readonly HashSet<string> LoggedUnclassifiedPartSamples = new(StringComparer.OrdinalIgnoreCase);
+    private const int UnclassifiedPartSampleLogLimit = 30;
 
     // Shared defaults for the experimental channels — used when no per-nation override
     // is configured. Vivid + distinct so the user can see which surface each channel paints.
@@ -736,17 +738,24 @@ internal static class DesignHullColorProofPatch
         try
         {
             PaintArea? paintArea = PaintAreaFor(part);
-            if (paintArea == null)
-                return;
+            // Previously this was an early-return; we now fall through with a "no primary"
+            // mode so experimental channels (Deck/Bottom/Roof) and OtherMetal still get a
+            // chance to paint materials on parts the named classifier doesn't recognize
+            // (e.g. main gun barrels, deck fittings).
+            bool hasPrimary = paintArea.HasValue;
+            if (!hasPrimary)
+                LogUnclassifiedPartSample(part);
 
             if (IsDamagePaintSuppressed(part))
                 return;
 
             ShipPaintScheme scheme = SchemeFor(part, out string nationKey);
-            // Cache/signature key still uses the part's primary area so cache invalidation
-            // behaves the same on damage/refit; per-material profiles are looked up below.
-            PaintProfile primaryProfile = scheme.Profile(paintArea.Value);
-            string partKey = PaintPartKey(part, paintArea.Value, primaryProfile);
+            // Cache/signature key still uses a stable area so cache invalidation behaves
+            // the same on damage/refit. For unclassified parts we use HullSide as the
+            // signature area; per-material profiles are looked up below regardless.
+            PaintArea cacheArea = hasPrimary && paintArea.HasValue ? paintArea.Value : PaintArea.HullSide;
+            PaintProfile primaryProfile = scheme.Profile(cacheArea);
+            string partKey = PaintPartKey(part, cacheArea, primaryProfile);
             if (!force)
             {
                 string beforeSignature = RendererMaterialSignature(part);
@@ -770,7 +779,7 @@ internal static class DesignHullColorProofPatch
                 if (materials == null || materials.Length == 0)
                     continue;
 
-                PaintedMaterialSet paintedMaterials = GetOrCreateMultiAreaPaintedMaterialSet(materials, paintArea.Value, primaryProfile, scheme, nationKey);
+                PaintedMaterialSet paintedMaterials = GetOrCreateMultiAreaPaintedMaterialSet(materials, hasPrimary, cacheArea, primaryProfile, scheme, nationKey);
                 changedMaterialCount += paintedMaterials.PaintedMaterialCount;
                 skippedMaterialCount += paintedMaterials.SkippedMaterialCount;
 
@@ -783,7 +792,7 @@ internal static class DesignHullColorProofPatch
             }
 
             AppliedRendererSignatureByPart[partKey] = RendererMaterialSignature(part);
-            LogFirstApplication(part, paintArea.Value, scheme, context, rendererCount, changedMaterialCount, skippedMaterialCount);
+            LogFirstApplication(part, cacheArea, scheme, context, rendererCount, changedMaterialCount, skippedMaterialCount);
         }
         catch (Exception ex)
         {
@@ -2040,13 +2049,13 @@ internal static class DesignHullColorProofPatch
     // Multi-area variant: classify each material independently and tint it with the
     // matched channel's profile. A single part can therefore have hull-side, deck,
     // bottom, trim, etc. each painted with their own color.
-    // For each material: try the experimental channels (Deck/Bottom) first. If none match,
-    // fall back to the part's primary area + its original ShouldPaintMaterial classifier.
-    // This preserves vanilla per-part behavior for HullSide/Super/Gun/Barbette so changing
-    // the gun color cannot bleed into the hull or superstructure.
-    private static PaintedMaterialSet GetOrCreateMultiAreaPaintedMaterialSet(Material[] materials, PaintArea primaryArea, PaintProfile primaryProfile, ShipPaintScheme scheme, string nationKey)
+    // For each material: try the experimental channels (Deck/Bottom/Roof) first. If none
+    // match, fall back to the part's primary area + its original ShouldPaintMaterial
+    // classifier (only when hasPrimary). Finally OtherMetal catches any unmatched metallic
+    // material so we can identify unclassified surfaces (gun barrels, deck fittings).
+    private static PaintedMaterialSet GetOrCreateMultiAreaPaintedMaterialSet(Material[] materials, bool hasPrimary, PaintArea primaryArea, PaintProfile primaryProfile, ShipPaintScheme scheme, string nationKey)
     {
-        string key = MultiAreaCacheKey(materials, primaryArea, primaryProfile, scheme, nationKey);
+        string key = MultiAreaCacheKey(materials, hasPrimary, primaryArea, primaryProfile, scheme, nationKey);
         if (PaintedMaterialSets.TryGetValue(key, out PaintedMaterialSet? cachedSet))
         {
             if (IsUsablePaintedMaterialSet(cachedSet))
@@ -2084,7 +2093,7 @@ internal static class DesignHullColorProofPatch
                 areaForMaterial = experimental.Value;
                 profileForMaterial = ProfileFor(scheme, nationKey, experimental.Value);
             }
-            else if (ShouldPaintMaterial(material, primaryArea))
+            else if (hasPrimary && ShouldPaintMaterial(material, primaryArea))
             {
                 areaForMaterial = primaryArea;
                 profileForMaterial = primaryProfile;
@@ -2123,7 +2132,7 @@ internal static class DesignHullColorProofPatch
         return set;
     }
 
-    private static string MultiAreaCacheKey(Material[] materials, PaintArea primaryArea, PaintProfile primaryProfile, ShipPaintScheme scheme, string nationKey)
+    private static string MultiAreaCacheKey(Material[] materials, bool hasPrimary, PaintArea primaryArea, PaintProfile primaryProfile, ShipPaintScheme scheme, string nationKey)
     {
         List<string> materialKeys = new(materials.Length);
         foreach (Material material in materials)
@@ -2151,7 +2160,7 @@ internal static class DesignHullColorProofPatch
             extrasFingerprint = string.Join(",", parts);
         }
 
-        return $"multi|{primaryArea}|{primaryProfile.Suffix}|{scheme.Id}|{nationKey}|{extrasFingerprint}|{string.Join(",", materialKeys)}";
+        return $"multi|hasPrimary={hasPrimary}|{primaryArea}|{primaryProfile.Suffix}|{scheme.Id}|{nationKey}|{extrasFingerprint}|{string.Join(",", materialKeys)}";
     }
 
     private static Material? GetOrCreatePaintMaterial(Material material, PaintArea paintArea, PaintProfile profile)
@@ -2675,6 +2684,31 @@ internal static class DesignHullColorProofPatch
         if (string.IsNullOrEmpty(materialText))
             return false;
         return ContainsAny(materialText, OtherMetalTokens);
+    }
+
+    // Logs the first N unique part names that PaintAreaFor returned null on so we can
+    // see what part types the painter was previously skipping (likely where gun barrels
+    // and deck fittings live).
+    private static void LogUnclassifiedPartSample(Part part)
+    {
+        if (LoggedUnclassifiedPartSamples.Count >= UnclassifiedPartSampleLogLimit)
+            return;
+
+        try
+        {
+            string partName = SafePartName(part?.data);
+            string shipName = SafeShipName(part?.ship);
+            string key = $"{partName}|{shipName}";
+            if (!LoggedUnclassifiedPartSamples.Add(key))
+                return;
+
+            Melon<UADVanillaPlusMod>.Logger.Msg(
+                $"UADVP ship paint unclassified part sample #{LoggedUnclassifiedPartSamples.Count}: part='{partName}'; ship='{shipName}'.");
+        }
+        catch
+        {
+            // Diagnostics only.
+        }
     }
 
     // Logs the first N unique material names that fall through to OtherMetal so we can
