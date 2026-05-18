@@ -14,10 +14,10 @@ namespace UADVanillaPlus.Harmony;
 internal static class DesignHullColorProofPatch
 {
     // Existing channels (HullSide/Barbette/Superstructure/Gun) tint by part type via
-    // PaintAreaFor. Experimental channels (Deck/Bottom/Roof) classify per-material so
-    // a single part can have its deck, bottom, and roof tinted independently of the
-    // part's primary area. OtherMetal is a final-fallback catch-all that tints any
-    // metallic-looking material the named channels did NOT claim.
+    // PaintAreaFor. Experimental channels (Deck/Bottom/Roof/Detail) classify per-material
+    // so a single part can have its deck, bottom, roof, and detail bits tinted
+    // independently of the part's primary area. OtherMetal is a final-fallback catch-all
+    // that tints any metallic-looking material the named channels did NOT claim.
     internal enum PaintArea
     {
         HullSide,
@@ -27,6 +27,7 @@ internal static class DesignHullColorProofPatch
         Deck,
         Bottom,
         Roof,
+        Detail,
         OtherMetal,
     }
 
@@ -281,6 +282,7 @@ internal static class DesignHullColorProofPatch
     private static readonly string[] DeckTokens = { "deck", "wood", "plank", "floor" };
     private static readonly string[] BottomTokens = { "hull_bottom", "bottom", "underwater", "keel", "waterline" };
     private static readonly string[] RoofTokens = { "roofing", "roof" };
+    private static readonly string[] DetailTokens = { "details_" };
     private static readonly string[] OtherMetalTokens = { "metal", "steel_", "steelboard", "steel_board", "armor", "armour", "body", "iron", "brass", "bronze" };
     private static readonly HashSet<string> LoggedOtherMetalSamples = new(StringComparer.OrdinalIgnoreCase);
     private const int OtherMetalSampleLogLimit = 40;
@@ -296,6 +298,9 @@ internal static class DesignHullColorProofPatch
         [PaintArea.Deck] = Profile(0.83f, 0.65f, 0.42f, 212, 166, 107, 0.45f, "deck_teak"),
         [PaintArea.Bottom] = Profile(0.45f, 0.10f, 0.10f, 115, 26, 26, 0.70f, "bottom_antifouling"),
         [PaintArea.Roof] = Profile(0.32f, 0.32f, 0.34f, 82, 82, 87, 0.55f, "roof_gunmetal"),
+        // Detail catches `details_3`/`details_4` (untextured small metal bits). Default
+        // magenta so the user can see what surfaces it claims, then tune via the picker.
+        [PaintArea.Detail] = Profile(0.82f, 0.18f, 0.62f, 209, 46, 158, 0.60f, "detail_magenta"),
         // Vivid identification color so the user can see at-a-glance which surfaces fall
         // through to OtherMetal. Materials caught here are logged so we can learn token
         // patterns and promote them into named channels later.
@@ -953,6 +958,7 @@ internal static class DesignHullColorProofPatch
             case "deck": area = PaintArea.Deck; return true;
             case "bottom": area = PaintArea.Bottom; return true;
             case "roof": area = PaintArea.Roof; return true;
+            case "detail": area = PaintArea.Detail; return true;
             case "othermetal": area = PaintArea.OtherMetal; return true;
             default: area = PaintArea.HullSide; return false;
         }
@@ -967,6 +973,7 @@ internal static class DesignHullColorProofPatch
             PaintArea.Deck => "deck",
             PaintArea.Bottom => "bottom",
             PaintArea.Roof => "roof",
+            PaintArea.Detail => "detail",
             PaintArea.OtherMetal => "othermetal",
             _ => string.Empty,
         };
@@ -982,6 +989,7 @@ internal static class DesignHullColorProofPatch
             "deck" or "wood" or "plank" or "floor" => "deck",
             "bottom" or "hull_bottom" or "underwater" or "keel" or "waterline" => "bottom",
             "roof" or "roofing" => "roof",
+            "detail" or "details" => "detail",
             "othermetal" or "other_metal" or "metal" => "othermetal",
             _ => string.Empty
         };
@@ -1078,6 +1086,7 @@ internal static class DesignHullColorProofPatch
         PaintArea.Deck,
         PaintArea.Bottom,
         PaintArea.Roof,
+        PaintArea.Detail,
         PaintArea.OtherMetal,
     };
 
@@ -2658,15 +2667,16 @@ internal static class DesignHullColorProofPatch
             PaintArea.Deck => ContainsAny(materialText, DeckTokens),
             PaintArea.Bottom => ContainsAny(materialText, BottomTokens),
             PaintArea.Roof => ContainsAny(materialText, RoofTokens),
+            PaintArea.Detail => ContainsAny(materialText, DetailTokens),
             _ => LooksLikePaintedSideMaterial(materialText)
         };
         PaintMaterialCandidateCache[key] = decision;
         return decision;
     }
 
-    // Checks the experimental per-material channels (Deck, Bottom, Roof). The four primary
-    // channels (HullSide/Barbette/Superstructure/Gun) keep their per-part dispatch so shared
-    // tokens (steel_/metal/armor) don't bleed between them.
+    // Checks the experimental per-material channels (Deck, Bottom, Roof, Detail). The
+    // four primary channels (HullSide/Barbette/Superstructure/Gun) keep their per-part
+    // dispatch so shared tokens (steel_/metal/armor) don't bleed between them.
     private static PaintArea? ClassifyExperimentalMaterialArea(Material material)
     {
         Material source = OriginalMaterial(material);
@@ -2675,8 +2685,11 @@ internal static class DesignHullColorProofPatch
             return null;
 
         if (ContainsAny(materialText, BottomTokens)) return PaintArea.Bottom;
+        // Roof checks "roof"/"roofing" — matches details_2's MetalRoofing texture name
+        // before Detail's "details_" token gets a chance to claim it.
         if (ContainsAny(materialText, RoofTokens)) return PaintArea.Roof;
         if (ContainsAny(materialText, DeckTokens)) return PaintArea.Deck;
+        if (ContainsAny(materialText, DetailTokens)) return PaintArea.Detail;
         return null;
     }
 

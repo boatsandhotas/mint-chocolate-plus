@@ -2053,6 +2053,7 @@ internal static class InGameOptionsMenuPatch
             PaintArea.Deck => "Deck",
             PaintArea.Bottom => "Bottom",
             PaintArea.Roof => "Roof",
+            PaintArea.Detail => "Detail",
             PaintArea.OtherMetal => "Other Metal",
             _ => "Hull",
         };
