@@ -1485,7 +1485,9 @@ internal static class InGameOptionsMenuPatch
         panelRect.anchorMax = new Vector2(1f, 1f);
         panelRect.pivot = new Vector2(1f, 1f);
         panelRect.anchoredPosition = new Vector2(-18f, -90f);
-        panelRect.sizeDelta = new Vector2(500f, hasDesign ? 152f : 110f);
+        // Dual-row when a design context resolves; collapse to a single nation row
+        // otherwise. Width matches the 7-swatch layout after the OtherMetal removal.
+        panelRect.sizeDelta = new Vector2(hasDesign ? 480f : 280f, hasDesign ? 152f : 110f);
 
         VerticalLayoutGroup layout = constructorPaintPanel.AddComponent<VerticalLayoutGroup>();
         layout.padding = new RectOffset { left = 12, right = 12, top = 10, bottom = 10 };
@@ -2274,8 +2276,7 @@ internal static class InGameOptionsMenuPatch
             PaintArea.Deck => "Deck",
             PaintArea.Bottom => "Bottom",
             PaintArea.Roof => "Roof",
-            PaintArea.Detail => "Detail",
-            PaintArea.OtherMetal => "Other Metal",
+            PaintArea.Barrel => "Barrel",
             _ => "Hull",
         };
 
