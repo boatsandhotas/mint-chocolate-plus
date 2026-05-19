@@ -342,6 +342,8 @@ internal static class DesignHullColorProofPatch
     private static int LodRendererLogCount;
     private static int MissedGunLodRendererLogCount;
     private static int MissedChildRendererLogCount;
+    private static int SilentlySkippedMaterialLogCount;
+    private static readonly HashSet<string> LoggedSilentSkipKeys = new(StringComparer.OrdinalIgnoreCase);
     private static int NationPaintSettingsLogCount;
     private static int PendingCampaignBattleCountryMapLogCount;
     private static int ResolvedNationPaintRevision = -1;
@@ -358,6 +360,11 @@ internal static class DesignHullColorProofPatch
     // (ladders, vents, davits, AA fittings) that the painter silently skips today.
     // Generous cap because each grey deck object spans multiple LODs.
     private const int MaxMissedChildRendererLogs = 60;
+    // Logs when GetOrCreatePaintMaterial returns null because the second-pass
+    // ShouldPaintMaterial(area) check disagrees with the outer classifier's pick —
+    // a silent skip that doesn't reach LogUnmatchedMaterial. This is where deck
+    // bollards and similar "no channel touches them" surfaces hide.
+    private const int MaxSilentlySkippedMaterialLogs = 60;
     private const int BattleRepaintCandidateWarningThreshold = 240;
     private const int BattleRepaintBattleReadyWaitAttempts = 60;
     private const float BattleRepaintBattleReadyWaitDelaySeconds = 0.2f;
@@ -481,6 +488,8 @@ internal static class DesignHullColorProofPatch
         // Reset diagnostic sample sets so a fresh test session captures new entries.
         LoggedUnmatchedMaterialSamples.Clear();
         LoggedUnclassifiedPartSamples.Clear();
+        LoggedSilentSkipKeys.Clear();
+        SilentlySkippedMaterialLogCount = 0;
 
         if (!IsEnabled)
         {
@@ -2380,10 +2389,16 @@ internal static class DesignHullColorProofPatch
         }
 
         if (!IsUsableSourceMaterial(source))
+        {
+            LogSilentlySkippedMaterial(source, paintArea, "source not usable");
             return null;
+        }
 
         if (!ShouldPaintMaterial(source, paintArea))
+        {
+            LogSilentlySkippedMaterial(source, paintArea, "ShouldPaintMaterial(area) returned false");
             return null;
+        }
 
         string key = MaterialCacheKey(source, profile);
         if (GeneratedMaterials.TryGetValue(key, out Material? cachedMaterial))
@@ -2925,6 +2940,37 @@ internal static class DesignHullColorProofPatch
             string primaryDescriptor = hasPrimary ? primaryArea.ToString() : "<unclassified>";
             Melon<UADVanillaPlusMod>.Logger.Msg(
                 $"UADVP ship paint UNMATCHED sample #{LoggedUnmatchedMaterialSamples.Count}: primary={primaryDescriptor}; material='{sourceName}'; textures='{textures}'.");
+        }
+        catch
+        {
+            // Diagnostics only.
+        }
+    }
+
+    // Logs the first N materials that the outer classifier routed to a channel but
+    // GetOrCreatePaintMaterial then refused to paint (either because the source
+    // material wasn't usable, or because ShouldPaintMaterial(area) disagreed with
+    // the outer classifier's pick). These were previously silent skips — the
+    // material kept its original (untinted) form with no diagnostic trail. Dedup on
+    // material name + textures + intended area so we see each unique case once.
+    private static void LogSilentlySkippedMaterial(Material source, PaintArea paintArea, string reason)
+    {
+        if (SilentlySkippedMaterialLogCount >= MaxSilentlySkippedMaterialLogs)
+            return;
+
+        try
+        {
+            if (source == null)
+                return;
+            string sourceName = source.name ?? "<material>";
+            string textures = MaterialTextureNames(source);
+            string key = $"{paintArea}|{sourceName}|{textures}";
+            if (!LoggedSilentSkipKeys.Add(key))
+                return;
+
+            SilentlySkippedMaterialLogCount++;
+            Melon<UADVanillaPlusMod>.Logger.Msg(
+                $"UADVP ship paint SILENT SKIP #{SilentlySkippedMaterialLogCount}: area={paintArea}; reason={reason}; material='{sourceName}'; textures='{textures}'.");
         }
         catch
         {
