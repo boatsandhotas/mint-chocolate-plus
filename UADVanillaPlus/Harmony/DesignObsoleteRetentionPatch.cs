@@ -13,6 +13,8 @@ namespace UADVanillaPlus.Harmony;
 internal static class DesignObsoleteHullRetentionPatch
 {
     private static bool loggedFirstHull;
+    private static bool loggedFirstHullPartData;
+    private static bool loggedFirstSubmarine;
 
     [HarmonyPrefix]
     [HarmonyPatch(nameof(Player.IsHullObsolete), typeof(string))]
@@ -26,6 +28,39 @@ internal static class DesignObsoleteHullRetentionPatch
         return false;
     }
 
+    // Vanilla exposes a second IsHullObsolete(PartData) overload that isn't a thin
+    // wrapper over the String one — confirmed missing from our patch via uad_recon's
+    // Q-Refit-2 dump. The Shipyard's refit-button gate goes through this overload
+    // (the design's hull part is already a PartData by the time the gate fires), so
+    // the String-only patch never ran on that path and obsolete hulls stayed blocked
+    // from refit even with "Retain" on.
+    [HarmonyPrefix]
+    [HarmonyPatch(nameof(Player.IsHullObsolete), typeof(PartData))]
+    internal static bool IsHullObsoletePartDataPrefix(Player __instance, PartData part, ref bool __result)
+    {
+        if (!ShouldRetainFor(__instance) || part == null)
+            return true;
+
+        __result = false;
+        LogFirstHullPartData(part);
+        return false;
+    }
+
+    // Same retention semantics for submarine hulls. Vanilla's IsSubmarineObsolete
+    // is a parallel gate (Q-Refit-2) that, like the hull version, would otherwise
+    // block refits on retired sub classes for the player.
+    [HarmonyPrefix]
+    [HarmonyPatch(nameof(Player.IsSubmarineObsolete), typeof(string))]
+    internal static bool IsSubmarineObsoletePrefix(Player __instance, string name, ref bool __result)
+    {
+        if (!ShouldRetainFor(__instance) || string.IsNullOrWhiteSpace(name))
+            return true;
+
+        __result = false;
+        LogFirstSubmarine(name);
+        return false;
+    }
+
     private static bool ShouldRetainFor(Player? player)
         => ModSettings.ObsoleteDesignRetentionEnabled && player?.isMain == true && player.isAi == false;
 
@@ -36,6 +71,25 @@ internal static class DesignObsoleteHullRetentionPatch
 
         loggedFirstHull = true;
         Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP design option: retaining obsolete hull availability for player designs. First retained hull id: {part}.");
+    }
+
+    private static void LogFirstHullPartData(PartData part)
+    {
+        if (loggedFirstHullPartData)
+            return;
+
+        loggedFirstHullPartData = true;
+        string label = part?.name ?? "<unknown>";
+        Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP design option: retaining obsolete hull (PartData) for player designs. First retained hull: {label}.");
+    }
+
+    private static void LogFirstSubmarine(string name)
+    {
+        if (loggedFirstSubmarine)
+            return;
+
+        loggedFirstSubmarine = true;
+        Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP design option: retaining obsolete submarine availability for player designs. First retained submarine id: {name}.");
     }
 }
 

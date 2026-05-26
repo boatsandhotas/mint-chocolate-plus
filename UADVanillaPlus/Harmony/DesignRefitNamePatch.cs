@@ -7,14 +7,30 @@ using MelonLoader;
 
 namespace UADVanillaPlus.Harmony;
 
-// Vanilla appends global duplicate counters such as " - 2" to refit designs.
-// Keep refit names compact and only add a letter when the same class already
-// has a refit design for the same campaign year.
+// Vanilla appends global duplicate counters such as " - 2" to refit designs,
+// and even with VP's class-year disambiguation, two refits designed in the
+// same year were getting letter suffixes ("1904", "1904a", "1904b") that
+// gave no hint at the actual design date.
+//
+// Switched to month+year suffix ("Jul. 1904") borrowed from UAD DIP — same
+// uniqueness guarantee in 11 cases out of 12 across a campaign year, and
+// the name reads as a date instead of a counter. Letter suffix still kicks
+// in for the rare same-month collision so we never overwrite a previous
+// design name.
 [HarmonyPatch(typeof(Ship))]
 internal static class DesignRefitNamePatch
 {
+    private static readonly string[] MonthAbbreviations =
+    {
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    };
+
+    // Captures both the new format "(Jul. 1904)" / "(Jul. 1904a)" and the
+    // legacy year-only format "(1904)" / "(1904a)" so we keep recognising
+    // refit designs created by older builds for conflict detection.
     private static readonly Regex RefitYearNameRegex = new(
-        @"^\s*(?<base>.*?)\s*\((?<year>\d{4})(?<letter>[A-Za-z]*)\)\s*(?:-\s*(?<number>\d+))?\s*$",
+        @"^\s*(?<base>.*?)\s*\((?:(?<month>[A-Za-z]{3})\.?\s+)?(?<year>\d{4})(?<letter>[A-Za-z]*)\)\s*(?:-\s*(?<number>\d+))?\s*$",
         RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
     private static bool loggedRule;
@@ -38,9 +54,12 @@ internal static class DesignRefitNamePatch
             if (string.IsNullOrWhiteSpace(baseName))
                 return true;
 
-            int refitYear = campaign.CurrentDate.AsDate().Year;
-            int ordinal = NextSameYearOrdinal(tempPlayer, __instance, baseName, refitYear);
-            string yearText = $"{refitYear}{ConflictLetterSuffix(ordinal)}";
+            var currentDate = campaign.CurrentDate.AsDate();
+            int refitYear = currentDate.Year;
+            int refitMonth = currentDate.Month;
+            string monthLabel = MonthAbbreviation(refitMonth);
+            int ordinal = NextSameMonthOrdinal(tempPlayer, __instance, baseName, refitYear, refitMonth);
+            string yearText = $"{monthLabel}. {refitYear}{ConflictLetterSuffix(ordinal)}";
             string refitSuffix = $" ({yearText})";
 
             __result = refitDesignIsRefitDesign ? $"{baseName}{refitSuffix}" : refitSuffix;
@@ -57,7 +76,7 @@ internal static class DesignRefitNamePatch
         }
     }
 
-    private static int NextSameYearOrdinal(Player player, Ship currentDesign, string baseName, int refitYear)
+    private static int NextSameMonthOrdinal(Player player, Ship currentDesign, string baseName, int refitYear, int refitMonth)
     {
         int highestOrdinal = 0;
         var designs = new Il2CppSystem.Collections.Generic.List<Ship>(player.designs);
@@ -66,10 +85,18 @@ internal static class DesignRefitNamePatch
             if (design == null || design.Pointer == currentDesign.Pointer)
                 continue;
 
-            if (!TryReadRefitYearName(design.name, design, out string candidateBaseName, out int candidateYear, out int candidateOrdinal))
+            if (!TryReadRefitYearName(design.name, design,
+                    out string candidateBaseName, out int candidateYear, out int candidateMonth, out int candidateOrdinal))
                 continue;
 
             if (candidateYear != refitYear || !string.Equals(candidateBaseName, baseName, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            // Legacy year-only entries (candidateMonth == 0) collide with ANY
+            // month in the same year — we can't tell when they were designed,
+            // so treat them as overlapping to be safe. Month-tagged entries
+            // only collide with their own month.
+            if (candidateMonth != 0 && candidateMonth != refitMonth)
                 continue;
 
             highestOrdinal = Math.Max(highestOrdinal, Math.Max(1, candidateOrdinal));
@@ -78,13 +105,31 @@ internal static class DesignRefitNamePatch
         return highestOrdinal + 1;
     }
 
+    private static string MonthAbbreviation(int month)
+    {
+        if (month < 1 || month > 12) return "???";
+        return MonthAbbreviations[month - 1];
+    }
+
+    private static int MonthFromAbbreviation(string? abbreviation)
+    {
+        if (string.IsNullOrWhiteSpace(abbreviation)) return 0;
+        string token = abbreviation.Trim();
+        for (int i = 0; i < MonthAbbreviations.Length; i++)
+        {
+            if (string.Equals(token, MonthAbbreviations[i], StringComparison.OrdinalIgnoreCase))
+                return i + 1;
+        }
+        return 0;
+    }
+
     private static string CleanRefitBaseName(Ship? ship)
     {
         string? name = ship?.name;
         if (string.IsNullOrWhiteSpace(name))
             return string.Empty;
 
-        if (TryReadRefitYearName(name, ship, out string baseName, out _, out _))
+        if (TryReadRefitYearName(name, ship, out string baseName, out _, out _, out _))
             return baseName;
 
         string cleaned = StripLegacyCloneSuffix(name.Trim());
@@ -95,10 +140,11 @@ internal static class DesignRefitNamePatch
         return StripLeadingShipTypePrefix(cleaned, ship);
     }
 
-    private static bool TryReadRefitYearName(string? name, Ship? ship, out string baseName, out int year, out int ordinal)
+    private static bool TryReadRefitYearName(string? name, Ship? ship, out string baseName, out int year, out int month, out int ordinal)
     {
         baseName = string.Empty;
         year = 0;
+        month = 0;       // 0 = name didn't carry a month (legacy "(1904)" format)
         ordinal = 1;
 
         if (string.IsNullOrWhiteSpace(name))
@@ -111,6 +157,8 @@ internal static class DesignRefitNamePatch
         baseName = StripLeadingShipTypePrefix(match.Groups["base"].Value.Trim(), ship);
         if (string.IsNullOrWhiteSpace(baseName))
             return false;
+
+        month = MonthFromAbbreviation(match.Groups["month"].Value);
 
         Group numberGroup = match.Groups["number"];
         if (numberGroup.Success && int.TryParse(numberGroup.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int numberOrdinal))
@@ -239,7 +287,7 @@ internal static class DesignRefitNamePatch
             return;
 
         loggedRule = true;
-        Melon<UADVanillaPlusMod>.Logger.Msg("UADVP design refit names: using class-year naming for player and AI refits.");
+        Melon<UADVanillaPlusMod>.Logger.Msg("UADVP design refit names: using class month+year naming (e.g. \"Foo (Jul. 1904)\") for player and AI refits.");
     }
 
     private static void LogConflictOnce(string generatedName)

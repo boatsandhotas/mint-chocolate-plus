@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using MelonLoader;
 using UnityEngine;
 
@@ -30,6 +32,10 @@ internal static class ModSettings
     private const string BattleRuntimeDiagnosticsEnabledKey = "uadvp_battle_runtime_diagnostics_enabled";
     private const string NationShipPaintStringKeyPrefix = "uadvp_nation_ship_paint_";
     private const string DesignShipPaintStringKeyPrefix = "uadvp_design_ship_paint_";
+    private const string UserPaintPresetsKey = "uadvp_user_paint_presets";
+    // Cap chosen so the user-presets row fits in the 260-wide picker window:
+    //   6 swatches × 24 + 6 gaps × 4 + "+ Save" button (60) = 228 ≤ 232 usable.
+    private const int MaxUserPaintPresets = 6;
     private const string OldPanamaCanalEarlyEnabledKey = "uadvp_panama_canal_early_enabled";
 
     private static bool? portStrikeBalanced;
@@ -453,6 +459,87 @@ internal static class ModSettings
                 $"UADVP option: Design Ship Paints updated for design {designKey}.");
         return true;
     }
+
+    // User-defined color presets shown in the picker, persisted across sessions.
+    // Stored as a semicolon-delimited list of #RRGGBB hex strings. Capped at
+    // MaxUserPaintPresets entries; saving past the cap drops the oldest.
+    internal static List<Color32> UserPaintPresets()
+    {
+        string raw = PlayerPrefs.GetString(UserPaintPresetsKey, string.Empty);
+        List<Color32> result = new();
+        if (string.IsNullOrWhiteSpace(raw))
+            return result;
+        foreach (string token in raw.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            if (TryParseHexColor(token, out Color32 color))
+                result.Add(color);
+        }
+        return result;
+    }
+
+    internal static bool AddUserPaintPreset(Color32 color)
+    {
+        List<Color32> presets = UserPaintPresets();
+        // Skip duplicates so the row doesn't accumulate identical swatches.
+        foreach (Color32 existing in presets)
+        {
+            if (existing.r == color.r && existing.g == color.g && existing.b == color.b)
+                return false;
+        }
+        presets.Add(color);
+        // Drop oldest when we exceed the cap so the most recent saves win.
+        while (presets.Count > MaxUserPaintPresets)
+            presets.RemoveAt(0);
+        return PersistUserPaintPresets(presets, $"saved {HexFor(color)}");
+    }
+
+    internal static bool RemoveUserPaintPresetAt(int index)
+    {
+        List<Color32> presets = UserPaintPresets();
+        if (index < 0 || index >= presets.Count)
+            return false;
+        Color32 removed = presets[index];
+        presets.RemoveAt(index);
+        return PersistUserPaintPresets(presets, $"removed {HexFor(removed)}");
+    }
+
+    private static bool PersistUserPaintPresets(List<Color32> presets, string changeDescription)
+    {
+        string serialized = string.Join(";", presets.ConvertAll(HexFor));
+        string current = PlayerPrefs.GetString(UserPaintPresetsKey, string.Empty);
+        if (string.Equals(current, serialized, StringComparison.Ordinal))
+            return false;
+        PlayerPrefs.SetString(UserPaintPresetsKey, serialized);
+        PlayerPrefs.Save();
+        Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: user paint presets {changeDescription} ({presets.Count}/{MaxUserPaintPresets}).");
+        return true;
+    }
+
+    private static bool TryParseHexColor(string value, out Color32 color)
+    {
+        color = default;
+        string hex = (value ?? string.Empty).Trim();
+        if (hex.StartsWith("#", StringComparison.Ordinal))
+            hex = hex[1..];
+        if (hex.Length != 6)
+            return false;
+        try
+        {
+            color = new Color32(
+                Convert.ToByte(hex[..2], 16),
+                Convert.ToByte(hex.Substring(2, 2), 16),
+                Convert.ToByte(hex.Substring(4, 2), 16),
+                byte.MaxValue);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static string HexFor(Color32 color)
+        => $"#{color.r:X2}{color.g:X2}{color.b:X2}";
 
     internal static bool DesignAccuracyPenaltiesBalanced
         => DesignAccuracyPenaltyMode != AccuracyPenaltyMode.Vanilla;

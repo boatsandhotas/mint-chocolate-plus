@@ -70,9 +70,32 @@
     </Reference>
   </ItemGroup>
 
+  <!--
+    Kill any running UAD instance before the DLL copy so the new mod can be
+    written. The cmd wrapper redirects both stdout and stderr to nul so
+    MSBuild's stderr-scanning doesn't flag taskkill's "process not found"
+    message (exit code 128) as a build error. IgnoreExitCode + the wrapper
+    together mean: succeeds when UAD is running (killed), silently no-ops
+    when UAD isn't running.
+  -->
+  <Target Name="KillUad" BeforeTargets="CopyMod" Condition="'$(DeployOnBuild)' == 'true'">
+    <Exec Command='cmd /c taskkill /F /IM "Ultimate Admiral Dreadnoughts.exe" /T 1&gt;nul 2&gt;nul'
+          IgnoreExitCode="true"
+          IgnoreStandardErrorWarningFormat="true" />
+  </Target>
+
   <Target Name="CopyMod" AfterTargets="Build" Condition="'$(DeployOnBuild)' == 'true'">
     <Copy SourceFiles="$(TargetPath)"
           DestinationFiles="$(UAD_PATH)Mods/UADVanillaPlus.dll"
           SkipUnchangedFiles="true" />
+  </Target>
+
+  <!--
+    Opt-in: launches UAD via the Steam protocol handler after a successful
+    build+deploy. Use with: dotnet build ... -p:DeployOnBuild=true -p:LaunchGame=true
+    Steam appid 1069660 = Ultimate Admiral: Dreadnoughts.
+  -->
+  <Target Name="LaunchUad" AfterTargets="CopyMod" Condition="'$(LaunchGame)' == 'true'">
+    <Exec Command='cmd /c start "" "steam://rungameid/1069660"' IgnoreExitCode="true" />
   </Target>
 </Project>

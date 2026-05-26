@@ -93,6 +93,10 @@ internal static class InGameOptionsMenuPatch
     private static Slider? pickerValueSlider;
     private static Image? pickerPreviewFill;
     private static InputField? pickerHexInput;
+    // Root of the user-presets row inside the picker; held so we can rebuild
+    // just that row after Save / shift-click-delete without rebuilding the
+    // whole picker (which would lose the current wheel/slider state).
+    private static GameObject? pickerUserPresetsRow;
     private static Text? pickerValueText;
     private static DesignHullColorProofPatch.NationPaintUiInfo pickerNation;
     private static PaintArea pickerChannel;
@@ -528,8 +532,48 @@ internal static class InGameOptionsMenuPatch
         DesignHullColorProofPatch.RefreshNationPaintSettingsCache("options menu");
         AddText(parent, "Click a swatch to pick a color for that ship area. Reset clears the override and restores the built-in scheme.", 12, TextAnchor.MiddleLeft);
 
+        AddNationShipPaintsChannelHeader(parent);
+
         foreach (DesignHullColorProofPatch.NationPaintUiInfo nation in DesignHullColorProofPatch.NationPaintOptions())
             AddNationShipPaintRow(parent, nation);
+    }
+
+    // Column-header row above the nation swatch rows so the user can tell at a glance
+    // which channel each swatch governs (Hull/Super/Turret/Deck/Bottom/Detail/Barrel/Trim)
+    // without having to hover for the tooltip. Lead spacer + per-column widths mirror
+    // AddNationShipPaintRow's label width (100) and swatch width (24) so the labels line
+    // up with the swatches beneath them.
+    private static void AddNationShipPaintsChannelHeader(Transform parent)
+    {
+        GameObject row = new("UADVP_NationShipPaintsHeader");
+        row.transform.SetParent(parent, false);
+        Image rowImage = row.AddComponent<Image>();
+        rowImage.color = new Color(0f, 0f, 0f, 0f);
+        rowImage.raycastTarget = false;
+        HorizontalLayoutGroup rowLayout = row.AddComponent<HorizontalLayoutGroup>();
+        rowLayout.padding = new RectOffset { left = 8, right = 8, top = 2, bottom = 2 };
+        rowLayout.spacing = 4f;
+        rowLayout.childAlignment = TextAnchor.MiddleLeft;
+        rowLayout.childControlHeight = true;
+        rowLayout.childControlWidth = true;
+        rowLayout.childForceExpandHeight = false;
+        rowLayout.childForceExpandWidth = false;
+        AddLayout(row, minHeight: 16f, preferredHeight: 16f, flexibleWidth: 1f);
+
+        // Matches the 100-px nation-label column in AddNationShipPaintRow so the first
+        // channel label sits directly above the first swatch.
+        GameObject leadSpacer = new("Spacer");
+        leadSpacer.transform.SetParent(row.transform, false);
+        Image leadImage = leadSpacer.AddComponent<Image>();
+        leadImage.color = new Color(0f, 0f, 0f, 0f);
+        leadImage.raycastTarget = false;
+        AddLayout(leadSpacer, minWidth: 100f, preferredWidth: 100f, flexibleWidth: 0f);
+
+        foreach (PaintArea area in DesignHullColorProofPatch.AllPickerChannels)
+        {
+            Text label = AddText(row.transform, ShortChannelLabel(area), 9, TextAnchor.MiddleCenter);
+            AddLayout(label.gameObject, minWidth: 24f, preferredWidth: 24f, minHeight: 14f, preferredHeight: 14f, flexibleWidth: 0f);
+        }
     }
 
     private static void AddNationShipPaintRow(Transform parent, DesignHullColorProofPatch.NationPaintUiInfo nation)
@@ -1399,8 +1443,6 @@ internal static class InGameOptionsMenuPatch
             paintLauncherButton.onClick.RemoveAllListeners();
             paintLauncherButton.onClick.AddListener(new System.Action(ToggleConstructorPaintPanel));
         }
-
-        Melon<UADVanillaPlusMod>.Logger.Msg("UADVP ship paints launcher button added.");
     }
 
     private static bool ShouldShowPaintLauncher()
@@ -1494,7 +1536,7 @@ internal static class InGameOptionsMenuPatch
         panelRect.anchoredPosition = new Vector2(-18f, -90f);
         // Dual-row when a design context resolves; collapse to a single nation row
         // otherwise. Width grows with the channel count (8 swatches + label + buttons).
-        panelRect.sizeDelta = new Vector2(hasDesign ? 540f : 350f, hasDesign ? 172f : 130f);
+        panelRect.sizeDelta = new Vector2(hasDesign ? 600f : 350f, hasDesign ? 172f : 130f);
 
         VerticalLayoutGroup layout = constructorPaintPanel.AddComponent<VerticalLayoutGroup>();
         layout.padding = new RectOffset { left = 12, right = 12, top = 10, bottom = 10 };
@@ -1552,8 +1594,12 @@ internal static class InGameOptionsMenuPatch
                 onSwatchClick: (channel, color) => OpenPaintPicker(nation, channel, panelDesignKey, panelDesignName),
                 actionButtons: new[]
                 {
-                    ("Reset", new Action(() => ResetDesignPaintString(panelDesignKey, panelDesignName))),
+                    // Demote ↓: clear all class overrides — class falls back to nation.
+                    ("Demote ↓", new Action(() => ResetDesignPaintString(panelDesignKey, panelDesignName))),
+                    // Promote ↑: copy class overrides up into nation (class still overrides).
                     ("Promote ↑", new Action(() => PromoteDesignToNation(panelDesignKey, panelDesignName, nation))),
+                    // Swap ↕: exchange the nation and class paint strings atomically.
+                    ("Swap ↕", new Action(() => SwapDesignAndNation(panelDesignKey, panelDesignName, nation))),
                 });
         }
         else
@@ -1742,6 +1788,43 @@ internal static class InGameOptionsMenuPatch
         }
     }
 
+    // Atomically exchanges the nation paint string with the design paint string —
+    // after the swap, the nation displays what the class had as overrides, and the
+    // class layer holds what the nation had. Useful for "I want my whole nation to
+    // look like this class, and this one class to look like the old nation."
+    private static void SwapDesignAndNation(string designKey, string designName, DesignHullColorProofPatch.NationPaintUiInfo nation)
+    {
+        if (string.IsNullOrEmpty(designKey))
+            return;
+
+        ClosePaintPicker();
+
+        string previousNationString = ModSettings.NationShipPaintString(nation.Key);
+        string previousDesignString = ModSettings.DesignShipPaintString(designKey);
+
+        if (string.Equals(previousNationString, previousDesignString, StringComparison.OrdinalIgnoreCase))
+        {
+            Melon<UADVanillaPlusMod>.Logger.Msg(
+                $"UADVP ship paints: swap is a no-op — {nation.Label} and {designName} share identical paint strings.");
+            return;
+        }
+
+        // Suppress per-set log spam; emit one summary line below.
+        ModSettings.SetNationShipPaintString(nation.Key, previousDesignString, logChange: false);
+        ModSettings.SetDesignShipPaintString(designKey, previousNationString, logChange: false);
+        DesignHullColorProofPatch.ApplyNationPaintSettingsChange(
+            $"swap nation {nation.Label} ↔ design {designName}");
+
+        Melon<UADVanillaPlusMod>.Logger.Msg(
+            $"UADVP ship paints: swapped nation {nation.Label} ↔ design {designName} ({designKey}).");
+
+        if (constructorPaintPanel != null)
+        {
+            CloseConstructorPaintPanel();
+            OpenConstructorPaintPanel();
+        }
+    }
+
     private static Image AddPanelSwatch(Transform parent, DesignHullColorProofPatch.NationPaintUiInfo nation, PaintArea channel, Color32 color)
     {
         // Compact, label-less swatch — tooltip identifies the channel.
@@ -1884,7 +1967,7 @@ internal static class InGameOptionsMenuPatch
         windowRect.anchorMax = new Vector2(1f, 0f);
         windowRect.pivot = new Vector2(1f, 0f);
         windowRect.anchoredPosition = new Vector2(-24f, 24f);
-        windowRect.sizeDelta = new Vector2(260f, 360f);
+        windowRect.sizeDelta = new Vector2(260f, 432f);
 
         VerticalLayoutGroup layout = window.AddComponent<VerticalLayoutGroup>();
         layout.padding = new RectOffset { left = 14, right = 14, top = 12, bottom = 12 };
@@ -1939,6 +2022,16 @@ internal static class InGameOptionsMenuPatch
 
         AddPickerQuickSwatch(previewRow.transform, "BlackSwatch", new Color32(0, 0, 0, 255), () => SetPaintPickerHSV(0f, 0f, 0f), "Pure black (#000000)");
         AddPickerQuickSwatch(previewRow.transform, "WhiteSwatch", new Color32(255, 255, 255, 255), () => SetPaintPickerHSV(0f, 0f, 1f), "Pure white (#FFFFFF)");
+
+        // Naval preset row. Colors chosen to cover the common channel intents:
+        // hull greys (battleship/haze), trim accent (gold), bold accent (navy
+        // blue), deck/metal defaults that match the painter's built-ins (teak
+        // / gunmetal / anti-fouling red), and a WW2-camo accent (olive drab).
+        AddPaintPickerPresetRow(window.transform);
+
+        // Custom user-defined presets row. Save button captures the current
+        // picker color; shift-click any custom swatch to delete it.
+        AddPaintPickerUserPresetRow(window.transform);
 
         GameObject buttonsRow = new("UADVP_PaintPickerButtons");
         buttonsRow.transform.SetParent(window.transform, false);
@@ -2325,6 +2418,7 @@ internal static class InGameOptionsMenuPatch
         pickerValueSlider = null;
         pickerPreviewFill = null;
         pickerHexInput = null;
+        pickerUserPresetsRow = null;
         pickerValueText = null;
         pickerWheelDragging = false;
         pickerDesignKey = string.Empty;
@@ -2379,6 +2473,14 @@ internal static class InGameOptionsMenuPatch
             return;
         }
 
+        SetPaintPickerToColor32(color);
+    }
+
+    // Converts an RGB color into the picker's HSV state, preserving hue/saturation
+    // collapse on pure-black so the wheel handle and value slider end up in the
+    // expected positions. Used by the hex-input handler and preset-swatch buttons.
+    private static void SetPaintPickerToColor32(Color32 color)
+    {
         Color.RGBToHSV((Color)color, out float h, out float s, out float v);
         if (v <= 0.001f)
         {
@@ -2460,6 +2562,127 @@ internal static class InGameOptionsMenuPatch
             rect.offsetMax = new Vector2(-6f, -1f);
         }
         return uiText;
+    }
+
+    private static void AddPaintPickerPresetRow(Transform parent)
+    {
+        GameObject presetsRow = new("UADVP_PaintPickerPresets");
+        presetsRow.transform.SetParent(parent, false);
+        Image presetsRowImage = presetsRow.AddComponent<Image>();
+        presetsRowImage.color = new Color(0f, 0f, 0f, 0f);
+        presetsRowImage.raycastTarget = false;
+        HorizontalLayoutGroup presetsLayout = presetsRow.AddComponent<HorizontalLayoutGroup>();
+        // Tight spacing so 8 swatches fit inside the 260-wide picker window.
+        // childControlWidth MUST be true so the HLG honors each swatch's
+        // LayoutElement.preferredWidth (24); otherwise it uses the swatch's
+        // native RectTransform (~100) and the row blows off-screen.
+        presetsLayout.spacing = 4f;
+        presetsLayout.childAlignment = TextAnchor.MiddleLeft;
+        presetsLayout.childControlHeight = true;
+        presetsLayout.childControlWidth = true;
+        presetsLayout.childForceExpandHeight = false;
+        presetsLayout.childForceExpandWidth = false;
+        AddLayout(presetsRow, minHeight: 26f, preferredHeight: 26f, flexibleWidth: 1f);
+
+        // (name, hex, tooltip). Hex strings are authoritative — converted to
+        // Color32 inline so the swatch and the picker write the same value.
+        (string Name, byte R, byte G, byte B, string Tooltip)[] presets =
+        {
+            ("BattleshipGrey",   0x7C, 0x86, 0x8D, "Battleship grey (#7C868D)"),
+            ("HazeGrey",         0xA8, 0xB0, 0xB8, "Haze grey (#A8B0B8)"),
+            ("NavyBlue",         0x1B, 0x28, 0x45, "Navy blue (#1B2845)"),
+            ("NavyGold",         0xB8, 0x86, 0x0B, "Darker gold (#B8860B)"),
+            ("OliveDrab",        0x5B, 0x61, 0x49, "Olive drab (#5B6149)"),
+            ("Teak",             0xD4, 0xA6, 0x6B, "Teak deck (#D4A66B) — default deck"),
+            ("Gunmetal",         0x52, 0x52, 0x57, "Gunmetal (#525257) — default metal"),
+            ("AntiFoulingRed",   0x73, 0x1A, 0x1A, "Anti-fouling red (#731A1A) — default bottom"),
+        };
+
+        foreach ((string name, byte r, byte g, byte b, string tooltip) in presets)
+        {
+            Color32 color = new(r, g, b, 255);
+            AddPickerQuickSwatch(presetsRow.transform, name, color, () => SetPaintPickerToColor32(color), tooltip);
+        }
+    }
+
+    // User-defined preset row: shows saved custom colors plus a trailing
+    // "+ Save" button that captures the picker's current color. Shift-click on
+    // any saved swatch removes it. The row Transform is cached so we can
+    // rebuild just this row after save/delete without re-opening the picker.
+    private static void AddPaintPickerUserPresetRow(Transform parent)
+    {
+        pickerUserPresetsRow = new GameObject("UADVP_PaintPickerUserPresets");
+        pickerUserPresetsRow.transform.SetParent(parent, false);
+        Image rowImage = pickerUserPresetsRow.AddComponent<Image>();
+        rowImage.color = new Color(0f, 0f, 0f, 0f);
+        rowImage.raycastTarget = false;
+        HorizontalLayoutGroup rowLayout = pickerUserPresetsRow.AddComponent<HorizontalLayoutGroup>();
+        rowLayout.spacing = 4f;
+        rowLayout.childAlignment = TextAnchor.MiddleLeft;
+        rowLayout.childControlHeight = true;
+        // Honor each swatch's LayoutElement preferredWidth — same fix as the
+        // default presets row, otherwise children blow up to native rect width.
+        rowLayout.childControlWidth = true;
+        rowLayout.childForceExpandHeight = false;
+        rowLayout.childForceExpandWidth = false;
+        AddLayout(pickerUserPresetsRow, minHeight: 26f, preferredHeight: 26f, flexibleWidth: 1f);
+
+        PopulatePaintPickerUserPresetRow();
+    }
+
+    private static void PopulatePaintPickerUserPresetRow()
+    {
+        if (pickerUserPresetsRow == null)
+            return;
+
+        // Destroy any existing swatches/buttons so we can rebuild from the
+        // current saved preset list. DestroyImmediate so the HLG re-flows
+        // synchronously before we add the new children.
+        Transform rowTransform = pickerUserPresetsRow.transform;
+        for (int i = rowTransform.childCount - 1; i >= 0; i--)
+            UnityEngine.Object.DestroyImmediate(rowTransform.GetChild(i).gameObject);
+
+        List<Color32> presets = ModSettings.UserPaintPresets();
+        for (int i = 0; i < presets.Count; i++)
+        {
+            int presetIndex = i;
+            Color32 color = presets[i];
+            string tooltip = $"Custom preset {HexFor(color)}\nClick to apply. Shift-click to delete.";
+            AddPickerQuickSwatch(rowTransform, $"UserPreset_{i}", color,
+                () => OnUserPaintPresetClicked(presetIndex), tooltip);
+        }
+
+        // Save button is always present. Tooltip shows current cap usage.
+        AddActionButton(rowTransform, "+ Save",
+            SaveCurrentPaintPickerColorAsPreset, width: 60f);
+    }
+
+    private static void OnUserPaintPresetClicked(int index)
+    {
+        // Shift-click deletes; plain click applies.
+        if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
+        {
+            if (ModSettings.RemoveUserPaintPresetAt(index))
+                PopulatePaintPickerUserPresetRow();
+            return;
+        }
+
+        List<Color32> presets = ModSettings.UserPaintPresets();
+        if (index < 0 || index >= presets.Count)
+            return;
+        SetPaintPickerToColor32(presets[index]);
+    }
+
+    private static void SaveCurrentPaintPickerColorAsPreset()
+    {
+        Color rgb = Color.HSVToRGB(pickerCurrentH, pickerCurrentS, pickerCurrentV);
+        Color32 color = new(
+            (byte)Mathf.Clamp(Mathf.RoundToInt(rgb.r * 255f), 0, 255),
+            (byte)Mathf.Clamp(Mathf.RoundToInt(rgb.g * 255f), 0, 255),
+            (byte)Mathf.Clamp(Mathf.RoundToInt(rgb.b * 255f), 0, 255),
+            byte.MaxValue);
+        if (ModSettings.AddUserPaintPreset(color))
+            PopulatePaintPickerUserPresetRow();
     }
 
     private static Button AddPickerQuickSwatch(Transform parent, string name, Color32 color, Action onClick, string tooltip)

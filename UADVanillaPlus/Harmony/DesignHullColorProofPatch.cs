@@ -233,7 +233,11 @@ internal static class DesignHullColorProofPatch
         new("spain", "Spain", new[] { "spain", "spanish" }, SpainScheme),
         new("china", "China", new[] { "china", "chinese" }, ChinaScheme),
     };
-    private static readonly string[] ColorProperties = { "_Color", "_BaseColor" };
+    // _Color = Unity Standard / built-in pipeline. _BaseColor = URP Lit. _TintColor =
+    // Shader Forge custom shaders (e.g. UAD's DeckBorder uses ONLY _TintColor — neither
+    // _Color nor _BaseColor — so writes were silently dropped before this property was
+    // added). Confirmed via SHADER PROFILE diagnostic on 2026-05-19.
+    private static readonly string[] ColorProperties = { "_Color", "_BaseColor", "_TintColor" };
     private static readonly string[] TextureNameProperties = { "_MainTex", "_BaseMap", "_Albedo", "_DiffuseTex", "_BaseColorMap" };
     private static readonly string[] HullSkipTokens =
     {
@@ -328,6 +332,18 @@ internal static class DesignHullColorProofPatch
     private static int BarbetteDetailedLogCount;
     private static int SuperstructureDetailedLogCount;
     private static int GunDetailedLogCount;
+    // Global kill switch for paint-related informational logs. Set true to re-enable
+    // diagnostics (MATERIAL SEEN, ship paint proof, ship scan summary, etc.). Warnings
+    // remain on regardless — those are routed through Logger.Warning, not through here.
+    // Static readonly (not const) so the compiler doesn't pre-evaluate the guard and
+    // flag the inner Logger.Msg as unreachable code.
+    private static readonly bool EnablePaintLogs = false;
+    private static void PaintLog(string msg)
+    {
+        if (EnablePaintLogs)
+            Melon<UADVanillaPlusMod>.Logger.Msg(msg);
+    }
+
     private static int BattleLoadLogCount;
     private static int RestoredBrokenMaterialLogCount;
     private static int PropertyBlockFailureLogCount;
@@ -344,6 +360,10 @@ internal static class DesignHullColorProofPatch
     private static int MissedChildRendererLogCount;
     private static int SilentlySkippedMaterialLogCount;
     private static readonly HashSet<string> LoggedSilentSkipKeys = new(StringComparer.OrdinalIgnoreCase);
+    private static int EncounteredMaterialLogCount;
+    private static readonly HashSet<string> LoggedEncounteredMaterials = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly HashSet<int> ScannedShipInstanceIds = new();
+    private static int OrphanRendererLogCount;
     private static int NationPaintSettingsLogCount;
     private static int PendingCampaignBattleCountryMapLogCount;
     private static int ResolvedNationPaintRevision = -1;
@@ -365,6 +385,15 @@ internal static class DesignHullColorProofPatch
     // a silent skip that doesn't reach LogUnmatchedMaterial. This is where deck
     // bollards and similar "no channel touches them" surfaces hide.
     private const int MaxSilentlySkippedMaterialLogs = 60;
+    // Logs every unique source material encountered by the painter, regardless of
+    // classification outcome. Cap is generous so we can build a complete inventory
+    // across one session to spot unknown deck-fitting material names.
+    private const int MaxEncounteredMaterialLogs = 500;
+    // Logs renderers found in a ship's transform hierarchy that are NOT under any
+    // Part GameObject. These are the suspect set for ship-level deck props
+    // (bollards/capstans/hatches/cleats) that never reach the painter because
+    // the painter only iterates Parts. Once per ship instance, cap 80 entries.
+    private const int MaxOrphanRendererLogs = 80;
     private const int BattleRepaintCandidateWarningThreshold = 240;
     private const int BattleRepaintBattleReadyWaitAttempts = 60;
     private const float BattleRepaintBattleReadyWaitDelaySeconds = 0.2f;
@@ -410,7 +439,7 @@ internal static class DesignHullColorProofPatch
 
         EnsureNationPaintSchemeCache();
         if (NationPaintSettingsLogCount++ < 3)
-            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP ship paint proof: refreshed Nation Ship Paints settings during {context}.");
+            PaintLog($"UADVP ship paint proof: refreshed Nation Ship Paints settings during {context}.");
     }
 
     [HarmonyPostfix]
@@ -424,6 +453,7 @@ internal static class DesignHullColorProofPatch
             return;
 
         TryApplyProofColor(__instance, "model loaded", force: false);
+        ScanShipForOrphanRenderers(__instance);
     }
 
     [HarmonyPostfix]
@@ -490,6 +520,10 @@ internal static class DesignHullColorProofPatch
         LoggedUnclassifiedPartSamples.Clear();
         LoggedSilentSkipKeys.Clear();
         SilentlySkippedMaterialLogCount = 0;
+        LoggedEncounteredMaterials.Clear();
+        EncounteredMaterialLogCount = 0;
+        ScannedShipInstanceIds.Clear();
+        OrphanRendererLogCount = 0;
 
         if (!IsEnabled)
         {
@@ -499,7 +533,7 @@ internal static class DesignHullColorProofPatch
         }
 
         EnsureNationPaintSchemeCache();
-        Melon<UADVanillaPlusMod>.Logger.Msg("UADVP ship paint proof: Experimental Nation Ship Paints enabled.");
+        PaintLog("UADVP ship paint proof: Experimental Nation Ship Paints enabled.");
         if (GameManager.IsBattle)
             ScheduleBattleRepaintRetries("Experimental Nation Ship Paints enabled", repaintImmediately: true);
         else if (GameManager.IsConstructor)
@@ -519,7 +553,7 @@ internal static class DesignHullColorProofPatch
         if (GameManager.IsBattle || GameManager.IsConstructor)
             RepaintAllLoadedParts($"Nation Ship Paints changed ({context})");
         else if (NationPaintSettingsLogCount++ < 6)
-            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP ship paint proof: stored Nation Ship Paints change during {context}; no active ship scene repaint needed.");
+            PaintLog($"UADVP ship paint proof: stored Nation Ship Paints change during {context}; no active ship scene repaint needed.");
     }
 
     internal static void ResetScenePaintCache(string context)
@@ -550,7 +584,7 @@ internal static class DesignHullColorProofPatch
 
         if ((restoredLoadedRenderers > 0 || restoredTrackedRenderers > 0 || materialSets > 0 || materials > 0 || generatedObjects > 0) && SceneCacheResetLogCount++ < 8)
         {
-            Melon<UADVanillaPlusMod>.Logger.Msg(
+            PaintLog(
                 $"UADVP ship paint proof: reset scene paint cache during {context}; restoredLoadedRenderers={restoredLoadedRenderers}, restoredTrackedRenderers={restoredTrackedRenderers}, materialSets={materialSets}, generatedMaterials={materials}, destroyedGeneratedObjects={generatedObjects}.");
         }
     }
@@ -601,7 +635,7 @@ internal static class DesignHullColorProofPatch
 
         if (destroyed > 0 && GeneratedObjectCleanupLogCount++ < 6)
         {
-            Melon<UADVanillaPlusMod>.Logger.Msg(
+            PaintLog(
                 $"UADVP ship paint proof: destroyed {destroyed} generated paint object(s) during {context}.");
         }
 
@@ -642,7 +676,7 @@ internal static class DesignHullColorProofPatch
         {
             if (BattleRepaintCoalesceLogCount++ < 4)
             {
-                Melon<UADVanillaPlusMod>.Logger.Msg(
+                PaintLog(
                     $"UADVP ship paint proof: coalesced battle repaint request during {context}; pendingGeneration={BattleRepaintScheduledGeneration}.");
             }
 
@@ -751,7 +785,7 @@ internal static class DesignHullColorProofPatch
 
             if (BattleRepaintLogCount++ < 4)
             {
-                Melon<UADVanillaPlusMod>.Logger.Msg(
+                PaintLog(
                     $"UADVP ship paint proof: repainted loaded parts during {context}; parts={parts.Length}, candidates={repaintCandidates}, overThreshold={candidatesOverThreshold}.");
             }
             else if (candidatesOverThreshold > 0 && BattleRepaintThresholdLogCount++ < 4)
@@ -1370,7 +1404,7 @@ internal static class DesignHullColorProofPatch
         PendingCampaignBattleCountryMap = battle;
         if (PendingCampaignBattleCountryMapLogCount++ < 4)
         {
-            Melon<UADVanillaPlusMod>.Logger.Msg(
+            PaintLog(
                 $"UADVP ship paint proof: queued campaign battle paint country map during {context} for battle {SafeCampaignBattleId(battle)}.");
         }
     }
@@ -1431,7 +1465,7 @@ internal static class DesignHullColorProofPatch
         if (BattleCountryMapLogCount++ < 4)
         {
             string countries = string.Join(", ", BattleCountryByShipId.Values.Distinct(StringComparer.OrdinalIgnoreCase));
-            Melon<UADVanillaPlusMod>.Logger.Msg(
+            PaintLog(
                 $"UADVP ship paint proof: remembered campaign battle paint countries during {context} for {mapped} ship(s): {countries}.");
         }
     }
@@ -1563,7 +1597,7 @@ internal static class DesignHullColorProofPatch
         if (BattleCountryByShipId.Count > 0 && BattleCountryMapLogCount++ < 4)
         {
             string countries = string.Join(", ", BattleCountryByShipId.Values.Distinct(StringComparer.OrdinalIgnoreCase));
-            Melon<UADVanillaPlusMod>.Logger.Msg(
+            PaintLog(
                 $"UADVP ship paint proof: remembered battle paint countries for {BattleCountryByShipId.Count} ship(s): {countries}.");
         }
     }
@@ -1732,7 +1766,7 @@ internal static class DesignHullColorProofPatch
 
         if (DamagePaintPolicyLogCount++ < 6)
         {
-            Melon<UADVanillaPlusMod>.Logger.Msg(
+            PaintLog(
                 $"UADVP ship paint proof: yielding paint to vanilla damage visuals on {SafePartName(part.data)}; damage={damageState}.");
         }
     }
@@ -1822,7 +1856,7 @@ internal static class DesignHullColorProofPatch
 
         if (lodRenderers.Count > 0 && LodRendererLogCount++ < MaxLodRendererLogs)
         {
-            Melon<UADVanillaPlusMod>.Logger.Msg(
+            PaintLog(
                 $"UADVP ship paint proof: included {lodRenderers.Count} extra {AreaLabel(paintArea ?? PaintArea.Superstructure)} LOD renderer(s) on {SafePartName(part.data)}.");
         }
 
@@ -1855,7 +1889,7 @@ internal static class DesignHullColorProofPatch
             string materialNames = RendererMaterialNames(renderer);
 
             MissedGunLodRendererLogCount++;
-            Melon<UADVanillaPlusMod>.Logger.Msg(
+            PaintLog(
                 $"UADVP ship paint proof: gun child renderer outside visualRenderers on {SafePartName(part.data)}; " +
                 $"renderer={rendererPath}; parent={parentPath}; activeSelf={renderer.gameObject.activeSelf}; " +
                 $"activeInHierarchy={renderer.gameObject.activeInHierarchy}; looksLikeLod={looksLikeLod}; " +
@@ -1863,6 +1897,81 @@ internal static class DesignHullColorProofPatch
 
             if (MissedGunLodRendererLogCount >= MaxMissedGunLodRendererLogs)
                 break;
+        }
+    }
+
+    // Walks the full Ship transform hierarchy and logs Renderers that are NOT
+    // children of any Part GameObject — the suspect set for deck props
+    // attached at the ship root (bollards, capstans, cleats, hatch covers).
+    // Deduped by ship instance ID, capped at MaxOrphanRendererLogs total.
+    private static void ScanShipForOrphanRenderers(Part triggeringPart)
+    {
+        if (OrphanRendererLogCount >= MaxOrphanRendererLogs)
+            return;
+
+        try
+        {
+            Ship? ship = triggeringPart?.ship;
+            if (ship == null)
+                return;
+            int shipInstanceId = ship.GetInstanceID();
+            if (!ScannedShipInstanceIds.Add(shipInstanceId))
+                return;
+
+            GameObject? shipGameObject = ship.gameObject;
+            if (shipGameObject == null)
+                return;
+
+            Transform shipTransform = shipGameObject.transform;
+            HashSet<int> partGameObjectIds = new();
+            Part[] allParts = shipGameObject.GetComponentsInChildren<Part>(true);
+            foreach (Part part in allParts)
+            {
+                if (part != null && part.gameObject != null)
+                    partGameObjectIds.Add(part.gameObject.GetInstanceID());
+            }
+
+            Renderer[] renderers = shipGameObject.GetComponentsInChildren<Renderer>(true);
+            string shipName = SafeShipName(ship);
+            int orphanCount = 0;
+            foreach (Renderer renderer in renderers)
+            {
+                if (renderer == null)
+                    continue;
+
+                Transform t = renderer.transform;
+                bool underPart = false;
+                while (t != null && t != shipTransform)
+                {
+                    if (partGameObjectIds.Contains(t.gameObject.GetInstanceID()))
+                    {
+                        underPart = true;
+                        break;
+                    }
+                    t = t.parent;
+                }
+
+                if (underPart)
+                    continue;
+
+                string path = TransformPath(renderer.transform, shipTransform);
+                string materialNames = RendererMaterialNames(renderer);
+                OrphanRendererLogCount++;
+                orphanCount++;
+                PaintLog(
+                    $"UADVP ship paint ORPHAN renderer (no Part parent) on '{shipName}'; path={path}; activeSelf={renderer.gameObject.activeSelf}; activeInHierarchy={renderer.gameObject.activeInHierarchy}; materials={materialNames}.");
+
+                if (OrphanRendererLogCount >= MaxOrphanRendererLogs)
+                    break;
+            }
+
+            PaintLog(
+                $"UADVP ship paint ship scan summary: ship='{shipName}'; parts={allParts.Length}; totalRenderers={renderers.Length}; orphanRenderersFound={orphanCount}.");
+        }
+        catch (Exception ex)
+        {
+            Melon<UADVanillaPlusMod>.Logger.Warning(
+                $"UADVP ship paint ship scan failed. {ex.GetType().Name}: {ex.Message}");
         }
     }
 
@@ -1901,7 +2010,7 @@ internal static class DesignHullColorProofPatch
             string materialNames = RendererMaterialNames(renderer);
 
             MissedChildRendererLogCount++;
-            Melon<UADVanillaPlusMod>.Logger.Msg(
+            PaintLog(
                 $"UADVP ship paint proof: missed child renderer (part={areaLabel}) on {SafePartName(part.data)}; " +
                 $"renderer={rendererPath}; parent={parentPath}; activeSelf={renderer.gameObject.activeSelf}; " +
                 $"activeInHierarchy={renderer.gameObject.activeInHierarchy}; materials={materialNames}.");
@@ -2269,6 +2378,8 @@ internal static class DesignHullColorProofPatch
                 material = originalMaterial;
             }
 
+            LogEncounteredMaterial(OriginalMaterial(material), hasPrimary, primaryArea);
+
             PaintArea areaForMaterial;
             PaintProfile profileForMaterial;
             PaintArea? experimental = ClassifyExperimentalMaterialArea(material);
@@ -2304,7 +2415,7 @@ internal static class DesignHullColorProofPatch
                 continue;
             }
 
-            Material? paintedMaterial = GetOrCreatePaintMaterial(material, areaForMaterial, profileForMaterial);
+            Material? paintedMaterial = GetOrCreatePaintMaterial(material, areaForMaterial, profileForMaterial, trustOuterClassifier: true);
             if (paintedMaterial == null)
             {
                 skippedMaterialCount++;
@@ -2367,7 +2478,7 @@ internal static class DesignHullColorProofPatch
         return $"multi|hasPrimary={hasPrimary}|{primaryArea}|{primaryProfile.Suffix}|{scheme.Id}|{nationKey}|{extrasFingerprint}|design:{designKey}|{designFingerprint}|{string.Join(",", materialKeys)}";
     }
 
-    private static Material? GetOrCreatePaintMaterial(Material material, PaintArea paintArea, PaintProfile profile)
+    private static Material? GetOrCreatePaintMaterial(Material material, PaintArea paintArea, PaintProfile profile, bool trustOuterClassifier = false)
     {
         Material source = OriginalMaterial(material);
         int materialId = material.GetInstanceID();
@@ -2394,7 +2505,12 @@ internal static class DesignHullColorProofPatch
             return null;
         }
 
-        if (!ShouldPaintMaterial(source, paintArea))
+        // When the multi-area classifier has already picked an area, its decision
+        // owns the routing. Skipping the second-pass token check here lets the
+        // unclassified-part fallback (LooksLikePaintedSideMaterial → Roof) actually
+        // paint generic deck-fitting metal like `steel_4` that doesn't contain
+        // "roof" tokens. The legacy single-area call site still passes false.
+        if (!trustOuterClassifier && !ShouldPaintMaterial(source, paintArea))
         {
             LogSilentlySkippedMaterial(source, paintArea, "ShouldPaintMaterial(area) returned false");
             return null;
@@ -2494,7 +2610,7 @@ internal static class DesignHullColorProofPatch
 
                 if (logDetails && BattleLoadLogCount++ < 8)
                 {
-                    Melon<UADVanillaPlusMod>.Logger.Msg(
+                    PaintLog(
                         $"UADVP ship paint proof: restored {materialCount} generated material(s) on {SafePartName(part.data)} before {context}; renderers={rendererCount}.");
                 }
             }
@@ -2568,7 +2684,7 @@ internal static class DesignHullColorProofPatch
         if (RestoredBrokenMaterialLogCount++ >= 8)
             return;
 
-        Melon<UADVanillaPlusMod>.Logger.Msg(
+        PaintLog(
             $"UADVP ship paint proof: restored broken generated material '{brokenMaterial.name ?? "<material>"}' to '{originalMaterial.name ?? "<material>"}'.");
     }
 
@@ -2699,9 +2815,9 @@ internal static class DesignHullColorProofPatch
 
             GeneratedTextures[key] = copy;
             OriginalTextureByGeneratedTexture[copy.GetInstanceID()] = source;
-            if (GeneratedTextureLogCount++ < 8)
+            if (GeneratedTextureLogCount++ < 200)
             {
-                Melon<UADVanillaPlusMod>.Logger.Msg(
+                PaintLog(
                     $"UADVP ship paint proof: generated {AreaLabel(paintArea)} texture '{copy.name}' from '{source.name}' ({source.width}x{source.height}).");
             }
 
@@ -2908,7 +3024,7 @@ internal static class DesignHullColorProofPatch
             if (!LoggedUnclassifiedPartSamples.Add(key))
                 return;
 
-            Melon<UADVanillaPlusMod>.Logger.Msg(
+            PaintLog(
                 $"UADVP ship paint unclassified part sample #{LoggedUnclassifiedPartSamples.Count}: part='{partName}'; ship='{shipName}'.");
         }
         catch
@@ -2938,8 +3054,39 @@ internal static class DesignHullColorProofPatch
                 return;
 
             string primaryDescriptor = hasPrimary ? primaryArea.ToString() : "<unclassified>";
-            Melon<UADVanillaPlusMod>.Logger.Msg(
+            PaintLog(
                 $"UADVP ship paint UNMATCHED sample #{LoggedUnmatchedMaterialSamples.Count}: primary={primaryDescriptor}; material='{sourceName}'; textures='{textures}'.");
+        }
+        catch
+        {
+            // Diagnostics only.
+        }
+    }
+
+    // Logs every unique source material the multi-area classifier encounters,
+    // deduped by source name. Includes the primary part area context so we can
+    // see which part type owns each material. This is the ground-truth inventory
+    // for diagnosing untinted surfaces: if a material doesn't appear here, the
+    // painter never visited the renderer that owns it.
+    private static void LogEncounteredMaterial(Material source, bool hasPrimary, PaintArea primaryArea)
+    {
+        if (EncounteredMaterialLogCount >= MaxEncounteredMaterialLogs)
+            return;
+
+        try
+        {
+            if (source == null)
+                return;
+            string sourceName = source.name ?? "<material>";
+            string textures = MaterialTextureNames(source);
+            string key = $"{sourceName}|{textures}";
+            if (!LoggedEncounteredMaterials.Add(key))
+                return;
+
+            EncounteredMaterialLogCount++;
+            string primaryDescriptor = hasPrimary ? primaryArea.ToString() : "<unclassified>";
+            PaintLog(
+                $"UADVP ship paint MATERIAL SEEN #{EncounteredMaterialLogCount}: partArea={primaryDescriptor}; material='{sourceName}'; textures='{textures}'.");
         }
         catch
         {
@@ -2969,7 +3116,7 @@ internal static class DesignHullColorProofPatch
                 return;
 
             SilentlySkippedMaterialLogCount++;
-            Melon<UADVanillaPlusMod>.Logger.Msg(
+            PaintLog(
                 $"UADVP ship paint SILENT SKIP #{SilentlySkippedMaterialLogCount}: area={paintArea}; reason={reason}; material='{sourceName}'; textures='{textures}'.");
         }
         catch
@@ -3188,7 +3335,7 @@ internal static class DesignHullColorProofPatch
         {
             if (SuppressedApplicationLogAreas.Add(paintArea))
             {
-                Melon<UADVanillaPlusMod>.Logger.Msg(
+                PaintLog(
                     $"UADVP ship paint proof: further {AreaLabel(paintArea)} application logs suppressed.");
             }
 
@@ -3199,7 +3346,7 @@ internal static class DesignHullColorProofPatch
 
         string shipName = SafeShipName(part.ship);
         string partName = SafePartName(part.data);
-        Melon<UADVanillaPlusMod>.Logger.Msg(
+        PaintLog(
             $"UADVP ship paint proof: tinted {AreaLabel(paintArea)} using {scheme.Id} for {shipName} / {partName} during {context}; renderers={rendererCount}, paintedMaterials={changedMaterialCount}, skippedMaterials={skippedMaterialCount}.");
 
         if (ShouldLogMaterialSamples(paintArea))
@@ -3238,7 +3385,7 @@ internal static class DesignHullColorProofPatch
                     continue;
 
                 string verdict = ShouldPaintMaterial(material, paintArea) ? "paint" : "skip";
-                Melon<UADVanillaPlusMod>.Logger.Msg(
+                PaintLog(
                     $"UADVP ship paint sample ({AreaLabel(paintArea)}): {verdict}; renderer='{SafeObjectName(renderer.gameObject)}'; material='{material.name ?? "<material>"}'; textures='{MaterialTextureNames(material)}'.");
 
                 sampleCount++;
