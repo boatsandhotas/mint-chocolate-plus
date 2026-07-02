@@ -56,6 +56,9 @@ internal static class InvasionDiplomaticConsequences
         var data = CampaignController.Instance?.CampaignData;
         if (data?.Players == null || data.Relations == null) return result;
 
+        if (ShouldWaive(attacker, defender, out _))
+            return result; // justified counter-invasion: no third-party blowback
+
         List<Player> majorPowers = new();
         foreach (Player p in data.Players)
             if (p != null && p.isMajor && p != attacker)
@@ -119,6 +122,20 @@ internal static class InvasionDiplomaticConsequences
             Melon<UADVanillaPlusMod>.Logger.Warning("UADVP invasion-consequences: campaign data unavailable.");
             return;
         }
+
+        // Justified counter-invasion: invading a power that is already at war with you, or
+        // that is occupying territory you claim, draws no third-party diplomatic blowback.
+        if (ShouldWaive(attacker, defender, out string waiveReason))
+        {
+            Melon<UADVanillaPlusMod>.Logger.Msg(
+                $"UADVP invasion-consequences: WAIVED — {waiveReason}. attacker={attacker.Name(false)} defender={defender.Name(false)}; no third-party penalties applied.");
+            return;
+        }
+
+        // Diagnostic: not waived — list any invasions currently targeting us so we can see
+        // whether the target's "attack" is represented as a special event (and who its
+        // Attacker is) if the waiver should have fired but didn't.
+        LogIncomingInvasions(attacker);
 
         // Use vanilla's curated major-powers list when available; fall back
         // to filtering Players by isMajor in case PlayersMajor is empty.
@@ -213,6 +230,123 @@ internal static class InvasionDiplomaticConsequences
         Melon<UADVanillaPlusMod>.Logger.Msg(
             $"UADVP invasion-consequences: complete attacker={attacker.Name(false)} defender={defender.Name(false)}.");
     }
+
+    // True when invading `defender` is a justified response and should incur no third-party
+    // diplomatic penalties: either we're already at war with them, or they currently hold a
+    // province we claim as our homeland (they invaded us). Logs the deciding reason.
+    internal static bool ShouldWaive(Player attacker, Player defender, out string reason)
+    {
+        reason = string.Empty;
+        try
+        {
+            var data = CampaignController.Instance?.CampaignData;
+            if (data == null || attacker == null || defender == null)
+                return false;
+
+            PlayerData? attackerData = SafePD(() => attacker.data);
+            PlayerData? defenderData = SafePD(() => defender.data);
+
+            // 1. Already at war with the target.
+            Relation? rel = data.Relations != null ? RelationExt.Between(data.Relations, attacker, defender) : null;
+            if (rel != null && (rel.isWar || rel.attitude <= WarAttitude))
+            {
+                reason = $"already at war with {SafeName(defender)}";
+                return true;
+            }
+
+            // 2. The target has an ACTIVE invasion/special event against us (they attacked
+            //    first — fires even before they've taken any province). Every special event
+            //    carries Attacker/Defender PlayerData on its base class.
+            var events = data.SpecialEvents;
+            if (events != null && attackerData != null && defenderData != null)
+            {
+                foreach (BaseCampaignSpecialEvent evt in events)
+                {
+                    if (evt == null)
+                        continue;
+                    PlayerData? evtAttacker = SafePD(() => evt.Attacker);
+                    PlayerData? evtDefender = SafePD(() => evt.Defender);
+                    if (evtAttacker != null && evtDefender != null
+                        && evtAttacker.Pointer == defenderData.Pointer
+                        && evtDefender.Pointer == attackerData.Pointer)
+                    {
+                        reason = $"{SafeName(defender)} has an active invasion against you ({SafeEvtName(evt)})";
+                        return true;
+                    }
+                }
+            }
+
+            // 3. The target already occupies a province we claim as homeland.
+            Il2CppSystem.Collections.Generic.List<Province>? provs = defender.provinces;
+            if (provs != null && attackerData != null)
+            {
+                foreach (Province p in provs)
+                {
+                    if (p == null)
+                        continue;
+                    PlayerData? claim = SafeClaim(p);
+                    if (claim != null && claim.Pointer == attackerData.Pointer)
+                    {
+                        reason = $"{SafeName(defender)} holds your claimed province {p.Id}";
+                        return true;
+                    }
+                }
+            }
+
+            // 4. We already hold territory the target claims — i.e. we've conquered some of
+            //    their land, so we're effectively at war and the rest of their territory is fair
+            //    game (no fresh third-party blowback for continuing the same war).
+            Il2CppSystem.Collections.Generic.List<Province>? ourProvs = attacker.provinces;
+            if (ourProvs != null && defenderData != null)
+            {
+                foreach (Province p in ourProvs)
+                {
+                    if (p == null)
+                        continue;
+                    PlayerData? claim = SafeClaim(p);
+                    if (claim != null && claim.Pointer == defenderData.Pointer)
+                    {
+                        reason = $"you hold {SafeName(defender)}-claimed territory ({p.Id})";
+                        return true;
+                    }
+                }
+            }
+        }
+        catch { }
+        return false;
+    }
+
+    private static void LogIncomingInvasions(Player attacker)
+    {
+        try
+        {
+            var events = CampaignController.Instance?.CampaignData?.SpecialEvents;
+            PlayerData? me = SafePD(() => attacker.data);
+            if (events == null || me == null)
+                return;
+            var incoming = new List<string>();
+            foreach (BaseCampaignSpecialEvent evt in events)
+            {
+                if (evt == null)
+                    continue;
+                PlayerData? d = SafePD(() => evt.Defender);
+                if (d != null && d.Pointer == me.Pointer)
+                {
+                    PlayerData? a = SafePD(() => evt.Attacker);
+                    incoming.Add($"{(a != null ? SafePDName(a) : "?")}:{SafeEvtName(evt)}");
+                }
+            }
+            Melon<UADVanillaPlusMod>.Logger.Msg(
+                $"UADVP invasion-consequences: incoming invasions vs you = [{(incoming.Count == 0 ? "none" : string.Join(", ", incoming))}].");
+        }
+        catch { }
+    }
+
+    private static string SafePDName(PlayerData d) { try { return d.name ?? "?"; } catch { return "?"; } }
+    private static PlayerData? SafeClaim(Province p) { try { return p.ClaimPlayer; } catch { return null; } }
+    private static PlayerData? SafePD(Func<PlayerData?> f) { try { return f(); } catch { return null; } }
+    private static string SafeName(Player p) { try { return p.Name(false); } catch { return "?"; } }
+    private static string SafeEvtName(BaseCampaignSpecialEvent e) { try { return e.Name ?? "event"; } catch { return "event"; } }
 
     private static float TryApplyPenalty(Player attacker, Player target, float basePenalty, string? reason)
     {

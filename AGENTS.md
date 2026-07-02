@@ -15,7 +15,7 @@
 - Keep the in-game overlay version and MelonLoader metadata consistent through `ModInfo.DisplayText`.
 - After a successful build, always try the built-DLL copy immediately. Copy directly to the game `Mods` folder without first checking whether the game is running; if the DLL is locked, let the copy fail and report that.
 - When the user asks to merge, push, update GitHub, or otherwise publish completed work, commit locally, fast-forward/merge the work to `master`, and push `master` unless they explicitly limit it to local-only or ask for a different branch.
-- The GitHub CLI is installed at `E:\Codex\tools\gh\gh_2.92.0_windows_amd64\bin\gh.exe`; use that full path when `gh` is not on `PATH`.
+- The GitHub CLI may be installed outside `PATH`; use its full path (e.g. `<WORKSPACE>\tools\gh\...\gh.exe`) when `gh` is not on `PATH`.
 - When creating or updating GitHub release notes, summarize the major player-facing highlights since the previous public release/tag, not only the final commit. Use the tag range, such as `previous_tag..new_tag`, and group the notes by user-facing area when helpful.
 - Do not stop at a feature branch or PR branch for normal completed work. Use feature branches only as temporary work branches or when the user explicitly asks for a PR-style flow.
 - Keep feature ports modular. Each QoL port or gameplay change should ideally live in its own source file under a clear folder, with only small shared helpers in `GameData` or similar common areas.
@@ -27,7 +27,7 @@
 - Order README feature bullets by user value/impact within each subsection, not by implementation chronology. Use judgment: frequently checked, high-friction, or high-consequence gameplay improvements should appear before smaller conveniences.
 - In README feature lists, bold the feature name before the colon, such as `**Campaign maintenance indicators**: ...`.
 - Never commit or push to `master` unless the user asks for a commit, push, merge, or GitHub update. Once they do, `master` is the default target in this repo.
-- For development work, truth-seek against the available game disassembly before guessing how UAD works. The workspace has both skeleton/diffable and fuller IL views available at `E:\Codex\cpp2il_uad_diffable` and `E:\Codex\cpp2il_uad_isil`; inspect the relevant game classes/methods there when behavior or signatures are uncertain.
+- For development work, truth-seek against the available game disassembly before guessing how UAD works. The workspace has both skeleton/diffable and fuller IL views available at `<WORKSPACE>\cpp2il_uad_diffable` and `<WORKSPACE>\cpp2il_uad_isil`; inspect the relevant game classes/methods there when behavior or signatures are uncertain.
 - Prefer narrow Harmony prefixes/postfixes/transpilers when they keep a VP feature simple, but keep full-method replacement in the toolbox. UAD is effectively a frozen/unmaintained game, so future game-update drift is not the main risk; the main risks are technical integration, Il2Cpp/runtime boundaries, performance, and over-copying proprietary decompiled code. If a vanilla method has a clean boundary and layered pre/post hooks would be brittle, overly invasive, or hard to reason about, it is acceptable to skip the original method and run a VP-owned implementation instead. Use decompiled sources as a behavioral reference, verify live Il2Cpp names/signatures before wiring the target, and avoid wholesale copying of large proprietary decompiled blocks into the repo.
 - Before adding Harmony diagnostics to Il2Cpp methods with unusual signatures, verify the exact decompiled signature and likely marshaling behavior up front. Be especially careful around `ref`/`out` parameters, value-type structs, Il2Cpp collection fields, nested generic types, and UI hot paths; prefer safer surrounding hooks or read-only postfixes when the direct hook shape is uncertain.
 - Be performance-conscious by default. One of VP's goals is to avoid TAF/DIP-style overhead, so watch for hot paths, broad polling, expensive UI rebuilds, repeated reflection, allocations in frequent hooks, and large data scans. Push back when a requested idea is likely to hurt performance, and prefer designs that cache, narrow scope, or hook less frequently.
@@ -41,55 +41,55 @@
 Use the workspace-local .NET home so builds do not write to user-profile locations:
 
 ```powershell
-$env:DOTNET_CLI_HOME='E:\Codex\.dotnet_home'
-$env:NUGET_PACKAGES='E:\Codex\.nuget\packages'
-E:\Codex\dotnet\dotnet.exe build E:\Codex\UADVanillaPlus\UADVanillaPlus.sln -c Release /p:RestoreConfigFile=E:\Codex\UADVanillaPlus\NuGet.Config
+$env:DOTNET_CLI_HOME='<WORKSPACE>\.dotnet_home'
+$env:NUGET_PACKAGES='<WORKSPACE>\.nuget\packages'
+<WORKSPACE>\dotnet\dotnet.exe build <WORKSPACE>\UADVanillaPlus\UADVanillaPlus.sln -c Release /p:RestoreConfigFile=<WORKSPACE>\UADVanillaPlus\NuGet.Config
 ```
 
 Copy the built DLL directly after a successful build. Do not run a process check first; if the game has the DLL locked, let the copy fail and report that:
 
 ```powershell
-Copy-Item -LiteralPath 'E:\Codex\UADVanillaPlus\UADVanillaPlus\bin\Release\net6.0\UADVanillaPlus.dll' -Destination 'E:\SteamLibrary\steamapps\common\Ultimate Admiral Dreadnoughts\Mods\UADVanillaPlus.dll' -Force
+Copy-Item -LiteralPath '<WORKSPACE>\UADVanillaPlus\UADVanillaPlus\bin\Release\net6.0\UADVanillaPlus.dll' -Destination '<UAD_INSTALL>\Mods\UADVanillaPlus.dll' -Force
 ```
 
 ## Crash Dumps And Native Debugging
 
-When UAD crashes without a managed exception in `Latest.log`, check Windows crash artifacts before guessing. WER reports may only contain `Report.wer`; real dumps are often under `C:\Users\grego\AppData\Local\CrashDumps`. Copy useful UAD dumps into `E:\Codex\UADCrashDumps\dumps` so analysis stays in the workspace.
+When UAD crashes without a managed exception in `Latest.log`, check Windows crash artifacts before guessing. WER reports may only contain `Report.wer`; real dumps are often under `%LOCALAPPDATA%\CrashDumps`. Copy useful UAD dumps into `<WORKSPACE>\UADCrashDumps\dumps` so analysis stays in the workspace.
 
 Workspace-local crash tooling installed on 2026-05-14:
 
-- .NET SDK 8: `E:\Codex\.tools\dotnet-sdk\dotnet.exe`
-- `dotnet-dump`: `E:\Codex\.tools\dotnet-tools\dotnet-dump.exe`
-- Windows Debugging Tools `cdb`: `E:\Codex\.tools\WindowsKits\Debuggers\x64\cdb.exe`
-- Sysinternals ProcDump: `E:\Codex\.tools\Procdump\procdump64.exe`
+- .NET SDK 8: `<WORKSPACE>\.tools\dotnet-sdk\dotnet.exe`
+- `dotnet-dump`: `<WORKSPACE>\.tools\dotnet-tools\dotnet-dump.exe`
+- Windows Debugging Tools `cdb`: `<WORKSPACE>\.tools\WindowsKits\Debuggers\x64\cdb.exe`
+- Sysinternals ProcDump: `<WORKSPACE>\.tools\Procdump\procdump64.exe`
 
 Per-user WER full dumps are enabled for `Ultimate Admiral Dreadnoughts.exe` under `HKCU\Software\Microsoft\Windows\Windows Error Reporting\LocalDumps\Ultimate Admiral Dreadnoughts.exe`:
 
-- `DumpFolder`: `E:\Codex\UADCrashDumps\LocalDumps`
+- `DumpFolder`: `<WORKSPACE>\UADCrashDumps\LocalDumps`
 - `DumpCount`: `5`
 - `DumpType`: `2` (full user-mode dump)
 
-The next native crash should create a larger `.dmp` in that folder. Full dumps can be large; delete old files from `E:\Codex\UADCrashDumps\LocalDumps` after they are no longer useful.
+The next native crash should create a larger `.dmp` in that folder. Full dumps can be large; delete old files from `<WORKSPACE>\UADCrashDumps\LocalDumps` after they are no longer useful.
 
 Use `dotnet-dump` first for managed/interop clues. It needs the workspace .NET root on PATH because the system `dotnet` may only have an older runtime:
 
 ```powershell
-$env:DOTNET_ROOT='E:\Codex\.tools\dotnet-sdk'
-$env:PATH='E:\Codex\.tools\dotnet-sdk;E:\Codex\.tools\dotnet-tools;' + $env:PATH
-& 'E:\Codex\.tools\dotnet-tools\dotnet-dump.exe' analyze 'E:\Codex\UADCrashDumps\dumps\<dump-file>.dmp' -c "threads" -c "clrthreads" -c "clrstack -all" -c "pe" -c "exit"
+$env:DOTNET_ROOT='<WORKSPACE>\.tools\dotnet-sdk'
+$env:PATH='<WORKSPACE>\.tools\dotnet-sdk;<WORKSPACE>\.tools\dotnet-tools;' + $env:PATH
+& '<WORKSPACE>\.tools\dotnet-tools\dotnet-dump.exe' analyze '<WORKSPACE>\UADCrashDumps\dumps\<dump-file>.dmp' -c "threads" -c "clrthreads" -c "clrstack -all" -c "pe" -c "exit"
 ```
 
 Use `cdb` when native frames matter. Public symbols are limited for game binaries, but even export-level stacks can show whether the fault crosses `coreclr`, `GameAssembly.dll`, MelonLoader's `version.dll` shim, and `UnityPlayer`:
 
 ```powershell
-& 'E:\Codex\.tools\WindowsKits\Debuggers\x64\cdb.exe' -y 'srv*E:\Codex\.tools\symbols*https://msdl.microsoft.com/download/symbols' -z 'E:\Codex\UADCrashDumps\dumps\<dump-file>.dmp' -c ".ecxr; r; k; lm m coreclr; lm m GameAssembly; lm m version; q"
+& '<WORKSPACE>\.tools\WindowsKits\Debuggers\x64\cdb.exe' -y 'srv*<WORKSPACE>\.tools\symbols*https://msdl.microsoft.com/download/symbols' -z '<WORKSPACE>\UADCrashDumps\dumps\<dump-file>.dmp' -c ".ecxr; r; k; lm m coreclr; lm m GameAssembly; lm m version; q"
 ```
 
 If the next repro needs a richer dump than WER gives, attach ProcDump before triggering the crash. Prefer attaching by PID:
 
 ```powershell
 $p = Get-Process | Where-Object { $_.ProcessName -eq 'Ultimate Admiral Dreadnoughts' } | Select-Object -First 1
-& 'E:\Codex\.tools\Procdump\procdump64.exe' -accepteula -ma -e 1 $p.Id 'E:\Codex\UADCrashDumps'
+& '<WORKSPACE>\.tools\Procdump\procdump64.exe' -accepteula -ma -e 1 $p.Id '<WORKSPACE>\UADCrashDumps'
 ```
 
 For the 2026-05-14 battle-start crash, `dotnet-dump` showed `System.ExecutionEngineException` at `Il2CppInterop.Runtime.IL2CPP.il2cpp_value_box`, and `cdb` showed the native path crossing `coreclr -> GameAssembly.dll -> version.dll -> UnityPlayer`. Treat that shape as an Il2CppInterop/Harmony/native boundary problem, not a normal catchable C# exception.

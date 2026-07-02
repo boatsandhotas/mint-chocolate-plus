@@ -2,3 +2,8 @@ bin/
 obj/
 *.user
 *.suo
+
+# Local dev scratch / agent scaffolding - kept local, not shipped in the mod repo
+.claude/
+plans/
+recon-out.txt

@@ -18,14 +18,20 @@ internal static class InGameOptionsMenuPatch
     private enum Section
     {
         Battle,
+        Maneuvers,
         Campaign,
+        SwitchNation,
         ShipDesign,
         Experimental,
         NationShipPaints,
     }
 
+    private static int switchNationIndex;
+    private static bool switchNationArmed;
+
     private const string ButtonName = "UADVP_OptionsButton";
     private const string PaintLauncherButtonName = "UADVP_PaintLauncherButton";
+    private const string ThemeLauncherButtonName = "UADVP_ThemeLauncherButton";
     private const string MenuName = "UADVP Options";
     private const string ContentName = "UADVP_OptionsContent";
     private const string BattleWeatherOptionName = "UADVP_Option_BattleWeather";
@@ -38,7 +44,27 @@ internal static class InGameOptionsMenuPatch
     private const string AdvancedAiBuilderOptionName = "UADVP_Option_AdvancedAiBuilder";
     private const string SharedDesignsUsageOptionName = "UADVP_Option_SharedDesignsUsage";
     private const string MajorShipTorpedoesOptionName = "UADVP_Option_MajorShipTorpedoes";
-    private const string ObsoleteDesignRetentionOptionName = "UADVP_Option_ObsoleteDesignRetention";
+    private const string MultiYearShipyardRebuildOptionName = "UADVP_Option_MultiYearShipyardRebuild";
+    private const string AiEconomyPrioritiesOptionName = "UADVP_Option_AiEconomyPriorities";
+    private const string ShipResupplyOverrideOptionName = "UADVP_Option_ShipResupplyOverride";
+    private const string ShipServiceRecordsOptionName = "UADVP_Option_ShipServiceRecords";
+    private const string RebuildOverseasWeightOptionName = "UADVP_Option_RebuildOverseasWeight";
+    private const string VanquishedSpoilsOptionName = "UADVP_Option_VanquishedSpoils";
+    private const string VanquishedSpoilsShareOptionName = "UADVP_Option_VanquishedSpoilsShare";
+    private const string ClassNamingThemesOptionName = "UADVP_Option_ClassNamingThemes";
+    private const string ShipbuildingCapacityBoostOptionName = "UADVP_Option_ShipbuildingCapacityBoost";
+    private const string SurrenderedShipCaptureOptionName = "UADVP_Option_SurrenderedShipCapture";
+    private const string BattleStartDefaultsOptionName = "UADVP_Option_BattleStartDefaults";
+    private const string BattleStartAmmoOptionName = "UADVP_Option_BattleStartAmmo";
+    private const string BattleStartAvoidTorpOptionName = "UADVP_Option_BattleStartAvoidTorp";
+    private const string BattleStartAvoidShipOptionName = "UADVP_Option_BattleStartAvoidShip";
+    private const string BattleStartAutoLeaderOptionName = "UADVP_Option_BattleStartAutoLeader";
+    private const string BattleStartFireTorpOptionName = "UADVP_Option_BattleStartFireTorp";
+    private const string BattleStartFormationOptionName = "UADVP_Option_BattleStartFormation";
+    private const string BattleSpeedSyncOptionName = "UADVP_Option_BattleSpeedSync";
+    private const string BattleReverseMethodOptionName = "UADVP_Option_BattleReverseMethod";
+    private const string FollowSteerDampingOptionName = "UADVP_Option_FollowSteerDamping";
+    private const string ParallelStationOptionName = "UADVP_Option_ParallelStation";
     private const string SuperstructureRefitsOptionName = "UADVP_Option_SuperstructureRefits";
     private const string ShipyardCapacityOptionName = "UADVP_Option_ShipyardCapacity";
     private const string CampaignMapWraparoundOptionName = "UADVP_Option_CampaignMapWraparound";
@@ -79,6 +105,42 @@ internal static class InGameOptionsMenuPatch
     private static Sprite? paintIconSprite;
 
     private static GameObject? constructorPaintPanel;
+    private static Button? themeLauncherButton;
+    private static GameObject? themePanel;
+    private static string themePanelClass = string.Empty;
+    private static string themePanelNation = string.Empty;
+    private static List<NameThemeDatabase.ThemeInfo> themePanelThemes = new();
+    private static int themePanelThemeIndex;
+    private static int battleDefaultsTypeIndex;
+    // Battle typed course/speed inputs — a single draggable, always-on-top "helm" panel.
+    private static Ui? currentUi;
+    private static GameObject? battlePanel;
+    private static RectTransform? battlePanelRect;
+    private static Canvas? battlePanelCanvas;
+    private static Text? battleSpeedText;
+    private static Text? battleCourseText;
+    private static InputField? battleSpeedInput;
+    private static InputField? battleCourseInput;
+    private static bool battlePanelPosLoaded;
+    private static int speedDiagTick;
+    // Confirmed in-game 0.5.243 (UADVP_SPEEDDIAG): Ship.SpeedMax(false) is in m/s; displayed knots =
+    // m/s * 1.94384. e.g. SpeedMax(false)=19.29 -> 37.5 kn, matching the HUD "38" and the speed slider's
+    // own max (375 == 37.5 * 10). SpeedMax(true) is a larger INTERNAL unit (56.38) that savedCurrent/
+    // DesiredSpeed are expressed in (they peg exactly at SpeedMax(true)).
+    private const float MetersPerSecToKnots = 1.94384f;
+    private static string lastHelmVisSig = string.Empty;
+    // Auto-clipboard: the last course/speed the player SET on a division (captured when a
+    // stably-selected division's assigned order changes — works for typed or click-set orders).
+    // Right-clicking a row pastes the remembered value onto the currently selected division.
+    private static float clipboardCourse = float.NaN;
+    private static float clipboardSpeed = float.NaN;
+    private static IntPtr trackedDivPtr = IntPtr.Zero;
+    private static float trackedCourse = float.NaN;
+    private static float trackedSpeed = float.NaN;
+    private const string BattlePanelXKey = "uadvp_battle_panel_x";
+    private const string BattlePanelYKey = "uadvp_battle_panel_y";
+    private static bool loggedThemeLauncherNull;
+    private static bool loggedThemeLauncherShow;
     private static readonly Dictionary<PaintArea, Image> panelSwatches = new();
     private static readonly Dictionary<PaintArea, Image> panelClassSwatches = new();
     private static string panelDesignKey = string.Empty;
@@ -120,8 +182,9 @@ internal static class InGameOptionsMenuPatch
 
     [HarmonyPostfix]
     [HarmonyPatch(nameof(Ui.Update))]
-    internal static void UpdatePostfix()
+    internal static void UpdatePostfix(Ui __instance)
     {
+        currentUi = __instance;
         if (!initialized && Time.realtimeSinceStartup >= nextRetryTime)
         {
             nextRetryTime = Time.realtimeSinceStartup + 1f;
@@ -130,6 +193,17 @@ internal static class InGameOptionsMenuPatch
 
         RefreshLauncherButton();
         RefreshPaintLauncherButton();
+        RefreshThemeLauncherButton();
+        BattleControlProbe.SampleIfBattle();
+        BattleStartDefaults.ReapplyNewDivisions();
+        BattleSpeedSync.Tick();
+        BattleTurn.TryHotkey(currentUi);
+        FollowSteerProbe.Tick(currentUi);
+        DesignStateProbe.Tick();
+        FormationProbe.Tick();
+        ParallelOrder.Tick(currentUi);
+        TrySetupBattleInputs();
+        RefreshBattleInputs();
         RefreshConstructorPaintPanel();
         UpdatePaintPickerWheelDrag();
     }
@@ -142,7 +216,11 @@ internal static class InGameOptionsMenuPatch
         try
         {
             SetupLauncherButton();
-            SetupPaintLauncherButton();
+            // Isolate each optional launcher so one failing setup never blocks the next.
+            try { SetupPaintLauncherButton(); }
+            catch (Exception ex) { Melon<UADVanillaPlusMod>.Logger.Warning($"UADVP paint launcher setup skipped. {ex.GetType().Name}: {ex.Message}"); }
+            try { SetupThemeLauncherButton(); }
+            catch (Exception ex) { Melon<UADVanillaPlusMod>.Logger.Warning($"UADVP theme launcher setup skipped. {ex.GetType().Name}: {ex.Message}"); }
         }
         catch (Exception ex)
         {
@@ -309,7 +387,9 @@ internal static class InGameOptionsMenuPatch
         AddLayout(sections, minWidth: 122f, preferredWidth: 122f, flexibleHeight: 1f);
 
         AddSectionButton(sections.transform, Section.Battle, "Battle");
+        AddSectionButton(sections.transform, Section.Maneuvers, "Maneuvers");
         AddSectionButton(sections.transform, Section.Campaign, "Campaign");
+        AddSectionButton(sections.transform, Section.SwitchNation, "Switch Nation");
         AddSectionButton(sections.transform, Section.ShipDesign, "Ship Design");
         AddSectionButton(sections.transform, Section.Experimental, "Experimental");
         if (ModSettings.ExperimentalNationShipPaintsEnabled)
@@ -381,6 +461,107 @@ internal static class InGameOptionsMenuPatch
                     ("/5", ModSettings.DesignAccuracyPenaltyMode == ModSettings.AccuracyPenaltyMode.Div5, () => SetDesignAccuracyPenaltiesMode(ModSettings.AccuracyPenaltyMode.Div5)),
                     ("/2", ModSettings.DesignAccuracyPenaltyMode == ModSettings.AccuracyPenaltyMode.Div2, () => SetDesignAccuracyPenaltiesMode(ModSettings.AccuracyPenaltyMode.Div2)),
                     ("Vanilla", ModSettings.DesignAccuracyPenaltyMode == ModSettings.AccuracyPenaltyMode.Vanilla, () => SetDesignAccuracyPenaltiesMode(ModSettings.AccuracyPenaltyMode.Vanilla)));
+                AddSegmentedOption(
+                    pane.transform,
+                    SurrenderedShipCaptureOptionName,
+                    "Capture Surrendered Ships",
+                    "At campaign battle end the victory-points winner takes all surrendered ships — captures the loser's and recovers its own, towed to a winner port. Applies to you whether you win or lose. Vanilla leaves surrendered ships as losses.",
+                    true,
+                    ("On", ModSettings.SurrenderedShipCaptureEnabled, () => SetSurrenderedShipCaptureMode(true)),
+                    ("Vanilla", !ModSettings.SurrenderedShipCaptureEnabled, () => SetSurrenderedShipCaptureMode(false)));
+                AddSegmentedOption(
+                    pane.transform,
+                    BattleSpeedSyncOptionName,
+                    "Division Speed Sync",
+                    "When a division leader has a manual speed order, its followers match that speed (capped at their own max) instead of running at full speed and circling back into line. Off keeps vanilla.",
+                    true,
+                    ("On", ModSettings.BattleSpeedSyncEnabled, () => SetBattleSpeedSyncMode(true)),
+                    ("Off", !ModSettings.BattleSpeedSyncEnabled, () => SetBattleSpeedSyncMode(false)));
+                AddSegmentedOption(
+                    pane.transform,
+                    BattleStartDefaultsOptionName,
+                    "Battle Start Defaults",
+                    "Auto-apply your preferred per-class ship settings (below) when each battle begins, so you don't redo them every fight. Off keeps vanilla.",
+                    true,
+                    ("On", ModSettings.BattleStartDefaultsEnabled, () => SetBattleStartDefaultsMode(true)),
+                    ("Off", !ModSettings.BattleStartDefaultsEnabled, () => SetBattleStartDefaultsMode(false)));
+                if (ModSettings.BattleStartDefaultsEnabled)
+                {
+                    AddBattleDefaultsClassRow(pane.transform);
+                    string bsType = CurrentBattleDefaultsType();
+                    string bsLabel = BattleStartDefaults.Types[battleDefaultsTypeIndex].Label;
+                    AddSegmentedOption(
+                        pane.transform, BattleStartAmmoOptionName, $"  • {bsLabel} Ammo",
+                        "Default shell type (main + secondary) for this class at battle start. Leave keeps each ship's current selection.",
+                        true,
+                        ("Leave", BattleStartDefaults.GetAmmo(bsType) == ModSettings.BattleAmmoMode.Leave, () => SetBattleStartAmmo(ModSettings.BattleAmmoMode.Leave)),
+                        ("Auto", BattleStartDefaults.GetAmmo(bsType) == ModSettings.BattleAmmoMode.Auto, () => SetBattleStartAmmo(ModSettings.BattleAmmoMode.Auto)),
+                        ("AP", BattleStartDefaults.GetAmmo(bsType) == ModSettings.BattleAmmoMode.AP, () => SetBattleStartAmmo(ModSettings.BattleAmmoMode.AP)),
+                        ("HE", BattleStartDefaults.GetAmmo(bsType) == ModSettings.BattleAmmoMode.HE, () => SetBattleStartAmmo(ModSettings.BattleAmmoMode.HE)));
+                    AddSegmentedOption(
+                        pane.transform, BattleStartAvoidTorpOptionName, $"  • {bsLabel} Avoid Torpedoes",
+                        "This class's divisions get this Avoid Torpedoes order at battle start. Leave keeps vanilla.",
+                        true,
+                        ("Leave", BattleStartDefaults.GetAvoidTorp(bsType) == ModSettings.BattleToggle.Leave, () => SetBattleStartAvoidTorp(ModSettings.BattleToggle.Leave)),
+                        ("On", BattleStartDefaults.GetAvoidTorp(bsType) == ModSettings.BattleToggle.On, () => SetBattleStartAvoidTorp(ModSettings.BattleToggle.On)),
+                        ("Off", BattleStartDefaults.GetAvoidTorp(bsType) == ModSettings.BattleToggle.Off, () => SetBattleStartAvoidTorp(ModSettings.BattleToggle.Off)));
+                    AddSegmentedOption(
+                        pane.transform, BattleStartAvoidShipOptionName, $"  • {bsLabel} Avoid Ships",
+                        "This class's divisions get this Avoid Collisions order at battle start. Leave keeps vanilla.",
+                        true,
+                        ("Leave", BattleStartDefaults.GetAvoidShip(bsType) == ModSettings.BattleToggle.Leave, () => SetBattleStartAvoidShip(ModSettings.BattleToggle.Leave)),
+                        ("On", BattleStartDefaults.GetAvoidShip(bsType) == ModSettings.BattleToggle.On, () => SetBattleStartAvoidShip(ModSettings.BattleToggle.On)),
+                        ("Off", BattleStartDefaults.GetAvoidShip(bsType) == ModSettings.BattleToggle.Off, () => SetBattleStartAvoidShip(ModSettings.BattleToggle.Off)));
+                    AddSegmentedOption(
+                        pane.transform, BattleStartAutoLeaderOptionName, $"  • {bsLabel} Auto Group Leader",
+                        "This class's divisions get this automatic group-leader change at battle start. Leave keeps vanilla.",
+                        true,
+                        ("Leave", BattleStartDefaults.GetAutoLeader(bsType) == ModSettings.BattleToggle.Leave, () => SetBattleStartAutoLeader(ModSettings.BattleToggle.Leave)),
+                        ("On", BattleStartDefaults.GetAutoLeader(bsType) == ModSettings.BattleToggle.On, () => SetBattleStartAutoLeader(ModSettings.BattleToggle.On)),
+                        ("Off", BattleStartDefaults.GetAutoLeader(bsType) == ModSettings.BattleToggle.Off, () => SetBattleStartAutoLeader(ModSettings.BattleToggle.Off)));
+                    AddSegmentedOption(
+                        pane.transform, BattleStartFireTorpOptionName, $"  • {bsLabel} Torpedoes",
+                        "This class's ships get this torpedo firing mode at battle start (On = fire, Off = hold). Leave keeps vanilla.",
+                        true,
+                        ("Leave", BattleStartDefaults.GetFireTorp(bsType) == ModSettings.BattleToggle.Leave, () => SetBattleStartFireTorp(ModSettings.BattleToggle.Leave)),
+                        ("On", BattleStartDefaults.GetFireTorp(bsType) == ModSettings.BattleToggle.On, () => SetBattleStartFireTorp(ModSettings.BattleToggle.On)),
+                        ("Off", BattleStartDefaults.GetFireTorp(bsType) == ModSettings.BattleToggle.Off, () => SetBattleStartFireTorp(ModSettings.BattleToggle.Off)));
+                    AddSegmentedOption(
+                        pane.transform, BattleStartFormationOptionName, $"  • {bsLabel} Formation",
+                        "This class's divisions get this formation at battle start. Leave keeps vanilla.",
+                        true,
+                        ("Leave", BattleStartDefaults.GetFormation(bsType) == ModSettings.BattleFormation.Leave, () => SetBattleStartFormation(ModSettings.BattleFormation.Leave)),
+                        ("Column", BattleStartDefaults.GetFormation(bsType) == ModSettings.BattleFormation.Column, () => SetBattleStartFormation(ModSettings.BattleFormation.Column)),
+                        ("Line", BattleStartDefaults.GetFormation(bsType) == ModSettings.BattleFormation.Line, () => SetBattleStartFormation(ModSettings.BattleFormation.Line)));
+                }
+                break;
+            case Section.Maneuvers:
+                AddSegmentedOption(
+                    pane.transform,
+                    BattleReverseMethodOptionName,
+                    "Reverse-Course Method (R/T)",
+                    "How the R (port) / T (starboard) hotkeys turn a selected division 180. 180 = single command, rear becomes lead. 90·90 = turn 90, swap the column once turning, then finish 90. Split = each ship breaks into its own division and pivots at the same instant (true simultaneous), then rejoins reversed. Rudder = direct hard-over (experimental). Split/Rudder fall back to 90·90 if the maneuver can't start.",
+                    true,
+                    ("180", ModSettings.BattleReverseMethod == ModSettings.BattleTurnMethod.Single180, () => SetBattleReverseMethod(ModSettings.BattleTurnMethod.Single180)),
+                    ("90·90", ModSettings.BattleReverseMethod == ModSettings.BattleTurnMethod.NinetySwapNinety, () => SetBattleReverseMethod(ModSettings.BattleTurnMethod.NinetySwapNinety)),
+                    ("Split", ModSettings.BattleReverseMethod == ModSettings.BattleTurnMethod.SplitRejoin, () => SetBattleReverseMethod(ModSettings.BattleTurnMethod.SplitRejoin)),
+                    ("Rudder", ModSettings.BattleReverseMethod == ModSettings.BattleTurnMethod.Rudder, () => SetBattleReverseMethod(ModSettings.BattleTurnMethod.Rudder)));
+                AddSegmentedOption(
+                    pane.transform,
+                    FollowSteerDampingOptionName,
+                    "Follow Steering Damping (exp.)",
+                    "Experimental: damps the per-frame yaw rate of division followers to reduce the S-pattern weave that fast, slow-rudder ships show while keeping station. Off keeps vanilla follow steering. Requires Battle Runtime Diagnostics on to log its effect.",
+                    true,
+                    ("On", ModSettings.FollowSteerDampingEnabled, () => SetFollowSteerDamping(true)),
+                    ("Off", !ModSettings.FollowSteerDampingEnabled, () => SetFollowSteerDamping(false)));
+                AddSegmentedOption(
+                    pane.transform,
+                    ParallelStationOptionName,
+                    "Parallel Station",
+                    "Where the Parallel order (order-bar button / Shift+P) places a division relative to its tagged anchor. Astern = behind and on the side away from the enemy (a trailing screen — e.g. DDs lurking for a torpedo run). Abreast = beside the anchor on the beam (parallel battle lines; chain divisions for 2–3 columns).",
+                    true,
+                    ("Astern", !ModSettings.ParallelStationAbreast, () => SetParallelStation(false)),
+                    ("Abreast", ModSettings.ParallelStationAbreast, () => SetParallelStation(true)));
                 break;
             case Section.Campaign:
                 AddSegmentedOption(
@@ -400,6 +581,86 @@ internal static class InGameOptionsMenuPatch
                     ("Vanilla", ModSettings.AiFleetComposition == ModSettings.AiFleetCompositionMode.Vanilla, () => SetAiFleetCompositionMode(ModSettings.AiFleetCompositionMode.Vanilla)),
                     ("Balanced", ModSettings.AiFleetComposition == ModSettings.AiFleetCompositionMode.Balanced, () => SetAiFleetCompositionMode(ModSettings.AiFleetCompositionMode.Balanced)),
                     ("Heavy", ModSettings.AiFleetComposition == ModSettings.AiFleetCompositionMode.Heavy, () => SetAiFleetCompositionMode(ModSettings.AiFleetCompositionMode.Heavy)));
+                AddSegmentedOption(
+                    pane.transform,
+                    AiEconomyPrioritiesOptionName,
+                    "AI Economy Priorities",
+                    "Makes AI majors fund their economy sensibly: transport/merchant capacity up to 200% first, then technology, then crew training (reallocating their own naval budget, never overspending). Fixes AI nations starving their transport (and economy). Vanilla keeps the original AI budget split.",
+                    true,
+                    ("On", ModSettings.AiEconomyPrioritiesEnabled, () => SetAiEconomyPriorities(true)),
+                    ("Vanilla", !ModSettings.AiEconomyPrioritiesEnabled, () => SetAiEconomyPriorities(false)));
+                AddSegmentedOption(
+                    pane.transform,
+                    ShipResupplyOverrideOptionName,
+                    "Ship Resupply Override",
+                    "Debug: manually refuel and rearm your ships — for task forces stranded at sea that aren't replenishing. Off keeps vanilla supply.",
+                    true,
+                    ("On", ModSettings.ShipResupplyOverrideEnabled, () => SetShipResupplyOverride(true)),
+                    ("Off", !ModSettings.ShipResupplyOverrideEnabled, () => SetShipResupplyOverride(false)));
+                if (ModSettings.ShipResupplyOverrideEnabled)
+                    AddActionButton(pane.transform, "Resupply My Fleet Now", () => ResupplyOverride.ResupplyAll(), 220f);
+                AddSegmentedOption(
+                    pane.transform,
+                    ShipServiceRecordsOptionName,
+                    "Ship Service Records",
+                    "Records each of your ships' battle history — damage dealt/received, ships sunk and wrecked, survived/lost — per campaign. Data is captured now; the records viewer is coming.",
+                    true,
+                    ("On", ModSettings.ShipServiceRecordsEnabled, () => SetShipServiceRecords(true)),
+                    ("Off", !ModSettings.ShipServiceRecordsEnabled, () => SetShipServiceRecords(false)));
+                if (ModSettings.ShipServiceRecordsEnabled)
+                    AddActionButton(pane.transform, "Open Ship Records (F10)", () => ShipRecordsViewer.Toggle(), 220f);
+                AddSegmentedOption(
+                    pane.transform,
+                    MultiYearShipyardRebuildOptionName,
+                    "Shipyard Rebuild on Conquest",
+                    "On ties national shipbuilding capacity to territory: capturing a province takes its proportional share of the loser's shipyard and rebuilds it for the captor over a development-scaled few years. Vanilla leaves shipyard capacity unchanged when territory changes hands.",
+                    true,
+                    ("On", ModSettings.MultiYearShipyardRebuildEnabled, () => SetMultiYearShipyardRebuildMode(true)),
+                    ("Vanilla", !ModSettings.MultiYearShipyardRebuildEnabled, () => SetMultiYearShipyardRebuildMode(false)));
+                AddSegmentedOption(
+                    pane.transform,
+                    RebuildOverseasWeightOptionName,
+                    "Overseas Capacity Weight",
+                    "How much overseas/colonial territory counts toward shipbuilding capacity versus home territory. Low makes colonies nearly irrelevant to shipbuilding; High makes them count nearly as much as the homeland.",
+                    true,
+                    ("Low", ModSettings.RebuildOverseasWeightLevel == ModSettings.LevelSetting.Low, () => SetRebuildOverseasWeight(ModSettings.LevelSetting.Low)),
+                    ("Medium", ModSettings.RebuildOverseasWeightLevel == ModSettings.LevelSetting.Medium, () => SetRebuildOverseasWeight(ModSettings.LevelSetting.Medium)),
+                    ("High", ModSettings.RebuildOverseasWeightLevel == ModSettings.LevelSetting.High, () => SetRebuildOverseasWeight(ModSettings.LevelSetting.High)));
+                AddSegmentedOption(
+                    pane.transform,
+                    VanquishedSpoilsOptionName,
+                    "Vanquished Spoils",
+                    "On distributes a fully-conquered major's surviving fleet and a cash indemnity to the victors, instead of vanilla scrapping the fleet and stranding the treasury. Vanilla keeps the original behavior.",
+                    true,
+                    ("On", ModSettings.VanquishedSpoilsEnabled, () => SetVanquishedSpoilsMode(true)),
+                    ("Vanilla", !ModSettings.VanquishedSpoilsEnabled, () => SetVanquishedSpoilsMode(false)));
+                AddSegmentedOption(
+                    pane.transform,
+                    VanquishedSpoilsShareOptionName,
+                    "Vanquished Spoils Share",
+                    "How much of a defeated nation's fleet and treasury the victors receive. Low scuttles more of the fleet and seizes less cash; High transfers more of both.",
+                    true,
+                    ("Low", ModSettings.VanquishedSpoilsShareLevel == ModSettings.LevelSetting.Low, () => SetVanquishedSpoilsShare(ModSettings.LevelSetting.Low)),
+                    ("Medium", ModSettings.VanquishedSpoilsShareLevel == ModSettings.LevelSetting.Medium, () => SetVanquishedSpoilsShare(ModSettings.LevelSetting.Medium)),
+                    ("High", ModSettings.VanquishedSpoilsShareLevel == ModSettings.LevelSetting.High, () => SetVanquishedSpoilsShare(ModSettings.LevelSetting.High)));
+                AddSegmentedOption(
+                    pane.transform,
+                    ClassNamingThemesOptionName,
+                    "Class Naming Themes",
+                    "On shows a theme button in the ship constructor: assign a naming theme to a class and new ships of that class draw from that name pool (or a sequential <Class>-N scheme) instead of the generic per-nation list. Off hides the button and uses vanilla naming.",
+                    true,
+                    ("On", ModSettings.ClassNamingThemesEnabled, () => SetClassNamingThemesMode(true)),
+                    ("Off", !ModSettings.ClassNamingThemesEnabled, () => SetClassNamingThemesMode(false)));
+                AddSegmentedOption(
+                    pane.transform,
+                    ShipbuildingCapacityBoostOptionName,
+                    "Shipbuilding Capacity",
+                    "Multiplies every nation's total shipbuilding capacity (the home-port-derived limit) so all players can build more tonnage at once. Vanilla keeps the game's limit.",
+                    true,
+                    ("Vanilla", ModSettings.ShipbuildingCapacityBoost == ModSettings.ShipbuildingCapacityBoostMode.Vanilla, () => SetShipbuildingCapacityBoost(ModSettings.ShipbuildingCapacityBoostMode.Vanilla)),
+                    ("1.5x", ModSettings.ShipbuildingCapacityBoost == ModSettings.ShipbuildingCapacityBoostMode.Plus50, () => SetShipbuildingCapacityBoost(ModSettings.ShipbuildingCapacityBoostMode.Plus50)),
+                    ("2x", ModSettings.ShipbuildingCapacityBoost == ModSettings.ShipbuildingCapacityBoostMode.Double, () => SetShipbuildingCapacityBoost(ModSettings.ShipbuildingCapacityBoostMode.Double)),
+                    ("3x", ModSettings.ShipbuildingCapacityBoost == ModSettings.ShipbuildingCapacityBoostMode.Triple, () => SetShipbuildingCapacityBoost(ModSettings.ShipbuildingCapacityBoostMode.Triple)));
                 AddSegmentedOption(
                     pane.transform,
                     AdvancedAiBuilderOptionName,
@@ -469,6 +730,57 @@ internal static class InGameOptionsMenuPatch
                     ("Disabled", ModSettings.SubmarineWarfareDisabled, () => SetSubmarineWarfareMode(true)),
                     ("Enabled", !ModSettings.SubmarineWarfareDisabled, () => SetSubmarineWarfareMode(false)));
                 break;
+            case Section.SwitchNation:
+            {
+                var targets = PlayerSwap.SwitchTargets();
+                if (targets.Count == 0)
+                {
+                    AddText(pane.transform, "Available on the campaign map only (not in battle), and only when other major nations exist.", 13, TextAnchor.MiddleLeft);
+                    switchNationArmed = false;
+                    break;
+                }
+                switchNationIndex = Mathf.Clamp(switchNationIndex, 0, targets.Count - 1);
+                Player tgt = targets[switchNationIndex];
+                string tgtName = PlayerSwap.NationLabel(tgt);
+                string curName = PlayerSwap.NationLabel(PlayerSwap.CurrentHuman());
+                int count = targets.Count;
+
+                AddText(pane.transform,
+                    $"Switch which nation you control. Your current nation ({curName}) is handed to the AI; you take over the selected nation and fight on as it. This SAVES and returns to the main menu — click Continue to resume as the new nation.",
+                    12, TextAnchor.UpperLeft);
+
+                GameObject row = new("UADVP_SwitchNationRow");
+                row.transform.SetParent(pane.transform, false);
+                Image bg = row.AddComponent<Image>();
+                bg.color = RowBackground;
+                HorizontalLayoutGroup hl = row.AddComponent<HorizontalLayoutGroup>();
+                hl.padding = new RectOffset { left = 8, right = 8, top = 4, bottom = 4 };
+                hl.spacing = 8f;
+                hl.childAlignment = TextAnchor.MiddleLeft;
+                hl.childControlHeight = true;
+                hl.childControlWidth = true;
+                hl.childForceExpandHeight = false;
+                hl.childForceExpandWidth = false;
+                AddLayout(row, minHeight: 34f, preferredHeight: 34f, flexibleWidth: 1f);
+                Text rl = AddText(row.transform, "Nation", 13, TextAnchor.MiddleLeft);
+                AddLayout(rl.gameObject, minWidth: 110f, flexibleWidth: 1f);
+                AddActionButton(row.transform, "<", () => { switchNationIndex = (switchNationIndex - 1 + count) % count; switchNationArmed = false; RefreshMenu(); }, 56f);
+                Text rc = AddText(row.transform, tgtName, 14, TextAnchor.MiddleCenter);
+                AddLayout(rc.gameObject, minWidth: 150f);
+                AddActionButton(row.transform, ">", () => { switchNationIndex = (switchNationIndex + 1) % count; switchNationArmed = false; RefreshMenu(); }, 56f);
+
+                if (!switchNationArmed)
+                {
+                    AddActionButton(pane.transform, $"Become {tgtName}…", () => { switchNationArmed = true; RefreshMenu(); }, 220f);
+                }
+                else
+                {
+                    AddText(pane.transform, $"Confirm: become {tgtName}? Saves and drops to the main menu — then click Continue.", 13, TextAnchor.MiddleLeft);
+                    AddActionButton(pane.transform, $"CONFIRM — Become {tgtName}", () => { switchNationArmed = false; PlayerSwap.SwitchTo(tgt); }, 250f);
+                    AddActionButton(pane.transform, "Cancel", () => { switchNationArmed = false; RefreshMenu(); }, 120f);
+                }
+                break;
+            }
             case Section.ShipDesign:
                 AddSegmentedOption(
                     pane.transform,
@@ -478,14 +790,6 @@ internal static class InGameOptionsMenuPatch
                     true,
                     ("Disallowed", ModSettings.MajorShipTorpedoesRestricted, () => SetMajorShipTorpedoesMode(true)),
                     ("Vanilla", !ModSettings.MajorShipTorpedoesRestricted, () => SetMajorShipTorpedoesMode(false)));
-                AddSegmentedOption(
-                    pane.transform,
-                    ObsoleteDesignRetentionOptionName,
-                    "Obsolete Tech & Hulls",
-                    "Retain keeps already researched obsolete hulls and components available for player ship designs. Vanilla hides older options as newer equivalents become available. AI design availability remains vanilla.",
-                    true,
-                    ("Retain", ModSettings.ObsoleteDesignRetentionEnabled, () => SetObsoleteDesignRetentionMode(true)),
-                    ("Vanilla", !ModSettings.ObsoleteDesignRetentionEnabled, () => SetObsoleteDesignRetentionMode(false)));
                 AddSegmentedOption(
                     pane.transform,
                     SuperstructureRefitsOptionName,
@@ -500,10 +804,11 @@ internal static class InGameOptionsMenuPatch
                     pane.transform,
                     CampaignMapWraparoundOptionName,
                     "Map Geometry",
-                    "Disc World enables the experimental campaign-map wrap illusion at the Pacific edge: neighboring map copies, wider horizontal panning, and wrapped marker and movement interactions. Flat Earth keeps vanilla one-map geometry and bounds.",
+                    "Flat Earth: vanilla one-map geometry. Disc World: wraps the map at the Pacific seam (neighboring copies, wider panning). Globe: renders the campaign as a 3D sphere skin over the flat sim (experimental — orbit with right-drag/scroll; border lines and great-circle movement are not represented).",
                     true,
-                    ("Disc World", ModSettings.CampaignMapWraparoundEnabled, () => SetCampaignMapWraparoundMode(true)),
-                    ("Flat Earth", !ModSettings.CampaignMapWraparoundEnabled, () => SetCampaignMapWraparoundMode(false)));
+                    ("Flat Earth", ModSettings.MapGeometry == ModSettings.MapGeometryMode.Flat, () => SetMapGeometryMode(ModSettings.MapGeometryMode.Flat)),
+                    ("Disc World", ModSettings.MapGeometry == ModSettings.MapGeometryMode.Disc, () => SetMapGeometryMode(ModSettings.MapGeometryMode.Disc)),
+                    ("Globe", ModSettings.MapGeometry == ModSettings.MapGeometryMode.Globe, () => SetMapGeometryMode(ModSettings.MapGeometryMode.Globe)));
                 AddSegmentedOption(
                     pane.transform,
                     ExperimentalNationShipPaintsOptionName,
@@ -830,6 +1135,815 @@ internal static class InGameOptionsMenuPatch
         RefreshLauncherButton();
     }
 
+    private static void SetMultiYearShipyardRebuildMode(bool enabled)
+    {
+        if (ModSettings.MultiYearShipyardRebuildEnabled != enabled)
+            ModSettings.MultiYearShipyardRebuildEnabled = enabled;
+
+        RefreshMenu();
+        RefreshLauncherButton();
+    }
+
+    private static void SetRebuildOverseasWeight(ModSettings.LevelSetting level)
+    {
+        if (ModSettings.RebuildOverseasWeightLevel != level)
+            ModSettings.RebuildOverseasWeightLevel = level;
+
+        RefreshMenu();
+        RefreshLauncherButton();
+    }
+
+    private static void SetVanquishedSpoilsMode(bool enabled)
+    {
+        if (ModSettings.VanquishedSpoilsEnabled != enabled)
+            ModSettings.VanquishedSpoilsEnabled = enabled;
+
+        RefreshMenu();
+        RefreshLauncherButton();
+    }
+
+    private static void SetVanquishedSpoilsShare(ModSettings.LevelSetting level)
+    {
+        if (ModSettings.VanquishedSpoilsShareLevel != level)
+            ModSettings.VanquishedSpoilsShareLevel = level;
+
+        RefreshMenu();
+        RefreshLauncherButton();
+    }
+
+    private static void SetClassNamingThemesMode(bool enabled)
+    {
+        if (ModSettings.ClassNamingThemesEnabled != enabled)
+            ModSettings.ClassNamingThemesEnabled = enabled;
+
+        RefreshMenu();
+        RefreshLauncherButton();
+        RefreshThemeLauncherButton();
+    }
+
+    private static void SetShipbuildingCapacityBoost(ModSettings.ShipbuildingCapacityBoostMode mode)
+    {
+        if (ModSettings.ShipbuildingCapacityBoost != mode)
+            ModSettings.ShipbuildingCapacityBoost = mode;
+
+        RefreshMenu();
+        RefreshLauncherButton();
+    }
+
+    private static void SetSurrenderedShipCaptureMode(bool enabled)
+    {
+        if (ModSettings.SurrenderedShipCaptureEnabled != enabled)
+            ModSettings.SurrenderedShipCaptureEnabled = enabled;
+
+        RefreshMenu();
+        RefreshLauncherButton();
+    }
+
+    private static void SetBattleStartDefaultsMode(bool enabled)
+    {
+        if (ModSettings.BattleStartDefaultsEnabled != enabled)
+            ModSettings.BattleStartDefaultsEnabled = enabled;
+        RefreshMenu();
+        RefreshLauncherButton();
+    }
+
+    private static string CurrentBattleDefaultsType()
+    {
+        battleDefaultsTypeIndex = Mathf.Clamp(battleDefaultsTypeIndex, 0, BattleStartDefaults.Types.Length - 1);
+        return BattleStartDefaults.Types[battleDefaultsTypeIndex].Key;
+    }
+
+    // The "Class" selector row for per-type battle-start defaults: < BB > cycling the type
+    // that the rows below edit. Rebuilt each RefreshMenu so the rows reflect the chosen type.
+    private static void AddBattleDefaultsClassRow(Transform pane)
+    {
+        battleDefaultsTypeIndex = Mathf.Clamp(battleDefaultsTypeIndex, 0, BattleStartDefaults.Types.Length - 1);
+        int count = BattleStartDefaults.Types.Length;
+
+        GameObject row = new("UADVP_BattleDefaultsClass");
+        row.transform.SetParent(pane, false);
+        Image bg = row.AddComponent<Image>();
+        bg.color = RowBackground;
+        HorizontalLayoutGroup hl = row.AddComponent<HorizontalLayoutGroup>();
+        hl.padding = new RectOffset { left = 8, right = 8, top = 4, bottom = 4 };
+        hl.spacing = 8f;
+        hl.childAlignment = TextAnchor.MiddleLeft;
+        hl.childControlHeight = true;
+        hl.childControlWidth = true;
+        hl.childForceExpandHeight = false;
+        hl.childForceExpandWidth = false;
+        AddLayout(row, minHeight: 34f, preferredHeight: 34f, flexibleWidth: 1f);
+
+        Text label = AddText(row.transform, "Class", 13, TextAnchor.MiddleLeft);
+        AddLayout(label.gameObject, minWidth: 155f, flexibleWidth: 1f);
+        AddActionButton(row.transform, "<", () => { battleDefaultsTypeIndex = (battleDefaultsTypeIndex - 1 + count) % count; RefreshMenu(); }, 56f);
+        Text cur = AddText(row.transform, BattleStartDefaults.Types[battleDefaultsTypeIndex].Label, 14, TextAnchor.MiddleCenter);
+        AddLayout(cur.gameObject, minWidth: 90f);
+        AddActionButton(row.transform, ">", () => { battleDefaultsTypeIndex = (battleDefaultsTypeIndex + 1) % count; RefreshMenu(); }, 56f);
+    }
+
+    private static void SetBattleStartAmmo(ModSettings.BattleAmmoMode mode)
+    {
+        BattleStartDefaults.SetAmmo(CurrentBattleDefaultsType(), mode);
+        RefreshMenu();
+    }
+
+    private static void SetBattleStartAvoidTorp(ModSettings.BattleToggle mode)
+    {
+        BattleStartDefaults.SetAvoidTorp(CurrentBattleDefaultsType(), mode);
+        RefreshMenu();
+    }
+
+    private static void SetBattleStartAvoidShip(ModSettings.BattleToggle mode)
+    {
+        BattleStartDefaults.SetAvoidShip(CurrentBattleDefaultsType(), mode);
+        RefreshMenu();
+    }
+
+    private static void SetBattleStartAutoLeader(ModSettings.BattleToggle mode)
+    {
+        BattleStartDefaults.SetAutoLeader(CurrentBattleDefaultsType(), mode);
+        RefreshMenu();
+    }
+
+    private static void SetBattleStartFireTorp(ModSettings.BattleToggle mode)
+    {
+        BattleStartDefaults.SetFireTorp(CurrentBattleDefaultsType(), mode);
+        RefreshMenu();
+    }
+
+    private static void SetBattleStartFormation(ModSettings.BattleFormation mode)
+    {
+        BattleStartDefaults.SetFormation(CurrentBattleDefaultsType(), mode);
+        RefreshMenu();
+    }
+
+    private static void SetBattleSpeedSyncMode(bool enabled)
+    {
+        ModSettings.BattleSpeedSyncEnabled = enabled;
+        RefreshMenu();
+    }
+
+    private static void SetBattleReverseMethod(ModSettings.BattleTurnMethod mode)
+    {
+        if (ModSettings.BattleReverseMethod != mode)
+            ModSettings.BattleReverseMethod = mode;
+        RefreshMenu();
+    }
+
+    private static void SetFollowSteerDamping(bool enabled)
+    {
+        ModSettings.FollowSteerDampingEnabled = enabled;
+        RefreshMenu();
+    }
+
+    private static void SetParallelStation(bool abreast)
+    {
+        ModSettings.ParallelStationAbreast = abreast;
+        RefreshMenu();
+    }
+
+    private static void SetAiEconomyPriorities(bool enabled)
+    {
+        ModSettings.AiEconomyPrioritiesEnabled = enabled;
+        RefreshMenu();
+    }
+
+    private static void SetShipResupplyOverride(bool enabled)
+    {
+        ModSettings.ShipResupplyOverrideEnabled = enabled;
+        RefreshMenu();
+    }
+
+    private static void SetShipServiceRecords(bool enabled)
+    {
+        ModSettings.ShipServiceRecordsEnabled = enabled;
+        RefreshMenu();
+    }
+
+    // ----- Battle "helm" panel: draggable, always-on-top typed course + speed, with paste -----
+
+    private static void TrySetupBattleInputs()
+    {
+        if (currentUi == null)
+            return;
+        if (battlePanel != null)
+            return; // already built (destroyed objects null out -> rebuild)
+        try
+        {
+            UnityEngine.UI.Slider speedSlider = currentUi.divSpeedSlider;
+            if (speedSlider == null)
+                return;
+            Transform root = TopCanvasOf(speedSlider.transform);
+
+            battlePanel = new GameObject("UADVP_BattleHelmPanel");
+            battlePanel.transform.SetParent(root, false);
+
+            // Own canvas, sorted above the HUD so the divisions UI can't sink behind/over it.
+            battlePanelCanvas = battlePanel.AddComponent<Canvas>();
+            battlePanelCanvas.overrideSorting = true;
+            battlePanelCanvas.sortingOrder = 5000;
+            battlePanel.AddComponent<GraphicRaycaster>();
+
+            Image bg = battlePanel.AddComponent<Image>();
+            bg.color = new Color(0f, 0f, 0f, 0.8f);
+            bg.raycastTarget = true;
+
+            battlePanelRect = battlePanel.GetComponent<RectTransform>();
+            battlePanelRect.anchorMin = new Vector2(0.5f, 0.5f);
+            battlePanelRect.anchorMax = new Vector2(0.5f, 0.5f);
+            battlePanelRect.pivot = new Vector2(0.5f, 0.5f);
+            battlePanelRect.sizeDelta = new Vector2(250f, 128f);
+
+            VerticalLayoutGroup vl = battlePanel.AddComponent<VerticalLayoutGroup>();
+            vl.padding = new RectOffset { left = 6, right = 6, top = 4, bottom = 6 };
+            vl.spacing = 4f;
+            vl.childAlignment = TextAnchor.UpperLeft;
+            vl.childControlHeight = true;
+            vl.childControlWidth = true;
+            vl.childForceExpandHeight = false;
+            vl.childForceExpandWidth = true;
+
+            // Auto-size the panel height to however many rows it ends up with (speed, course, turn buttons)
+            // so the dark background always covers them; width stays fixed at sizeDelta.x.
+            ContentSizeFitter fitter = battlePanel.AddComponent<ContentSizeFitter>();
+            fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            // Header doubles as the drag handle.
+            GameObject header = new("UADVP_BattleHelmHeader");
+            header.transform.SetParent(battlePanel.transform, false);
+            Image hbg = header.AddComponent<Image>();
+            hbg.color = new Color(0.16f, 0.32f, 0.52f, 0.95f);
+            hbg.raycastTarget = true;
+            Text htext = AddText(header.transform, "HELM — drag • right-click a row = paste", 11, TextAnchor.MiddleCenter);
+            htext.raycastTarget = false;
+            AddLayout(header, minHeight: 20f, preferredHeight: 20f, flexibleWidth: 1f);
+            AddDragHandler(header);
+
+            BuildBattleRow("UADVP_BattleSpeedRow", "kn", true, out battleSpeedText, out battleSpeedInput);
+            BuildBattleRow("UADVP_BattleCourseRow", "deg", false, out battleCourseText, out battleCourseInput);
+            battleSpeedInput.onEndEdit.AddListener(new System.Action<string>(OnBattleSpeedEntered));
+            battleCourseInput.onEndEdit.AddListener(new System.Action<string>(OnBattleCourseEntered));
+
+            // Reverse-course buttons — same as the R (port) / T (starboard) hotkeys, honoring the
+            // selected reverse method (180 / 90·90 / Split / Rudder).
+            BuildBattleTurnRow();
+
+            battlePanelPosLoaded = false;
+            Melon<UADVanillaPlusMod>.Logger.Msg("UADVP battle helm panel created (draggable, paste-enabled).");
+        }
+        catch (Exception ex)
+        {
+            Melon<UADVanillaPlusMod>.Logger.Warning($"UADVP battle inputs setup failed: {ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+    // Walk up to the top-most Canvas so our overlay parents at HUD root (won't be clipped/covered).
+    private static Transform TopCanvasOf(Transform t)
+    {
+        Transform top = t;
+        Transform? cur = t;
+        while (cur != null)
+        {
+            if (cur.GetComponent<Canvas>() != null)
+                top = cur;
+            cur = cur.parent;
+        }
+        return top;
+    }
+
+    private static GameObject BuildBattleRow(string name, string placeholder, bool isSpeed, out Text current, out InputField input)
+    {
+        GameObject row = new(name);
+        row.transform.SetParent(battlePanel!.transform, false);
+        Image rbg = row.AddComponent<Image>();
+        rbg.color = new Color(0f, 0f, 0f, 0.35f);
+        rbg.raycastTarget = true; // so right-click lands on the row (paste)
+
+        HorizontalLayoutGroup layout = row.AddComponent<HorizontalLayoutGroup>();
+        layout.padding = new RectOffset { left = 6, right = 6, top = 2, bottom = 2 };
+        layout.spacing = 6f;
+        layout.childAlignment = TextAnchor.MiddleLeft;
+        layout.childControlHeight = true;
+        layout.childControlWidth = true;
+        layout.childForceExpandHeight = false;
+        layout.childForceExpandWidth = false;
+        AddLayout(row, minHeight: 28f, preferredHeight: 28f, flexibleWidth: 1f);
+
+        current = AddText(row.transform, "—", 13, TextAnchor.MiddleLeft);
+        current.raycastTarget = false; // read-only label
+        AddLayout(current.gameObject, minWidth: 168f, preferredWidth: 168f, preferredHeight: 22f);
+
+        input = AddHexInput(row.transform, string.Empty, 52f);
+        if (input.placeholder != null)
+        {
+            Text? ph = input.placeholder.TryCast<Text>();
+            if (ph != null)
+                ph.text = placeholder;
+        }
+
+        AddRightClickPaste(row, isSpeed);
+        return row;
+    }
+
+    // A row of two reverse-course buttons (port / starboard) that mirror the R/T hotkeys.
+    private static void BuildBattleTurnRow()
+    {
+        GameObject row = new("UADVP_BattleTurnRow");
+        row.transform.SetParent(battlePanel!.transform, false);
+        Image rbg = row.AddComponent<Image>();
+        rbg.color = new Color(0f, 0f, 0f, 0.35f);
+        rbg.raycastTarget = true;
+
+        HorizontalLayoutGroup layout = row.AddComponent<HorizontalLayoutGroup>();
+        layout.padding = new RectOffset { left = 6, right = 6, top = 2, bottom = 2 };
+        layout.spacing = 6f;
+        layout.childAlignment = TextAnchor.MiddleCenter;
+        layout.childControlHeight = true;
+        layout.childControlWidth = true;
+        layout.childForceExpandHeight = false;
+        layout.childForceExpandWidth = true;
+        AddLayout(row, minHeight: 30f, preferredHeight: 30f, flexibleWidth: 1f);
+
+        AddPanelButton(row, "<< Port (R)", () => GameData.BattleTurn.ReverseSelected(currentUi, false));
+        AddPanelButton(row, "Stbd (T) >>", () => GameData.BattleTurn.ReverseSelected(currentUi, true));
+    }
+
+    // A lightweight button for the helm panel — its own Image (background) + a centered label, sized by
+    // a nested layout group so the text reliably fills and centers. Avoids the heavy popup button prefab.
+    private static Button AddPanelButton(GameObject row, string label, System.Action onClick)
+    {
+        GameObject go = new("UADVP_PanelBtn");
+        go.transform.SetParent(row.transform, false);
+        Image img = go.AddComponent<Image>();
+        img.color = new Color(0.16f, 0.32f, 0.52f, 0.95f);
+        img.raycastTarget = true;
+
+        HorizontalLayoutGroup hl = go.AddComponent<HorizontalLayoutGroup>();
+        hl.childAlignment = TextAnchor.MiddleCenter;
+        hl.childControlHeight = true;
+        hl.childControlWidth = true;
+        hl.childForceExpandHeight = true;
+        hl.childForceExpandWidth = true;
+
+        Button btn = go.AddComponent<Button>();
+        btn.targetGraphic = img;
+        btn.onClick.AddListener(new System.Action(onClick));
+
+        Text t = AddText(go.transform, label, 12, TextAnchor.MiddleCenter);
+        t.raycastTarget = false;
+        AddLayout(go, minHeight: 24f, preferredHeight: 24f, minWidth: 96f, flexibleWidth: 1f);
+        return btn;
+    }
+
+    // ----- pointer plumbing for the panel (drag) and rows (right-click paste) -----
+
+    private static void AddTrigger(GameObject go, UnityEngine.EventSystems.EventTriggerType type, System.Action<UnityEngine.EventSystems.BaseEventData> cb)
+    {
+        UnityEngine.EventSystems.EventTrigger trig = go.GetComponent<UnityEngine.EventSystems.EventTrigger>()
+            ?? go.AddComponent<UnityEngine.EventSystems.EventTrigger>();
+        UnityEngine.EventSystems.EventTrigger.Entry entry = new();
+        entry.eventID = type;
+        entry.callback.AddListener(new System.Action<UnityEngine.EventSystems.BaseEventData>(cb));
+        trig.triggers.Add(entry);
+    }
+
+    private static void AddDragHandler(GameObject handle)
+    {
+        AddTrigger(handle, UnityEngine.EventSystems.EventTriggerType.Drag, OnBattlePanelDrag);
+        AddTrigger(handle, UnityEngine.EventSystems.EventTriggerType.EndDrag, _ => SaveBattlePanelPosition());
+    }
+
+    private static void OnBattlePanelDrag(UnityEngine.EventSystems.BaseEventData data)
+    {
+        try
+        {
+            if (battlePanelRect == null)
+                return;
+            var p = data.TryCast<UnityEngine.EventSystems.PointerEventData>();
+            if (p == null)
+                return;
+            float scale = battlePanelCanvas != null && battlePanelCanvas.scaleFactor > 0f ? battlePanelCanvas.scaleFactor : 1f;
+            battlePanelRect.anchoredPosition += p.delta / scale;
+        }
+        catch { }
+    }
+
+    private static void AddRightClickPaste(GameObject row, bool isSpeed)
+    {
+        AddTrigger(row, UnityEngine.EventSystems.EventTriggerType.PointerClick, data =>
+        {
+            try
+            {
+                var p = data.TryCast<UnityEngine.EventSystems.PointerEventData>();
+                if (p == null || p.button != UnityEngine.EventSystems.PointerEventData.InputButton.Right)
+                    return;
+                if (isSpeed)
+                {
+                    if (!float.IsNaN(clipboardSpeed)) ApplySpeedToSelection(clipboardSpeed);
+                }
+                else
+                {
+                    if (!float.IsNaN(clipboardCourse)) ApplyCourseToSelection(clipboardCourse);
+                }
+            }
+            catch { }
+        });
+    }
+
+    private static void SaveBattlePanelPosition()
+    {
+        try
+        {
+            if (battlePanelRect == null)
+                return;
+            Vector2 ap = battlePanelRect.anchoredPosition;
+            PlayerPrefs.SetFloat(BattlePanelXKey, ap.x);
+            PlayerPrefs.SetFloat(BattlePanelYKey, ap.y);
+            PlayerPrefs.Save();
+        }
+        catch { }
+    }
+
+    private static void LoadBattlePanelPosition()
+    {
+        try
+        {
+            if (battlePanelRect == null)
+                return;
+            float x = PlayerPrefs.GetFloat(BattlePanelXKey, 0f);
+            float y = PlayerPrefs.GetFloat(BattlePanelYKey, -180f); // default: below screen center, clear of HUD
+            battlePanelRect.anchoredPosition = new Vector2(x, y);
+            battlePanelPosLoaded = true;
+        }
+        catch { }
+    }
+
+    private static void RefreshBattleInputs()
+    {
+        try
+        {
+            if (battlePanel == null)
+                return;
+
+            Ship? first = null;
+            bool show = false;
+            if (currentUi != null && GameManager.IsBattle)
+            {
+                // Only while the battle COMMAND phase is up. IsBattle stays true on the pre-battle
+                // deployment/briefing and post-battle results screens, and the speed slider can be active
+                // there too — so additionally gate on BattleManager's phase flags: IsBattleStart
+                // (deployment/start phase) and IsBattleFinishing (results/finishing phase) must BOTH be
+                // false. Active combat = neither. (UADVP_HELMVIS logs the flags on change to confirm.)
+                UnityEngine.UI.Slider? sld = null;
+                try { sld = currentUi.divSpeedSlider; } catch { }
+                bool hudUp = sld != null && sld.gameObject.activeInHierarchy;
+                bool starting = false, finishing = false;
+                try
+                {
+                    var bm = BattleManager.Instance;
+                    if (bm != null) { starting = bm.IsBattleStart; finishing = bm.IsBattleFinishing; }
+                }
+                catch { }
+                var selected = currentUi.selectedShips;
+                int selCount = selected != null ? selected.Count : 0;
+                if (hudUp && !starting && !finishing && selCount > 0)
+                {
+                    first = selected![0];
+                    show = first != null;
+                }
+                LogHelmVisibilityIfChanged(hudUp, starting, finishing, selCount, show);
+            }
+
+            if (battlePanel.activeSelf != show)
+                battlePanel.SetActive(show);
+            if (!show || first == null)
+            {
+                trackedDivPtr = IntPtr.Zero; // reset change tracking when nothing is selected
+                return;
+            }
+
+            if (!battlePanelPosLoaded)
+                LoadBattlePanelPosition();
+
+            Division? div = BattleDiv(first);
+            Ship lead = BattleLeader(div) ?? first;
+            float curCourse = BattleF(() => lead.transform.eulerAngles.y);
+            float assignedCourse = BattleAssignedCourse(div, curCourse);
+            float assignedSpeed = BattleCommandedKnots(lead);
+
+            // DIAGNOSTIC (throttled): dump everything needed to calibrate the raw<->displayed speed
+            // conversion against the game's OWN readout (divSpeedText, the number on the speed bar).
+            // With one sample where a known speed is set, compare game= to each candidate below to pin
+            // the exact correct conversion for both the readout and the apply path. Enable via the
+            // Experimental "Battle Runtime Diagnostics" option.
+            if (ModSettings.BattleRuntimeDiagnosticsEnabled && (++speedDiagTick % 90) == 0)
+            {
+                Ship f = first;
+                float curRaw = BattleF(() => f.savedCurrentSpeed);
+                float desRaw = BattleF(() => f.savedDesiredSpeed);
+                float engCustom = BattleF(() => f.engineCustomSpeed);
+                float maxDisp = BattleF(() => f.SpeedMax());          // fakeMod=true  => displayed max
+                float maxRaw = BattleF(() => f.SpeedMax(false));      // fakeMod=false => raw max
+                float desDispSD = BattleF(() => f.SpeedDesired(true, true));   // game's own getter, displayed?
+                float desRawSD = BattleF(() => f.SpeedDesired(true, false));   // game's own getter, raw
+                float ratioCur = maxRaw > 0.01f ? curRaw * maxDisp / maxRaw : curRaw;
+                float ratioDes = maxRaw > 0.01f ? desRaw * maxDisp / maxRaw : desRaw;
+                float modCurTT = 0f, modCurTF = 0f, modDesTT = 0f;
+                try { modCurTT = Ship.ModifySpeedShip(curRaw, true, true); } catch { }
+                try { modCurTF = Ship.ModifySpeedShip(curRaw, true, false); } catch { }
+                try { modDesTT = Ship.ModifySpeedShip(desRaw, true, true); } catch { }
+                float slVal = float.NaN, slMin = float.NaN, slMax = float.NaN;
+                try { var sld2 = currentUi != null ? currentUi.divSpeedSlider : null; if (sld2 != null) { slVal = sld2.value; slMin = sld2.minValue; slMax = sld2.maxValue; } } catch { }
+                float velMps = 0f;
+                try { Vector3 vv = f.velocity; vv.y = 0f; velMps = vv.magnitude; } catch { }
+                Melon<UADVanillaPlusMod>.Logger.Msg(
+                    $"UADVP_SPEEDDIAG game={BattleGameSpeedText()} slider={slVal:0.###}[{slMin:0.##}..{slMax:0.##}] " +
+                    $"vel={velMps:0.00}mps/{velMps * MetersPerSecToKnots:0.00}kn " +
+                    $"curRaw={curRaw:0.00} desRaw={desRaw:0.00} engCustom={engCustom:0.00} maxDisp={maxDisp:0.00} maxRaw={maxRaw:0.00} " +
+                    $"SpeedDesired(disp)={desDispSD:0.00} SpeedDesired(raw)={desRawSD:0.00} ratioCur={ratioCur:0.00} ratioDes={ratioDes:0.00} " +
+                    $"modCurTT={modCurTT:0.00} modCurTF={modCurTF:0.00} modDesTT={modDesTT:0.00}");
+            }
+
+            // Auto-clipboard: capture when the assigned course/speed CHANGES while the same division
+            // stays selected (i.e. the player adjusted it — right-click course order, slider drag, or
+            // typed). Switching selection only re-baselines (no copy), so a paste keeps the value from
+            // the division you adjusted, not the one you switch to.
+            IntPtr divPtr = IntPtr.Zero;
+            try { if (div != null) divPtr = div.Pointer; } catch { }
+            if (divPtr != IntPtr.Zero && divPtr == trackedDivPtr)
+            {
+                if (!float.IsNaN(trackedCourse) && AngleDelta(assignedCourse, trackedCourse) > 1.0f)
+                    clipboardCourse = assignedCourse;
+                if (!float.IsNaN(trackedSpeed) && Mathf.Abs(assignedSpeed - trackedSpeed) > 0.2f)
+                    clipboardSpeed = assignedSpeed;
+            }
+            trackedDivPtr = divPtr;
+            trackedCourse = assignedCourse;
+            trackedSpeed = assignedSpeed;
+
+            if (battleSpeedText != null)
+            {
+                float curSpeed = CurrentKnots(lead);
+                string clip = float.IsNaN(clipboardSpeed) ? string.Empty : $"  RC:{clipboardSpeed:0.0}";
+                battleSpeedText.text = $"spd {curSpeed:0.0}/{assignedSpeed:0.0}kn{clip}";
+            }
+            if (battleCourseText != null)
+            {
+                string clip = float.IsNaN(clipboardCourse) ? string.Empty : $"  RC:{clipboardCourse:0}°";
+                battleCourseText.text = $"crs {curCourse:0}/{assignedCourse:0}°{clip}";
+            }
+        }
+        catch { }
+    }
+
+    // Shortest absolute angular difference in degrees (0..180).
+    private static float AngleDelta(float a, float b)
+    {
+        float d = Mathf.Abs((a - b) % 360f);
+        return d > 180f ? 360f - d : d;
+    }
+
+    private static void OnBattleSpeedEntered(string value)
+    {
+        if (currentUi == null || !float.TryParse(value, out float knots))
+            return;
+        ApplySpeedToSelection(knots);
+        if (battleSpeedInput != null)
+            battleSpeedInput.text = string.Empty;
+    }
+
+    // Apply a knot speed to the selected division by driving the game's OWN division speed slider
+    // (not SetEngineCustomSpeed): the slider is the throttle bar (so it moves) and the game commits the
+    // order via OnSpeedSliderUp. Typed knots become a fraction of the division's max knots, mapped onto
+    // the slider range. CRITICAL: max knots = SpeedMax(false) m/s * 1.94384 (=37.5 for the test ship),
+    // NOT SpeedMax(true) (=56.38, an internal unit) — using the latter made every typed speed land ~0.66x
+    // too slow. Reused by typed entry and by right-click paste.
+    private static void ApplySpeedToSelection(float knots)
+    {
+        try
+        {
+            if (currentUi == null)
+                return;
+            if (knots < 0f)
+                knots = 0f;
+            var selected = currentUi.selectedShips;
+            if (selected == null || selected.Count == 0)
+                return;
+            Ship? first = selected[0];
+            if (first == null)
+                return;
+
+            Ship lead = BattleLeader(BattleDiv(first)) ?? first;
+            float maxKn = BattleF(() => lead.SpeedMax(false)) * MetersPerSecToKnots;
+            float frac = maxKn > 0f ? Mathf.Clamp01(knots / maxKn) : 0f;
+            float before = BattleF(() => first.savedCurrentSpeed);
+
+            UnityEngine.UI.Slider? slider = null;
+            try { slider = currentUi.divSpeedSlider; } catch { }
+            float sMin = 0f, sMax = 1f, sVal = frac;
+            bool applied = false;
+            if (slider != null)
+            {
+                try { sMin = slider.minValue; sMax = slider.maxValue; } catch { }
+                sVal = Mathf.Lerp(sMin, sMax, frac);
+                try { slider.value = sVal; applied = true; } catch { }
+                try { currentUi.OnSpeedSliderUp(); } catch { }
+            }
+
+            if (!applied)
+            {
+                foreach (Ship ship in selected)
+                {
+                    if (ship == null) continue;
+                    float max = BattleF(() => ship.SpeedMax());
+                    float v = max > 0f ? Mathf.Min(knots, max) : knots;
+                    try { ship.SetEngineCustomSpeed(v); } catch { }
+                }
+            }
+
+            // Capture the resulting state so the log shows what the game DID with our slider value: the
+            // raw desired speed it now holds, its own displayed desired (SpeedDesired fakeMod), the value
+            // the slider settled on, and the game's own speed readout. Comparing these to `typed` tells us
+            // whether a typed/pasted speed lands where intended. (These may lag a frame; the periodic
+            // UADVP_SPEEDDIAG line shows the fully-settled values.)
+            float afterDesRaw = BattleF(() => first.savedDesiredSpeed);
+            float afterDesDisp = BattleF(() => first.SpeedDesired(true, true));
+            float afterSliderVal = slider != null ? BattleF(() => slider.value) : float.NaN;
+            string gameTxt = BattleGameSpeedText();
+
+            Melon<UADVanillaPlusMod>.Logger.Msg(
+                $"UADVP battle speed: typed={knots:0.0}kn maxKn={maxKn:0.0} frac={frac:0.00} slider[{sMin:0.##}..{sMax:0.##}]=set{sVal:0.###}->now{afterSliderVal:0.###} " +
+                $"curBefore={before:0.0} desRawAfter={afterDesRaw:0.00} desDispAfter={afterDesDisp:0.00} game={gameTxt} appliedViaSlider={applied}");
+        }
+        catch (Exception ex)
+        {
+            Melon<UADVanillaPlusMod>.Logger.Warning($"UADVP battle speed apply failed: {ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+    // One-shot (per state change) trace of the helm-panel visibility gate, so a log read confirms the
+    // BattleManager phase flags actually distinguish deploy / combat / results. Gated on diagnostics.
+    private static void LogHelmVisibilityIfChanged(bool hudUp, bool starting, bool finishing, int selCount, bool show)
+    {
+        if (!ModSettings.BattleRuntimeDiagnosticsEnabled)
+            return;
+        string sig = $"{hudUp}|{starting}|{finishing}|{selCount > 0}|{show}";
+        if (sig == lastHelmVisSig)
+            return;
+        lastHelmVisSig = sig;
+        Melon<UADVanillaPlusMod>.Logger.Msg(
+            $"UADVP_HELMVIS hudUp={hudUp} battleStart={starting} battleFinishing={finishing} selCount={selCount} -> show={show}");
+    }
+
+    // The game's own division-speed readout text (the number shown on the speed bar) — the ground truth
+    // for calibrating raw<->displayed knots. divSpeedText is the primary line, divSpeedText2 the secondary.
+    private static string BattleGameSpeedText()
+    {
+        try
+        {
+            if (currentUi == null)
+                return "?";
+            string a = "?";
+            string b = "?";
+            try { var t = currentUi.divSpeedText; if (t != null) a = t.text; } catch { }
+            try { var t = currentUi.divSpeedText2; if (t != null) b = t.text; } catch { }
+            return $"\"{a}\"|\"{b}\"";
+        }
+        catch { return "?"; }
+    }
+
+    private static void OnBattleCourseEntered(string value)
+    {
+        if (currentUi == null || !float.TryParse(value, out float course))
+            return;
+        ApplyCourseToSelection(course);
+        if (battleCourseInput != null)
+            battleCourseInput.text = string.Empty;
+    }
+
+    // Steer each selected division onto an absolute compass course. Reused by typed entry and paste.
+    private static void ApplyCourseToSelection(float course)
+    {
+        try
+        {
+            if (currentUi == null)
+                return;
+            course = ((course % 360f) + 360f) % 360f;
+            var selected = currentUi.selectedShips;
+            if (selected == null)
+                return;
+            var seen = new HashSet<IntPtr>();
+            int n = 0;
+            foreach (Ship ship in selected)
+            {
+                if (ship == null)
+                    continue;
+                Division? d = BattleDiv(ship);
+                if (d == null)
+                    continue;
+                IntPtr ptr;
+                try { ptr = d.Pointer; } catch { continue; }
+                if (!seen.Add(ptr))
+                    continue;
+                Ship lead = BattleLeader(d) ?? ship;
+                float yaw = BattleF(() => lead.transform.eulerAngles.y);
+                Vector3 forward;
+                try { forward = lead.transform.forward; } catch { continue; }
+                Vector3 dir = Quaternion.AngleAxis(course - yaw, Vector3.up) * forward;
+                try { d.MoveDir(dir, true); n++; } catch { }
+            }
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP battle course: {course:0}° -> {n} division(s).");
+        }
+        catch (Exception ex)
+        {
+            Melon<UADVanillaPlusMod>.Logger.Warning($"UADVP battle course apply failed: {ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+    private static Division? BattleDiv(Ship s) { try { return s.division; } catch { return null; } }
+    private static Ship? BattleLeader(Division? d) { try { return d?.leader; } catch { return null; } }
+    private static float BattleF(Func<float> f) { try { return f(); } catch { return 0f; } }
+
+    // Current ACTUAL speed in knots, taken from the hull's physical velocity (m/s) rather than the opaque
+    // savedCurrentSpeed field (whose internal unit kept mis-scaling the readout). World velocity shares
+    // the same m/s scale that SpeedMax(false) uses (confirmed: SpeedMax(false) 19.29 m/s == 37.5 kn ==
+    // throttle), so knots = |velocity_horizontal| * 1.94384. Horizontal magnitude only (ignore sink/rise).
+    private static float CurrentKnots(Ship s)
+    {
+        try
+        {
+            Vector3 v = s.velocity;
+            v.y = 0f;
+            return v.magnitude * MetersPerSecToKnots;
+        }
+        catch { return 0f; }
+    }
+
+    // Assigned/desired speed in DISPLAYED knots (what the game shows on the speed bar).
+    private static float BattleSetSpeed(Ship s)
+    {
+        return DisplaySpeed(s, BattleF(() => s.savedDesiredSpeed));
+    }
+
+    // The selected division's COMMANDED speed in knots, read straight off the game's own speed slider so
+    // it matches the HUD speed bar exactly. We deliberately do NOT use savedDesiredSpeed here: for a
+    // follower that's station-keeping it swings between ~0 and max every second (that produced the junk
+    // readout). slider fraction * division max knots; falls back to the converted desired if no slider.
+    private static float BattleCommandedKnots(Ship lead)
+    {
+        try
+        {
+            var sld = currentUi != null ? currentUi.divSpeedSlider : null;
+            if (sld != null)
+            {
+                float min = sld.minValue, max = sld.maxValue, val = sld.value;
+                float maxKn = BattleF(() => lead.SpeedMax(false)) * MetersPerSecToKnots;
+                if (max > min && maxKn > 0f)
+                    return Mathf.Clamp01((val - min) / (max - min)) * maxKn;
+            }
+        }
+        catch { }
+        return BattleSetSpeed(lead);
+    }
+
+    // Convert a savedCurrent/DesiredSpeed value to the DISPLAYED knots the game shows. Those fields are
+    // in SpeedMax(true) INTERNAL units (they peg exactly at SpeedMax(true)), while the displayed max is
+    // SpeedMax(false) m/s * 1.94384 knots. So knots = raw * maxKnots / SpeedMax(true). (Confirmed in-game
+    // 0.5.243: SpeedMax(false)=19.29 m/s -> 37.5 kn == HUD "38" == sliderMax/10; savedDesiredSpeed pegged
+    // at SpeedMax(true)=56.38.) The earlier SpeedMax(true)/SpeedMax(false) ratio was inverted AND in the
+    // wrong units, inflating the readout ~2.9x.
+    private static float DisplaySpeed(Ship s, float raw)
+    {
+        try
+        {
+            float maxInternal = s.SpeedMax();                           // SpeedMax(true): same units as raw
+            float maxKnots = s.SpeedMax(false) * MetersPerSecToKnots;   // displayed max, in knots
+            if (maxInternal > 0.01f)
+                return raw * (maxKnots / maxInternal);
+        }
+        catch { }
+        return raw;
+    }
+
+    // Assigned course (degrees) from the division's ordered move direction; falls back to the
+    // current heading when no direction is set. Atan2(x,z) matches the eulerAngles.y convention.
+    private static float BattleAssignedCourse(Division? d, float fallbackDeg)
+    {
+        try
+        {
+            if (d == null)
+                return fallbackDeg;
+            Vector3 dir = d.MovingDirection();
+            if (dir.sqrMagnitude < 0.0001f)
+                return fallbackDeg;
+            float deg = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
+            return (deg % 360f + 360f) % 360f;
+        }
+        catch { return fallbackDeg; }
+    }
+
     private static void SetSharedDesignsUsageMode(CampaignController.SharedDesignUsage mode)
     {
         CampaignSharedDesignUsageSettings.TrySetMode(mode);
@@ -841,18 +1955,6 @@ internal static class InGameOptionsMenuPatch
     {
         if (ModSettings.MajorShipTorpedoesRestricted != restricted)
             ModSettings.MajorShipTorpedoesRestricted = restricted;
-
-        RefreshMenu();
-        RefreshLauncherButton();
-    }
-
-    private static void SetObsoleteDesignRetentionMode(bool enabled)
-    {
-        if (ModSettings.ObsoleteDesignRetentionEnabled != enabled)
-        {
-            ModSettings.ObsoleteDesignRetentionEnabled = enabled;
-            RefreshConstructorAvailabilityUi();
-        }
 
         RefreshMenu();
         RefreshLauncherButton();
@@ -882,12 +1984,14 @@ internal static class InGameOptionsMenuPatch
         RefreshLauncherButton();
     }
 
-    private static void SetCampaignMapWraparoundMode(bool enabled)
+    private static void SetMapGeometryMode(ModSettings.MapGeometryMode mode)
     {
-        if (ModSettings.CampaignMapWraparoundEnabled != enabled)
+        if (ModSettings.MapGeometry != mode)
         {
-            ModSettings.CampaignMapWraparoundEnabled = enabled;
+            ModSettings.MapGeometry = mode;
+            // Apply both: each builds for its mode and tears down otherwise (mutually exclusive).
             CampaignMapWrapVisualPatch.ApplyCurrentSetting();
+            CampaignGlobeVisualPatch.ApplyCurrentSetting();
         }
 
         RefreshMenu();
@@ -991,9 +2095,6 @@ internal static class InGameOptionsMenuPatch
         RefreshMenu();
         RefreshLauncherButton();
     }
-
-    private static void RefreshConstructorAvailabilityUi()
-        => RefreshConstructorAvailabilityUi("Obsolete Tech & Hulls");
 
     private static void RefreshConstructorAvailabilityUi(string optionName)
     {
@@ -1117,7 +2218,7 @@ internal static class InGameOptionsMenuPatch
     }
 
     private static bool AnyBalanceOptionEnabled()
-        => ModSettings.BattleWeatherAlwaysSunny || ModSettings.BattleSpottingRange != ModSettings.BattleSpottingRangeMode.Vanilla || ModSettings.BattleDamage != ModSettings.BattleDamageMode.Vanilla || ModSettings.RealisticShellDamageEnabled || ModSettings.DesignAccuracyPenaltiesBalanced || ModSettings.PortStrikeBalanced || ModSettings.AiFleetComposition != ModSettings.AiFleetCompositionMode.Vanilla || ModSettings.AdvancedAiBuilderEnabled || ModSettings.MajorShipTorpedoesRestricted || ModSettings.ObsoleteDesignRetentionEnabled || ModSettings.SuperstructureRefitsEnabled || ModSettings.ShipyardCapacityBalanced || ModSettings.EarlyCanalOpeningsEnabled || ModSettings.TechnologySpread != ModSettings.TechnologySpreadMode.Vanilla || !ModSettings.CampaignEndDateEnabled || ModSettings.MineWarfareDisabled || ModSettings.SubmarineWarfareDisabled || ModSettings.CampaignMapWraparoundEnabled || ModSettings.ExperimentalNationShipPaintsEnabled;
+        => ModSettings.BattleWeatherAlwaysSunny || ModSettings.BattleSpottingRange != ModSettings.BattleSpottingRangeMode.Vanilla || ModSettings.BattleDamage != ModSettings.BattleDamageMode.Vanilla || ModSettings.RealisticShellDamageEnabled || ModSettings.DesignAccuracyPenaltiesBalanced || ModSettings.PortStrikeBalanced || ModSettings.AiFleetComposition != ModSettings.AiFleetCompositionMode.Vanilla || ModSettings.AdvancedAiBuilderEnabled || ModSettings.MajorShipTorpedoesRestricted || ModSettings.SuperstructureRefitsEnabled || ModSettings.ShipyardCapacityBalanced || ModSettings.EarlyCanalOpeningsEnabled || ModSettings.TechnologySpread != ModSettings.TechnologySpreadMode.Vanilla || !ModSettings.CampaignEndDateEnabled || ModSettings.MineWarfareDisabled || ModSettings.SubmarineWarfareDisabled || ModSettings.CampaignMapWraparoundEnabled || ModSettings.ExperimentalNationShipPaintsEnabled;
 
     private static void AddLauncherTooltip(GameObject buttonObject)
         => AddTooltip(
@@ -1126,7 +2227,7 @@ internal static class InGameOptionsMenuPatch
             () => launcherButton != null && launcherButton.interactable);
 
     private static string LauncherTooltipText()
-        => $"UAD:VP Options\nBattle Weather: {BattleWeatherModeText(ModSettings.BattleWeatherAlwaysSunny)}\nBattle Spotting: {BattleSpottingRangeModeText(ModSettings.BattleSpottingRange)}\nBattle Damage: {BattleDamageModeText(ModSettings.BattleDamage)}\nRealistic Shell Damage: {RealisticShellDamageModeText(ModSettings.RealisticShellDamage)}\nCrew & Accuracy Balance: {DesignAccuracyPenaltiesModeText(ModSettings.DesignAccuracyPenaltyMode)}\nPort Strike: {PortStrikeModeText(ModSettings.PortStrikeBalanced)}\nAI Fleet Mix: {AiFleetCompositionModeText(ModSettings.AiFleetComposition)}\nAdvanced AI Builder: {AdvancedAiBuilderModeText(ModSettings.AdvancedAiBuilderEnabled)}\nShared Designs: {CampaignSharedDesignUsageSettings.CurrentModeText()}\nSuspend Dock Overcapacity: {ShipyardCapacityModeText(ModSettings.ShipyardCapacityBalanced)}\nCanal Openings: {CanalOpeningModeText(ModSettings.EarlyCanalOpeningsEnabled)}\nTechnology Spread: {TechnologySpreadModeText(ModSettings.TechnologySpread)}\nCampaign End Date: {CampaignEndDateModeText(ModSettings.CampaignEndDateEnabled)}\nMine Warfare: {MineWarfareModeText(ModSettings.MineWarfareDisabled)}\nSubmarine Warfare: {SubmarineWarfareModeText(ModSettings.SubmarineWarfareDisabled)}\nCA+ Torpedoes: {MajorShipTorpedoesModeText(ModSettings.MajorShipTorpedoesRestricted)}\nObsolete Tech & Hulls: {ObsoleteDesignRetentionModeText(ModSettings.ObsoleteDesignRetentionEnabled)}\nSuperstructure Compatibility: {SuperstructureRefitsModeText(ModSettings.SuperstructureRefitsEnabled)}\nMap Geometry: {CampaignMapWraparoundModeText(ModSettings.CampaignMapWraparoundEnabled)}\nExperimental Nation Ship Paints: {ExperimentalNationShipPaintsModeText(ModSettings.ExperimentalNationShipPaintsEnabled)}\nBattle Runtime Diagnostics: {BattleRuntimeDiagnosticsModeText(ModSettings.BattleRuntimeDiagnosticsEnabled)}";
+        => $"UAD:VP Options\nBattle Weather: {BattleWeatherModeText(ModSettings.BattleWeatherAlwaysSunny)}\nBattle Spotting: {BattleSpottingRangeModeText(ModSettings.BattleSpottingRange)}\nBattle Damage: {BattleDamageModeText(ModSettings.BattleDamage)}\nRealistic Shell Damage: {RealisticShellDamageModeText(ModSettings.RealisticShellDamage)}\nCrew & Accuracy Balance: {DesignAccuracyPenaltiesModeText(ModSettings.DesignAccuracyPenaltyMode)}\nPort Strike: {PortStrikeModeText(ModSettings.PortStrikeBalanced)}\nAI Fleet Mix: {AiFleetCompositionModeText(ModSettings.AiFleetComposition)}\nAdvanced AI Builder: {AdvancedAiBuilderModeText(ModSettings.AdvancedAiBuilderEnabled)}\nShared Designs: {CampaignSharedDesignUsageSettings.CurrentModeText()}\nSuspend Dock Overcapacity: {ShipyardCapacityModeText(ModSettings.ShipyardCapacityBalanced)}\nCanal Openings: {CanalOpeningModeText(ModSettings.EarlyCanalOpeningsEnabled)}\nTechnology Spread: {TechnologySpreadModeText(ModSettings.TechnologySpread)}\nCampaign End Date: {CampaignEndDateModeText(ModSettings.CampaignEndDateEnabled)}\nMine Warfare: {MineWarfareModeText(ModSettings.MineWarfareDisabled)}\nSubmarine Warfare: {SubmarineWarfareModeText(ModSettings.SubmarineWarfareDisabled)}\nCA+ Torpedoes: {MajorShipTorpedoesModeText(ModSettings.MajorShipTorpedoesRestricted)}\nSuperstructure Compatibility: {SuperstructureRefitsModeText(ModSettings.SuperstructureRefitsEnabled)}\nMap Geometry: {CampaignMapWraparoundModeText(ModSettings.CampaignMapWraparoundEnabled)}\nExperimental Nation Ship Paints: {ExperimentalNationShipPaintsModeText(ModSettings.ExperimentalNationShipPaintsEnabled)}\nBattle Runtime Diagnostics: {BattleRuntimeDiagnosticsModeText(ModSettings.BattleRuntimeDiagnosticsEnabled)}";
 
     private static void AddTooltip(GameObject target, string text, Func<bool>? canShow = null)
         => AddTooltip(target, () => text, canShow);
@@ -1276,7 +2377,9 @@ internal static class InGameOptionsMenuPatch
         => section switch
         {
             Section.Battle => "Battle",
+            Section.Maneuvers => "Battle Maneuvers",
             Section.Campaign => "Campaign",
+            Section.SwitchNation => "Switch Nation",
             Section.ShipDesign => "Ship Design",
             Section.Experimental => "Experimental",
             Section.NationShipPaints => "Nation Ship Paints",
@@ -1309,9 +2412,6 @@ internal static class InGameOptionsMenuPatch
 
     private static string MajorShipTorpedoesModeText(bool restricted)
         => restricted ? "Disallowed" : "Vanilla";
-
-    private static string ObsoleteDesignRetentionModeText(bool enabled)
-        => enabled ? "Retain" : "Vanilla";
 
     private static string SuperstructureRefitsModeText(bool enabled)
         => ModSettings.SuperstructureRefitsModeText(enabled);
@@ -1408,6 +2508,335 @@ internal static class InGameOptionsMenuPatch
     }
 
     // ---- Paint launcher + constructor panel + HSV color picker ----
+
+    // ----- Phase 2: class naming theme launcher + picker panel (constructor) -----
+
+    private static void SetupThemeLauncherButton()
+    {
+        GameObject? options = FindPath("Global/Ui/UiMain/Common/Options");
+        GameObject? helpButton = FindPath("Global/Ui/UiMain/Common/Options/Help");
+        if (options == null || helpButton == null)
+        {
+            Melon<UADVanillaPlusMod>.Logger.Warning("UADVP theme launcher: Options/Help not found at setup.");
+            return;
+        }
+
+        GameObject buttonObject = options.transform.Find(ThemeLauncherButtonName)?.gameObject ?? UnityEngine.Object.Instantiate(helpButton);
+        buttonObject.transform.SetParent(options.transform, false);
+        buttonObject.name = ThemeLauncherButtonName;
+        buttonObject.SetActive(false);
+        MatchButtonSizing(buttonObject, helpButton);
+        RemoveTooltipHandlers(buttonObject);
+        AddTooltip(buttonObject, () => "UAD:VP Class Naming Themes" + ThemeTooltipSuffix());
+
+        // Distinct icon so the button doesn't read as a second Help "?".
+        Transform? imageChild = buttonObject.transform.Find("Image");
+        if (imageChild != null && imageChild.TryGetComponent(out Image themeImage))
+        {
+            Sprite? sprite = Resources.Load<Sprite>("tabs/fleet") ?? Resources.Load<Sprite>("tabs/tech");
+            if (sprite != null)
+            {
+                themeImage.sprite = sprite.TryCast<Sprite>();
+                themeImage.preserveAspect = true;
+                themeImage.color = Color.white;
+            }
+            ScaleLauncherIcon(imageChild);
+        }
+
+        Outline outline = buttonObject.GetComponent<Outline>() ?? buttonObject.AddComponent<Outline>();
+        outline.effectDistance = new Vector2(1f, 1f);
+        outline.effectColor = new Color(0.4f, 0.8f, 1f, 1f);
+
+        themeLauncherButton = buttonObject.GetComponent<Button>();
+        if (themeLauncherButton != null)
+        {
+            themeLauncherButton.onClick.RemoveAllListeners();
+            themeLauncherButton.onClick.AddListener(new System.Action(ToggleThemePanel));
+        }
+        Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP theme launcher button added (button={(themeLauncherButton != null)}).");
+    }
+
+    private static string ThemeTooltipSuffix()
+    {
+        if (DesignHullColorProofPatch.TryResolveCurrentConstructorDesign(out _, out string name) && !string.IsNullOrWhiteSpace(name))
+            return $"\nEditing class: {name}";
+        return "\nOpen a ship in the constructor to set its class theme.";
+    }
+
+    private static void RefreshThemeLauncherButton()
+    {
+        if (themeLauncherButton == null)
+        {
+            if (!loggedThemeLauncherNull)
+            {
+                loggedThemeLauncherNull = true;
+                Melon<UADVanillaPlusMod>.Logger.Warning("UADVP theme launcher: button is null (not created).");
+            }
+            return;
+        }
+
+        bool show = initialized && ModSettings.ClassNamingThemesEnabled && GameManager.IsConstructor;
+        GameObject go = themeLauncherButton.gameObject;
+        if (go.activeSelf != show)
+            go.SetActive(show);
+        if (show && !loggedThemeLauncherShow)
+        {
+            loggedThemeLauncherShow = true;
+            RectTransform? r = go.GetComponent<RectTransform>();
+            Melon<UADVanillaPlusMod>.Logger.Msg(
+                $"UADVP theme launcher shown: active={go.activeSelf} parent={go.transform.parent?.name} sibling={go.transform.GetSiblingIndex()} pos={(r != null ? r.anchoredPosition.ToString() : "?")}.");
+        }
+        if (!show)
+            CloseThemePanel();
+    }
+
+    private static void ToggleThemePanel()
+    {
+        if (themePanel != null)
+            CloseThemePanel();
+        else
+            OpenThemePanel();
+    }
+
+    private static void CloseThemePanel()
+    {
+        if (themePanel != null)
+        {
+            UnityEngine.Object.Destroy(themePanel);
+            themePanel = null;
+        }
+    }
+
+    private static void OpenThemePanel()
+    {
+        CloseThemePanel();
+
+        if (!DesignHullColorProofPatch.TryResolveCurrentConstructorDesign(out _, out string designName) || string.IsNullOrWhiteSpace(designName))
+        {
+            Melon<UADVanillaPlusMod>.Logger.Warning("UADVP naming themes: no design open in the constructor.");
+            return;
+        }
+
+        GameObject? popupRoot = FindPath("Global/Ui/UiMain/Popup");
+        if (popupRoot == null)
+            return;
+
+        // Normalize to the game's real base-class name so this matches the build-time
+        // key (ShipGenerateRandomNameThemePatch). (Type-prefix stripping needs the ship's
+        // ShipType, added with the P2 ship-aware constructor resolution; null is fine for
+        // the common no-prefix case.)
+        string baseKey = ShipNameParts.BaseName(designName, null);
+        themePanelClass = string.IsNullOrEmpty(baseKey) ? designName : baseKey;
+        themePanelNation = ModCampaignState.MainPlayerNation();
+        themePanelThemes = NameThemeDatabase.GetAvailableThemes(themePanelNation, 99999);
+        themePanelThemeIndex = 0;
+
+        ClassThemeAssignments.Choice? choice = ClassThemeAssignments.Get(themePanelClass);
+        if (choice != null && choice.Mode == ClassThemeAssignments.Mode.ThemePool && !string.IsNullOrEmpty(choice.ThemeName))
+        {
+            int idx = themePanelThemes.FindIndex(t => string.Equals(t.ThemeName, choice.ThemeName, StringComparison.Ordinal));
+            if (idx >= 0)
+                themePanelThemeIndex = idx;
+        }
+
+        themePanel = new GameObject("UADVP_ClassThemePanel");
+        themePanel.transform.SetParent(popupRoot.transform, false);
+        Image bg = themePanel.AddComponent<Image>();
+        bg.color = new Color(0f, 0f, 0f, 0.9f);
+        bg.raycastTarget = true;
+        Button bgButton = themePanel.AddComponent<Button>();
+        bgButton.targetGraphic = bg;
+
+        RectTransform rect = themePanel.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(1f, 1f);
+        rect.anchorMax = new Vector2(1f, 1f);
+        rect.pivot = new Vector2(1f, 1f);
+        rect.anchoredPosition = new Vector2(-18f, -90f);
+        rect.sizeDelta = new Vector2(560f, 408f);
+
+        VerticalLayoutGroup layout = themePanel.AddComponent<VerticalLayoutGroup>();
+        layout.padding = new RectOffset { left = 12, right = 12, top = 10, bottom = 10 };
+        layout.spacing = 6f;
+        layout.childControlHeight = true;
+        layout.childControlWidth = true;
+        layout.childForceExpandHeight = false;
+        layout.childForceExpandWidth = true;
+
+        BuildThemePanelContent();
+        themePanel.transform.SetAsLastSibling();
+    }
+
+    private static void BuildThemePanelContent()
+    {
+        if (themePanel == null)
+            return;
+        ClearChildren(themePanel);
+
+        ClassThemeAssignments.Choice? choice = ClassThemeAssignments.Get(themePanelClass);
+        ClassThemeAssignments.Mode mode = choice?.Mode ?? ClassThemeAssignments.Mode.Off;
+
+        // Tall (scrollable theme list) for Theme mode, compact otherwise.
+        bool themeList = mode == ClassThemeAssignments.Mode.ThemePool && themePanelThemes.Count > 0;
+        RectTransform panelRect = themePanel.GetComponent<RectTransform>();
+        panelRect.sizeDelta = new Vector2(560f, themeList ? 408f : 150f);
+
+        GameObject header = new("Header");
+        header.transform.SetParent(themePanel.transform, false);
+        Image hi = header.AddComponent<Image>();
+        hi.color = new Color(0f, 0f, 0f, 0f);
+        hi.raycastTarget = false;
+        HorizontalLayoutGroup hl = header.AddComponent<HorizontalLayoutGroup>();
+        hl.spacing = 8f;
+        hl.childAlignment = TextAnchor.MiddleLeft;
+        hl.childControlHeight = true;
+        hl.childControlWidth = true;
+        hl.childForceExpandHeight = false;
+        hl.childForceExpandWidth = false;
+        AddLayout(header, minHeight: 22f, preferredHeight: 22f, flexibleWidth: 1f);
+        Text title = AddText(header.transform, $"Naming: {themePanelClass}", 13, TextAnchor.MiddleLeft);
+        AddLayout(title.gameObject, flexibleWidth: 1f);
+        AddActionButton(header.transform, "Close", CloseThemePanel, 56f);
+
+        AddSegmentedOption(
+            themePanel.transform,
+            "UADVP_ThemeMode",
+            "Mode",
+            "Vanilla uses the game's default names. Theme draws names from a chosen pool. Sequential names ships <Class>-1, -2, ...",
+            true,
+            ("Vanilla", mode == ClassThemeAssignments.Mode.Off, () => SetThemeMode(ClassThemeAssignments.Mode.Off)),
+            ("Theme", mode == ClassThemeAssignments.Mode.ThemePool, () => SetThemeMode(ClassThemeAssignments.Mode.ThemePool)),
+            ("Sequential", mode == ClassThemeAssignments.Mode.Sequential, () => SetThemeMode(ClassThemeAssignments.Mode.Sequential)));
+
+        if (mode == ClassThemeAssignments.Mode.ThemePool)
+        {
+            if (themePanelThemes.Count == 0)
+            {
+                AddText(themePanel.transform, $"No themes for '{(themePanelNation.Length == 0 ? "(no nation)" : themePanelNation)}'.", 12, TextAnchor.MiddleLeft);
+            }
+            else
+            {
+                themePanelThemeIndex = Mathf.Clamp(themePanelThemeIndex, 0, themePanelThemes.Count - 1);
+                BuildThemeScrollList(themePanel.transform);
+
+                NameThemeDatabase.ThemeInfo cur = themePanelThemes[themePanelThemeIndex];
+                List<string> preview = NameThemeDatabase.GetNamesForTheme(cur.ThemeName, themePanelNation);
+                string sample = preview.Count == 0 ? "(no names)" : string.Join(", ", preview.Take(8));
+                AddText(themePanel.transform, $"{cur.ThemeName}: {sample}", 12, TextAnchor.MiddleLeft);
+
+                // Selecting a theme already applies to FUTURE builds; this renames the class
+                // + its existing ships now (lead takes the theme's first name, rest follow).
+                AddActionButton(themePanel.transform, "Rename class + ships now", ApplyThemeRenameNow, 240f);
+            }
+        }
+        else if (mode == ClassThemeAssignments.Mode.Sequential)
+        {
+            AddText(themePanel.transform, $"New ships: {themePanelClass}-1, {themePanelClass}-2, ...", 12, TextAnchor.MiddleLeft);
+        }
+    }
+
+    // Scrollable list of available themes (selected highlighted). Replaces the cycler so
+    // every theme is reachable without paging. No game prefab — a hand-built ScrollRect.
+    private static void BuildThemeScrollList(Transform parent)
+    {
+        GameObject scrollGo = new("UADVP_ThemeScroll");
+        scrollGo.transform.SetParent(parent, false);
+        Image scrollBg = scrollGo.AddComponent<Image>();
+        scrollBg.color = new Color(0f, 0f, 0f, 0.25f);
+        ScrollRect scroll = scrollGo.AddComponent<ScrollRect>();
+        scroll.horizontal = false;
+        scroll.vertical = true;
+        scroll.movementType = ScrollRect.MovementType.Clamped;
+        scroll.scrollSensitivity = 24f;
+        AddLayout(scrollGo, minHeight: 224f, preferredHeight: 224f, flexibleWidth: 1f);
+
+        GameObject viewport = new("Viewport");
+        viewport.transform.SetParent(scrollGo.transform, false);
+        Image vpImg = viewport.AddComponent<Image>();
+        vpImg.color = new Color(0f, 0f, 0f, 0.01f);
+        viewport.AddComponent<RectMask2D>();
+        RectTransform vpRect = viewport.GetComponent<RectTransform>();
+        vpRect.anchorMin = Vector2.zero;
+        vpRect.anchorMax = Vector2.one;
+        vpRect.pivot = new Vector2(0f, 1f);
+        vpRect.offsetMin = Vector2.zero;
+        vpRect.offsetMax = Vector2.zero;
+
+        GameObject content = new("Content");
+        content.transform.SetParent(viewport.transform, false);
+        VerticalLayoutGroup vlg = content.AddComponent<VerticalLayoutGroup>();
+        vlg.spacing = 2f;
+        vlg.childControlHeight = true;
+        vlg.childControlWidth = true;
+        vlg.childForceExpandHeight = false;
+        vlg.childForceExpandWidth = true;
+        ContentSizeFitter csf = content.AddComponent<ContentSizeFitter>();
+        csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        csf.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+        RectTransform cRect = content.GetComponent<RectTransform>();
+        cRect.anchorMin = new Vector2(0f, 1f);
+        cRect.anchorMax = new Vector2(1f, 1f);
+        cRect.pivot = new Vector2(0.5f, 1f);
+        cRect.offsetMin = Vector2.zero;
+        cRect.offsetMax = Vector2.zero;
+
+        scroll.viewport = vpRect;
+        scroll.content = cRect;
+
+        for (int i = 0; i < themePanelThemes.Count; i++)
+        {
+            int index = i;
+            NameThemeDatabase.ThemeInfo info = themePanelThemes[i];
+            Button button = AddActionButton(content.transform, $"{info.ThemeName}  ({info.NameCount})", () => SelectTheme(index), 360f);
+            Image image = button.GetComponent<Image>() ?? button.gameObject.AddComponent<Image>();
+            image.color = i == themePanelThemeIndex ? SelectedGold : SegmentIdle;
+        }
+    }
+
+    private static void SetThemeMode(ClassThemeAssignments.Mode mode)
+    {
+        ClassThemeAssignments.Choice choice = ClassThemeAssignments.Get(themePanelClass) ?? new ClassThemeAssignments.Choice();
+        choice.Mode = mode;
+        if (mode == ClassThemeAssignments.Mode.ThemePool && string.IsNullOrEmpty(choice.ThemeName) && themePanelThemes.Count > 0)
+            choice.ThemeName = themePanelThemes[Mathf.Clamp(themePanelThemeIndex, 0, themePanelThemes.Count - 1)].ThemeName;
+        ClassThemeAssignments.Set(themePanelClass, choice);
+        BuildThemePanelContent();
+    }
+
+    private static void SelectTheme(int index)
+    {
+        if (index < 0 || index >= themePanelThemes.Count)
+            return;
+        themePanelThemeIndex = index;
+        ClassThemeAssignments.Choice choice = ClassThemeAssignments.Get(themePanelClass) ?? new ClassThemeAssignments.Choice();
+        choice.Mode = ClassThemeAssignments.Mode.ThemePool;
+        choice.ThemeName = themePanelThemes[index].ThemeName;
+        ClassThemeAssignments.Set(themePanelClass, choice);
+        BuildThemePanelContent();
+    }
+
+    // Family-wide rename of the current class to the selected theme. Renaming the class
+    // template changes its base name, so re-key the theme assignment so future builds of the
+    // (now renamed) class stay themed. Closes the panel afterward since the class identity changed.
+    private static void ApplyThemeRenameNow()
+    {
+        if (themePanelThemes.Count == 0)
+            return;
+        NameThemeDatabase.ThemeInfo cur = themePanelThemes[Mathf.Clamp(themePanelThemeIndex, 0, themePanelThemes.Count - 1)];
+        string oldKey = themePanelClass;
+        string newKey = ShipNaming.RenameClassToTheme(oldKey, cur.ThemeName, themePanelNation);
+
+        if (!string.IsNullOrEmpty(newKey) && !string.Equals(newKey, oldKey, StringComparison.OrdinalIgnoreCase))
+        {
+            ClassThemeAssignments.Set(oldKey, new ClassThemeAssignments.Choice { Mode = ClassThemeAssignments.Mode.Off });
+            ClassThemeAssignments.Set(newKey, new ClassThemeAssignments.Choice
+            {
+                Mode = ClassThemeAssignments.Mode.ThemePool,
+                ThemeName = cur.ThemeName,
+            });
+        }
+
+        CloseThemePanel();
+    }
 
     private static void SetupPaintLauncherButton()
     {

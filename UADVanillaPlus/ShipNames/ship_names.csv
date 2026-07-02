@@ -1,0 +1,5601 @@
+Country,Theme,Name,MinShips
+# 
+# CURRENTLY IMPLEMENTED COUNTRIES:
+# - universal (all countries)
+# - greece, britain, france, germany, usa, russia, italy, japan, spain, austria
+# 
+# TODO - COUNTRIES NEEDING NAMES:
+# - china, portugal, brazil, argentina, chile
+# - belgium, denmark, norway, sweden, korea
+# 
+# NOTE: MinShips column is currently set to 0 for all themes (all themes available regardless of class size)
+#       Deconfliction happens automatically across all classes using the same base name
+# 
+# Universal themes available to all countries
+universal,Greek Gods,Zeus,0
+universal,Greek Gods,Poseidon,0
+universal,Greek Gods,Athena,0
+universal,Greek Gods,Apollo,0
+universal,Greek Gods,Artemis,0
+universal,Greek Gods,Ares,0
+universal,Greek Gods,Aphrodite,0
+universal,Greek Gods,Hephaestus,0
+universal,Greek Gods,Hermes,0
+universal,Greek Gods,Dionysus,0
+universal,Greek Gods,Demeter,0
+universal,Greek Gods,Hestia,0
+universal,Greek Gods,Hera,0
+universal,Greek Gods,Hades,0
+universal,Greek Gods,Persephone,0
+universal,Greek Gods,Hecate,0
+universal,Greek Gods,Helios,0
+universal,Greek Gods,Selene,0
+universal,Greek Gods,Eos,0
+universal,Greek Gods,Kronos,0
+universal,Greek Gods,Rhea,0
+universal,Greek Gods,Oceanus,0
+universal,Greek Gods,Tethys,0
+universal,Greek Gods,Hyperion,0
+universal,Greek Gods,Theia,0
+universal,Greek Gods,Coeus,0
+universal,Greek Gods,Phoebe,0
+universal,Greek Gods,Mnemosyne,0
+universal,Greek Gods,Themis,0
+universal,Greek Gods,Crius,0
+universal,Greek Gods,Iapetus,0
+universal,Greek Gods,Atlas,0
+universal,Greek Gods,Prometheus,0
+universal,Greek Gods,Epimetheus,0
+universal,Greek Gods,Metis,0
+universal,Greek Gods,Eris,0
+universal,Greek Gods,Nemesis,0
+universal,Greek Gods,Nike,0
+universal,Greek Gods,Tyche,0
+universal,Greek Gods,Pan,0
+universal,Greek Gods,Morpheus,0
+universal,Greek Gods,Hypnos,0
+universal,Greek Gods,Thanatos,0
+universal,Greek Gods,Erebus,0
+universal,Greek Gods,Nyx,0
+universal,Greek Gods,Aether,0
+universal,Greek Gods,Hemera,0
+universal,Greek Gods,Gaia,0
+universal,Greek Gods,Uranus,0
+universal,Greek Gods,Pontus,0
+universal,Greek Heroes,Achilles,0
+universal,Greek Heroes,Odysseus,0
+universal,Greek Heroes,Heracles,0
+universal,Greek Heroes,Perseus,0
+universal,Greek Heroes,Theseus,0
+universal,Greek Heroes,Jason,0
+universal,Greek Heroes,Bellerophon,0
+universal,Greek Heroes,Orpheus,0
+universal,Greek Heroes,Atalanta,0
+universal,Greek Heroes,Castor,0
+universal,Greek Heroes,Pollux,0
+universal,Greek Heroes,Ajax,0
+universal,Greek Heroes,Diomedes,0
+universal,Greek Heroes,Nestor,0
+universal,Greek Heroes,Patroclus,0
+universal,Greek Heroes,Hector,0
+universal,Greek Heroes,Agamemnon,0
+universal,Greek Heroes,Menelaus,0
+universal,Greek Heroes,Aeneas,0
+universal,Greek Heroes,Telamon,0
+universal,Greek Heroes,Peleus,0
+universal,Greek Heroes,Meleager,0
+universal,Greek Heroes,Philoctetes,0
+universal,Greek Heroes,Teucer,0
+universal,Greek Heroes,Idomeneus,0
+universal,Greek Heroes,Cadmus,0
+universal,Greek Heroes,Pirithous,0
+universal,Greek Heroes,Daedalus,0
+universal,Greek Heroes,Icarus,0
+universal,Greek Heroes,Asclepius,0
+universal,Greek Heroes,Protesilaus,0
+universal,Greek Heroes,Sarpedon,0
+universal,Greek Heroes,Oedipus,0
+universal,Greek Heroes,Amphitryon,0
+universal,Greek Heroes,Hippolytus,0
+universal,Greek Heroes,Iphicles,0
+universal,Roman Gods,Jupiter,0
+universal,Roman Gods,Neptune,0
+universal,Roman Gods,Mars,0
+universal,Roman Gods,Venus,0
+universal,Roman Gods,Apollo,0
+universal,Roman Gods,Diana,0
+universal,Roman Gods,Mercury,0
+universal,Roman Gods,Minerva,0
+universal,Roman Gods,Vulcan,0
+universal,Roman Gods,Juno,0
+universal,Roman Gods,Vesta,0
+universal,Roman Gods,Ceres,0
+universal,Roman Gods,Bacchus,0
+universal,Roman Gods,Pluto,0
+universal,Roman Gods,Saturn,0
+universal,Roman Gods,Uranus,0
+universal,Roman Gods,Sol,0
+universal,Roman Gods,Luna,0
+universal,Roman Gods,Aurora,0
+universal,Roman Gods,Bellona,0
+universal,Roman Gods,Janus,0
+universal,Roman Gods,Fortuna,0
+universal,Roman Gods,Victoria,0
+universal,Roman Gods,Concordia,0
+universal,Roman Gods,Fides,0
+universal,Roman Gods,Spes,0
+universal,Roman Gods,Virtus,0
+universal,Roman Gods,Honos,0
+universal,Roman Gods,Clementia,0
+universal,Roman Gods,Justitia,0
+universal,Roman Gods,Pietas,0
+universal,Roman Gods,Salus,0
+universal,Roman Gods,Libertas,0
+universal,Roman Gods,Pax,0
+universal,Norse Gods,Odin,0
+universal,Norse Gods,Thor,0
+universal,Norse Gods,Loki,0
+universal,Norse Gods,Freya,0
+universal,Norse Gods,Frigg,0
+universal,Norse Gods,Baldur,0
+universal,Norse Gods,Tyr,0
+universal,Norse Gods,Heimdall,0
+universal,Norse Gods,Njord,0
+universal,Norse Gods,Skadi,0
+universal,Norse Gods,Hel,0
+universal,Norse Gods,Forseti,0
+universal,Norse Gods,Bragi,0
+universal,Norse Gods,Idun,0
+universal,Norse Gods,Vidar,0
+universal,Norse Gods,Vali,0
+universal,Norse Gods,Ullr,0
+universal,Norse Gods,Hoenir,0
+universal,Norse Gods,Sif,0
+universal,Norse Gods,Eir,0
+universal,Norse Gods,Saga,0
+universal,Norse Gods,Var,0
+universal,Norse Gods,Syn,0
+universal,Norse Gods,Aegir,0
+universal,Norse Gods,Ran,0
+universal,Norse Gods,Fenrir,0
+universal,Norse Gods,Jormungandr,0
+universal,Norse Gods,Sleipnir,0
+universal,Norse Gods,Ymir,0
+universal,Norse Gods,Surtr,0
+universal,Egyptian Gods,Ra,0
+universal,Egyptian Gods,Anubis,0
+universal,Egyptian Gods,Osiris,0
+universal,Egyptian Gods,Isis,0
+universal,Egyptian Gods,Horus,0
+universal,Egyptian Gods,Set,0
+universal,Egyptian Gods,Thoth,0
+universal,Egyptian Gods,Hathor,0
+universal,Egyptian Gods,Bastet,0
+universal,Egyptian Gods,Sekhmet,0
+universal,Egyptian Gods,Ptah,0
+universal,Egyptian Gods,Amun,0
+universal,Egyptian Gods,Amon-Ra,0
+universal,Egyptian Gods,Sobek,0
+universal,Egyptian Gods,Khnum,0
+universal,Egyptian Gods,Nut,0
+universal,Egyptian Gods,Geb,0
+universal,Egyptian Gods,Shu,0
+universal,Egyptian Gods,Tefnut,0
+universal,Egyptian Gods,Nephthys,0
+universal,Egyptian Gods,Ma'at,0
+universal,Egyptian Gods,Khonsu,0
+universal,Egyptian Gods,Bes,0
+universal,Egyptian Gods,Taweret,0
+universal,Egyptian Gods,Serapis,0
+universal,Hindu Gods,Brahma,0
+universal,Hindu Gods,Vishnu,0
+universal,Hindu Gods,Shiva,0
+universal,Hindu Gods,Ganesha,0
+universal,Hindu Gods,Hanuman,0
+universal,Hindu Gods,Durga,0
+universal,Hindu Gods,Kali,0
+universal,Hindu Gods,Lakshmi,0
+universal,Hindu Gods,Saraswati,0
+universal,Hindu Gods,Parvati,0
+universal,Hindu Gods,Krishna,0
+universal,Hindu Gods,Rama,0
+universal,Hindu Gods,Indra,0
+universal,Hindu Gods,Agni,0
+universal,Hindu Gods,Varuna,0
+universal,Hindu Gods,Vayu,0
+universal,Hindu Gods,Surya,0
+universal,Hindu Gods,Chandra,0
+universal,Hindu Gods,Yama,0
+universal,Hindu Gods,Kubera,0
+universal,Hindu Gods,Kartikeya,0
+universal,Hindu Gods,Garuda,0
+universal,Hindu Gods,Nandi,0
+universal,Hindu Gods,Kamadeva,0
+universal,Mythical Creatures,Phoenix,0
+universal,Mythical Creatures,Dragon,0
+universal,Mythical Creatures,Griffin,0
+universal,Mythical Creatures,Chimera,0
+universal,Mythical Creatures,Hydra,0
+universal,Mythical Creatures,Cerberus,0
+universal,Mythical Creatures,Pegasus,0
+universal,Mythical Creatures,Minotaur,0
+universal,Mythical Creatures,Sphinx,0
+universal,Mythical Creatures,Kraken,0
+universal,Mythical Creatures,Basilisk,0
+universal,Mythical Creatures,Manticore,0
+universal,Mythical Creatures,Wyvern,0
+universal,Mythical Creatures,Leviathan,0
+universal,Mythical Creatures,Behemoth,0
+universal,Mythical Creatures,Roc,0
+universal,Mythical Creatures,Thunderbird,0
+universal,Mythical Creatures,Salamander,0
+universal,Mythical Creatures,Unicorn,0
+universal,Mythical Creatures,Centaur,0
+universal,Mythical Creatures,Cyclops,0
+universal,Mythical Creatures,Gorgon,0
+universal,Mythical Creatures,Harpy,0
+universal,Mythical Creatures,Siren,0
+universal,Mythical Creatures,Scylla,0
+universal,Mythical Creatures,Charybdis,0
+# Culture-gated creature themes — unlocked by controlling territory from the listed nations
+universal,Greek Creatures,Typhon,0,greece
+universal,Greek Creatures,Echidna,0,greece
+universal,Greek Creatures,Hydra,0,greece
+universal,Greek Creatures,Chimera,0,greece
+universal,Greek Creatures,Minotaur,0,greece
+universal,Greek Creatures,Cyclops,0,greece
+universal,Greek Creatures,Medusa,0,greece
+universal,Greek Creatures,Gorgon,0,greece
+universal,Greek Creatures,Pegasus,0,greece
+universal,Greek Creatures,Cerberus,0,greece
+universal,Greek Creatures,Sphinx,0,greece
+universal,Greek Creatures,Harpy,0,greece
+universal,Greek Creatures,Siren,0,greece
+universal,Greek Creatures,Centaur,0,greece
+universal,Greek Creatures,Scylla,0,greece
+universal,Greek Creatures,Charybdis,0,greece
+universal,Greek Creatures,Python,0,greece
+universal,Greek Creatures,Ladon,0,greece
+universal,Greek Creatures,Geryon,0,greece
+universal,Greek Creatures,Cetus,0,greece
+universal,Greek Creatures,Drakon,0,greece
+universal,Greek Creatures,Colchian,0,greece
+universal,Greek Creatures,Lernaean,0,greece
+universal,Greek Creatures,Nemean,0,greece
+universal,Greek Creatures,Empusa,0,greece
+universal,Greek Creatures,Lamia,0,greece
+universal,Greek Creatures,Stymphalian,0,greece
+universal,Greek Creatures,Orthos,0,greece
+universal,Greek Creatures,Campe,0,greece
+universal,Norse Creatures,Fenrir,0,norway|sweden|denmark
+universal,Norse Creatures,Jormungandr,0,norway|sweden|denmark
+universal,Norse Creatures,Nidhogg,0,norway|sweden|denmark
+universal,Norse Creatures,Fafnir,0,norway|sweden|denmark
+universal,Norse Creatures,Kraken,0,norway|sweden|denmark
+universal,Norse Creatures,Lindworm,0,norway|sweden|denmark
+universal,Norse Creatures,Draugen,0,norway|sweden|denmark
+universal,Norse Creatures,Huldra,0,norway|sweden|denmark
+universal,Norse Creatures,Nøkken,0,norway|sweden|denmark
+universal,Norse Creatures,Fossegrim,0,norway|sweden|denmark
+universal,Norse Creatures,Jotun,0,norway|sweden|denmark
+universal,Norse Creatures,Garm,0,norway|sweden|denmark
+universal,Norse Creatures,Ratatosk,0,norway|sweden|denmark
+universal,Norse Creatures,Sköll,0,norway|sweden|denmark
+universal,Norse Creatures,Háti,0,norway|sweden|denmark
+universal,Norse Creatures,Huginn,0,norway|sweden|denmark
+universal,Norse Creatures,Muninn,0,norway|sweden|denmark
+universal,Norse Creatures,Sleipnir,0,norway|sweden|denmark
+universal,Norse Creatures,Níðhöggr,0,norway|sweden|denmark
+universal,Norse Creatures,Hrym,0,norway|sweden|denmark
+universal,Norse Creatures,Nattmara,0,norway|sweden|denmark
+universal,Norse Creatures,Svartálfar,0,norway|sweden|denmark
+universal,Norse Creatures,Valkyrie,0,norway|sweden|denmark
+universal,Chinese Creatures,Long,0,china
+universal,Chinese Creatures,Fenghuang,0,china
+universal,Chinese Creatures,Qilin,0,china
+universal,Chinese Creatures,Pixiu,0,china
+universal,Chinese Creatures,Bixie,0,china
+universal,Chinese Creatures,Jiaolong,0,china
+universal,Chinese Creatures,Peng,0,china
+universal,Chinese Creatures,Taotie,0,china
+universal,Chinese Creatures,Hundun,0,china
+universal,Chinese Creatures,Bashe,0,china
+universal,Chinese Creatures,Suanni,0,china
+universal,Chinese Creatures,Pulao,0,china
+universal,Chinese Creatures,Bixi,0,china
+universal,Chinese Creatures,Chaofeng,0,china
+universal,Chinese Creatures,Chiwen,0,china
+universal,Chinese Creatures,Yazi,0,china
+universal,Chinese Creatures,Bian,0,china
+universal,Chinese Creatures,Fuxi,0,china
+universal,Chinese Creatures,Biwen,0,china
+universal,Chinese Creatures,Jiu Wei Hu,0,china
+universal,Chinese Creatures,Tian Gou,0,china
+universal,Chinese Creatures,Baihu,0,china
+universal,Chinese Creatures,Xuanwu,0,china
+universal,Chinese Creatures,Zhuque,0,china
+universal,Japanese Creatures,Ryū,0,japan
+universal,Japanese Creatures,Tengu,0,japan
+universal,Japanese Creatures,Kappa,0,japan
+universal,Japanese Creatures,Tanuki,0,japan
+universal,Japanese Creatures,Oni,0,japan
+universal,Japanese Creatures,Kitsune,0,japan
+universal,Japanese Creatures,Yamata,0,japan
+universal,Japanese Creatures,Baku,0,japan
+universal,Japanese Creatures,Nue,0,japan
+universal,Japanese Creatures,Jorogumo,0,japan
+universal,Japanese Creatures,Raiju,0,japan
+universal,Japanese Creatures,Gashadokuro,0,japan
+universal,Japanese Creatures,Shachihoko,0,japan
+universal,Japanese Creatures,Ōkami,0,japan
+universal,Japanese Creatures,Bakeneko,0,japan
+universal,Japanese Creatures,Umi-bozu,0,japan
+universal,Japanese Creatures,Kirin,0,japan
+universal,Japanese Creatures,Shiryō,0,japan
+universal,Japanese Creatures,Orochi,0,japan
+universal,Slavic Creatures,Firebird,0,russia
+universal,Slavic Creatures,Zmey Gorynych,0,russia
+universal,Slavic Creatures,Rusalka,0,russia
+universal,Slavic Creatures,Leshy,0,russia
+universal,Slavic Creatures,Vodyanoy,0,russia
+universal,Slavic Creatures,Domovoi,0,russia
+universal,Slavic Creatures,Kikimora,0,russia
+universal,Slavic Creatures,Sirin,0,russia
+universal,Slavic Creatures,Alkonost,0,russia
+universal,Slavic Creatures,Zhar-Ptitsa,0,russia
+universal,Slavic Creatures,Gamayun,0,russia
+universal,Slavic Creatures,Poludnitsa,0,russia
+universal,Slavic Creatures,Stribog,0,russia
+universal,Slavic Creatures,Rarog,0,russia
+universal,Slavic Creatures,Indrik,0,russia
+universal,Celtic Creatures,Kelpie,0,britain
+universal,Celtic Creatures,Selkie,0,britain
+universal,Celtic Creatures,Banshee,0,britain
+universal,Celtic Creatures,Nuckelavee,0,britain
+universal,Celtic Creatures,Cu Sith,0,britain
+universal,Celtic Creatures,Pooka,0,britain
+universal,Celtic Creatures,Redcap,0,britain
+universal,Celtic Creatures,Gruagach,0,britain
+universal,Celtic Creatures,Caoranach,0,britain
+universal,Celtic Creatures,Dobhar-Chu,0,britain
+universal,Celtic Creatures,Glashtyn,0,britain
+universal,Celtic Creatures,Each-Uisge,0,britain
+universal,Celtic Creatures,Wulver,0,britain
+universal,Constellations,Orion,0
+universal,Constellations,Cassiopeia,0
+universal,Constellations,Draco,0
+universal,Constellations,Ursa Major,0
+universal,Constellations,Ursa Minor,0
+universal,Constellations,Andromeda,0
+universal,Constellations,Perseus,0
+universal,Constellations,Pegasus,0
+universal,Constellations,Cygnus,0
+universal,Constellations,Aquila,0
+universal,Constellations,Lyra,0
+universal,Constellations,Hercules,0
+universal,Constellations,Centaurus,0
+universal,Constellations,Scorpius,0
+universal,Constellations,Leo,0
+universal,Constellations,Taurus,0
+universal,Constellations,Aries,0
+universal,Constellations,Gemini,0
+universal,Constellations,Cancer,0
+universal,Constellations,Virgo,0
+universal,Constellations,Libra,0
+universal,Constellations,Sagittarius,0
+universal,Constellations,Capricornus,0
+universal,Constellations,Aquarius,0
+universal,Constellations,Pisces,0
+universal,Constellations,Ophiuchus,0
+universal,Constellations,Serpens,0
+universal,Constellations,Corvus,0
+universal,Constellations,Cetus,0
+universal,Constellations,Phoenix,0
+universal,Virtues,Valor,0
+universal,Virtues,Liberty,0
+universal,Virtues,Justice,0
+universal,Virtues,Honor,0
+universal,Virtues,Courage,0
+universal,Virtues,Wisdom,0
+universal,Virtues,Glory,0
+universal,Virtues,Victory,0
+universal,Virtues,Triumph,0
+universal,Virtues,Freedom,0
+universal,Virtues,Fortitude,0
+universal,Virtues,Vigilance,0
+universal,Virtues,Defiance,0
+universal,Virtues,Vengeance,0
+universal,Virtues,Retribution,0
+universal,Virtues,Indomitable,0
+universal,Virtues,Resolute,0
+universal,Virtues,Audacity,0
+universal,Virtues,Fearless,0
+universal,Virtues,Undaunted,0
+universal,Virtues,Invincible,0
+universal,Virtues,Relentless,0
+universal,Virtues,Intrepid,0
+universal,Virtues,Dauntless,0
+universal,Virtues,Dreadnought,0
+universal,Weather,Storm,0
+universal,Weather,Tempest,0
+universal,Weather,Thunder,0
+universal,Weather,Lightning,0
+universal,Weather,Gale,0
+universal,Weather,Squall,0
+universal,Weather,Hurricane,0
+universal,Weather,Typhoon,0
+universal,Weather,Cyclone,0
+universal,Weather,Tornado,0
+universal,Weather,Blizzard,0
+universal,Weather,Monsoon,0
+universal,Weather,Whirlwind,0
+universal,Weather,Maelstrom,0
+universal,Weather,Zephyr,0
+universal,Weather,Breeze,0
+universal,Weather,Gust,0
+universal,Weather,Sirocco,0
+universal,Weather,Mistral,0
+universal,Weather,Chinook,0
+universal,Weather,Norther,0
+universal,Weather,Foehn,0
+universal,Weather,Haboob,0
+universal,Weather,Bora,0
+universal,Weather,Tramontane,0
+universal,Weather,Etesian,0
+universal,Weather,Meltemi,0
+universal,Weather,Levanter,0
+universal,Weather,Gregale,0
+universal,Weather,Scirocco,0
+universal,Stinging Insects,Wasp,0
+universal,Stinging Insects,Hornet,0
+universal,Stinging Insects,Yellowjacket,0
+universal,Stinging Insects,Bumblebee,0
+universal,Stinging Insects,Honeybee,0
+universal,Stinging Insects,Fire Ant,0
+universal,Stinging Insects,Carpenter,0
+universal,Stinging Insects,Paper Wasp,0
+universal,Stinging Insects,Potter,0
+universal,Stinging Insects,Mud Dauber,0
+universal,Stinging Insects,Sand Wasp,0
+universal,Stinging Insects,Hunting Wasp,0
+universal,Stinging Insects,Cicada Killer,0
+universal,Stinging Insects,Tarantula Hawk,0
+universal,Stinging Insects,Velvet Ant,0
+universal,Stinging Insects,Baldfaced,0
+universal,Stinging Insects,Ground Hornet,0
+universal,Stinging Insects,Red Wasp,0
+universal,Stinging Insects,Thread Wasp,0
+universal,Stinging Insects,Blue Mud Wasp,0
+universal,Stinging Insects,Scorpion,0
+universal,Stinging Insects,Sting Ray,0
+universal,Stinging Insects,Vespula,0
+universal,Stinging Insects,Vespa,0
+universal,Stinging Insects,Polistes,0
+universal,Birds,Eagle,0
+universal,Birds,Hawk,0
+universal,Birds,Falcon,0
+universal,Birds,Osprey,0
+universal,Birds,Kestrel,0
+universal,Birds,Vulture,0
+universal,Birds,Condor,0
+universal,Birds,Albatross,0
+universal,Birds,Petrel,0
+universal,Birds,Pelican,0
+universal,Birds,Cormorant,0
+universal,Birds,Gannet,0
+universal,Birds,Frigate Bird,0
+universal,Birds,Shearwater,0
+universal,Birds,Skua,0
+universal,Birds,Tern,0
+universal,Birds,Gull,0
+universal,Birds,Kittiwake,0
+universal,Birds,Jaeger,0
+universal,Birds,Booby,0
+universal,Birds,Tropicbird,0
+universal,Birds,Crane,0
+universal,Birds,Heron,0
+universal,Birds,Egret,0
+universal,Birds,Ibis,0
+universal,Birds,Stork,0
+universal,Birds,Flamingo,0
+universal,Birds,Swan,0
+universal,Birds,Goose,0
+universal,Birds,Duck,0
+universal,Birds,Mallard,0
+universal,Birds,Teal,0
+universal,Birds,Wigeon,0
+universal,Birds,Pintail,0
+universal,Birds,Shoveler,0
+universal,Birds,Merganser,0
+universal,Birds,Eider,0
+universal,Birds,Scoter,0
+universal,Birds,Loon,0
+universal,Birds,Grebe,0
+universal,Birds,Avocet,0
+universal,Birds,Stilt,0
+universal,Birds,Plover,0
+universal,Birds,Lapwing,0
+universal,Birds,Curlew,0
+universal,Birds,Whimbrel,0
+universal,Birds,Godwit,0
+universal,Birds,Sandpiper,0
+universal,Birds,Snipe,0
+universal,Birds,Woodcock,0
+universal,Birds,Phalarope,0
+universal,Birds,Oystercatcher,0
+universal,Birds,Turnstone,0
+universal,Birds,Dunlin,0
+universal,Birds,Sanderling,0
+universal,Birds,Raven,0
+universal,Birds,Crow,0
+universal,Birds,Rook,0
+universal,Birds,Jackdaw,0
+universal,Birds,Magpie,0
+universal,Birds,Jay,0
+universal,Birds,Starling,0
+universal,Birds,Blackbird,0
+universal,Birds,Thrush,0
+universal,Birds,Robin,0
+universal,Birds,Nightingale,0
+universal,Birds,Lark,0
+universal,Birds,Swallow,0
+universal,Birds,Swift,0
+universal,Birds,Martin,0
+universal,Birds,Wren,0
+universal,Birds,Sparrow,0
+universal,Birds,Finch,0
+universal,Birds,Goldfinch,0
+universal,Birds,Linnet,0
+universal,Birds,Bunting,0
+universal,Birds,Cardinal,0
+universal,Birds,Oriole,0
+universal,Birds,Tanager,0
+universal,Birds,Warbler,0
+universal,Birds,Vireo,0
+universal,Birds,Flycatcher,0
+universal,Birds,Shrike,0
+universal,Birds,Nuthatch,0
+universal,Birds,Treecreeper,0
+universal,Birds,Titmouse,0
+universal,Birds,Chickadee,0
+universal,Birds,Owl,0
+universal,Birds,Eagle Owl,0
+universal,Birds,Barn Owl,0
+universal,Birds,Snowy Owl,0
+universal,Birds,Screech Owl,0
+universal,Birds,Horned Owl,0
+universal,Birds,Kingfisher,0
+universal,Birds,Woodpecker,0
+universal,Birds,Kookaburra,0
+universal,Birds,Hoopoe,0
+universal,Birds,Toucan,0
+universal,Birds,Hornbill,0
+universal,Birds,Parrot,0
+universal,Birds,Macaw,0
+universal,Birds,Cockatoo,0
+universal,Birds,Parakeet,0
+universal,Birds,Lorikeet,0
+universal,Birds,Peacock,0
+universal,Birds,Pheasant,0
+universal,Birds,Grouse,0
+universal,Birds,Quail,0
+universal,Birds,Partridge,0
+universal,Birds,Ptarmigan,0
+universal,Birds,Turkey,0
+universal,Birds,Ostrich,0
+universal,Birds,Emu,0
+universal,Birds,Rhea,0
+universal,Birds,Cassowary,0
+universal,Birds,Kiwi,0
+universal,Birds,Penguin,0
+universal,Birds,Emperor Penguin,0
+universal,Birds,King Penguin,0
+universal,Birds,Puffin,0
+universal,Birds,Auk,0
+universal,Birds,Murre,0
+universal,Birds,Guillemot,0
+universal,Birds,Razorbill,0
+universal,Birds,Secretary Bird,0
+universal,Birds,Harrier,0
+universal,Birds,Buzzard,0
+universal,Birds,Kite,0
+universal,Birds,Goshawk,0
+universal,Birds,Sparrowhawk,0
+universal,Birds,Merlin,0
+universal,Birds,Peregrine,0
+universal,Birds,Caracara,0
+universal,Birds,Roadrunner,0
+universal,Birds,Cuckoo,0
+universal,Birds,Coucal,0
+universal,Birds,Nightjar,0
+universal,Birds,Hummingbird,0
+universal,Birds,Pigeon,0
+universal,Birds,Dove,0
+universal,Birds,Sandgrouse,0
+universal,Birds,Bittern,0
+universal,Birds,Spoonbill,0
+universal,Birds,Shoebill,0
+# Greece
+greece,Heroes,Leonidas,0
+greece,Heroes,Themistocles,0
+greece,Heroes,Pericles,0
+greece,Heroes,Miltiades,0
+greece,Heroes,Solon,0
+greece,Heroes,Cleisthenes,0
+greece,Heroes,Aristides,0
+greece,Heroes,Cimon,0
+greece,Heroes,Alcibiades,0
+greece,Heroes,Demosthenes,0
+greece,Heroes,Epaminondas,0
+greece,Heroes,Pelopidas,0
+greece,Heroes,Lysander,0
+greece,Heroes,Brasidas,0
+greece,Heroes,Agesilaus,0
+greece,Heroes,Xenophon,0
+greece,Heroes,Ptolemy,0
+greece,Heroes,Pyrrhus,0
+greece,Cities,Athens,0
+greece,Cities,Sparta,0
+greece,Cities,Corinth,0
+greece,Cities,Thebes,0
+greece,Cities,Argos,0
+greece,Cities,Megara,0
+greece,Cities,Olympia,0
+greece,Cities,Delphi,0
+greece,Cities,Mycenae,0
+greece,Cities,Piraeus,0
+greece,Cities,Rhodes,0
+greece,Cities,Syracuse,0
+greece,Cities,Byzantium,0
+greece,Cities,Ephesus,0
+greece,Cities,Miletus,0
+greece,Cities,Smyrna,0
+greece,Cities,Pergamon,0
+greece,Cities,Antioch,0
+greece,Cities,Alexandria,0
+greece,Cities,Cyrene,0
+greece,Cities,Marseilles,0
+greece,Cities,Thessaloniki,0
+greece,Cities,Heraklion,0
+greece,Cities,Patras,0
+greece,Cities,Larissa,0
+greece,Cities,Volos,0
+greece,Cities,Ioannina,0
+greece,Cities,Kavala,0
+greece,Cities,Chania,0
+greece,Cities,Chalcis,0
+greece,Islands,Crete,0
+greece,Islands,Rhodes,0
+greece,Islands,Lesbos,0
+greece,Islands,Chios,0
+greece,Islands,Samos,0
+greece,Islands,Naxos,0
+greece,Islands,Delos,0
+greece,Islands,Mykonos,0
+greece,Islands,Santorini,0
+greece,Islands,Paros,0
+greece,Islands,Thasos,0
+greece,Islands,Corfu,0
+greece,Islands,Zakynthos,0
+greece,Islands,Kefalonia,0
+greece,Islands,Ithaca,0
+greece,Islands,Aegina,0
+greece,Islands,Hydra,0
+greece,Islands,Kos,0
+greece,Islands,Milos,0
+greece,Islands,Andros,0
+greece,Islands,Tinos,0
+greece,Islands,Syros,0
+greece,Islands,Skiathos,0
+greece,Islands,Skopelos,0
+greece,Islands,Skyros,0
+greece,Islands,Lemnos,0
+greece,Islands,Ikaria,0
+greece,Islands,Patmos,0
+greece,Islands,Karpathos,0
+greece,Islands,Amorgos,0
+greece,Islands,Ios,0
+greece,Islands,Folegandros,0
+greece,Islands,Sifnos,0
+greece,Islands,Serifos,0
+greece,Islands,Kythira,0
+greece,Islands,Paxos,0
+greece,Islands,Lefkada,0
+greece,Islands,Alonissos,0
+greece,Islands,Samothrace,0
+greece,Islands,Kalymnos,0
+greece,Regions,Thessaly,0
+greece,Regions,Macedonia,0
+greece,Regions,Epirus,0
+greece,Regions,Thrace,0
+greece,Regions,Boeotia,0
+greece,Regions,Attica,0
+greece,Regions,Peloponnese,0
+greece,Regions,Laconia,0
+greece,Regions,Messenia,0
+greece,Regions,Arcadia,0
+greece,Regions,Achaea,0
+greece,Regions,Elis,0
+greece,Regions,Argolid,0
+greece,Regions,Corinthia,0
+greece,Regions,Phocis,0
+greece,Regions,Aetolia,0
+greece,Regions,Acarnania,0
+greece,Regions,Euboea,0
+greece,Regions,Locris,0
+greece,Regions,Doris,0
+greece,Battles,Marathon,0
+greece,Battles,Thermopylae,0
+greece,Battles,Salamis,0
+greece,Battles,Plataea,0
+greece,Battles,Mycale,0
+greece,Battles,Leuctra,0
+greece,Battles,Chaeronea,0
+greece,Battles,Granicus,0
+greece,Battles,Issus,0
+greece,Battles,Gaugamela,0
+greece,Battles,Navarino,0
+greece,Battles,Mantinea,0
+greece,Battles,Coronea,0
+greece,Battles,Cunaxa,0
+greece,Mountains,Olympus,0
+greece,Mountains,Parnassus,0
+greece,Mountains,Helicon,0
+greece,Mountains,Pindus,0
+greece,Mountains,Taygetus,0
+greece,Mountains,Pelion,0
+greece,Mountains,Ossa,0
+greece,Mountains,Hymettus,0
+greece,Mountains,Pentelicus,0
+greece,Mountains,Parnitha,0
+greece,Mountains,Athos,0
+greece,Mountains,Pangaion,0
+greece,Mountains,Vermio,0
+greece,Mountains,Voras,0
+greece,Mountains,Falakro,0
+greece,Mountains,Smolikas,0
+greece,Mountains,Grammos,0
+greece,Mountains,Tymfi,0
+greece,Mountains,Vardousia,0
+greece,Mountains,Giona,0
+greece,Mountains,Oeta,0
+greece,Mountains,Othrys,0
+greece,Mountains,Erymanthos,0
+greece,Mountains,Cyllene,0
+greece,Mountains,Mainalon,0
+greece,Mountains,Aroania,0
+greece,Mountains,Psiloritis,0
+greece,Mountains,Lefka Ori,0
+greece,Mountains,Dikti,0
+greece,Mountains,Ida,0
+greece,Winds,Boreas,0
+greece,Winds,Notus,0
+greece,Winds,Zephyrus,0
+greece,Winds,Eurus,0
+greece,Winds,Apeliotes,0
+greece,Winds,Kaikias,0
+greece,Winds,Lips,0
+greece,Winds,Skiron,0
+greece,Winds,Meltemi,0
+greece,Winds,Etesian,0
+greece,Winds,Gregale,0
+greece,Winds,Sirocco,0
+greece,Winds,Levanter,0
+greece,Winds,Tramontane,0
+greece,Winds,Bora,0
+greece,Rivers,Alpheus,0
+greece,Rivers,Eurotas,0
+greece,Rivers,Achelous,0
+greece,Rivers,Pineios,0
+greece,Rivers,Axios,0
+greece,Rivers,Nestos,0
+greece,Rivers,Evros,0
+greece,Rivers,Strymon,0
+greece,Rivers,Aliakmon,0
+greece,Rivers,Arachthos,0
+greece,Rivers,Asopos,0
+greece,Rivers,Cephissus,0
+greece,Rivers,Ilissos,0
+greece,Rivers,Sperchios,0
+greece,Rivers,Amphrysos,0
+greece,Rivers,Peneus,0
+greece,Rivers,Kalamas,0
+greece,Rivers,Thyamis,0
+greece,Rivers,Louros,0
+greece,Rivers,Aoos,0
+greece,Rivers,Haliacmon,0
+greece,Rivers,Gallikos,0
+greece,Rivers,Loudias,0
+greece,Rivers,Vardar,0
+greece,Rivers,Angitis,0
+greece,Rivers,Nestos River,0
+greece,Rivers,Kosynthos,0
+greece,Rivers,Filiouris,0
+greece,Rivers,Erythropotamos,0
+greece,Rivers,Ardas,0
+greece,Streams,Kephisos,0
+greece,Streams,Ilissos,0
+greece,Streams,Erasinos,0
+greece,Streams,Lousios,0
+greece,Streams,Voidomatis,0
+greece,Streams,Acheron,0
+greece,Streams,Haliacmon,0
+greece,Streams,Pamisos,0
+greece,Streams,Eurotas,0
+greece,Streams,Ladon,0
+greece,Streams,Aroanios,0
+greece,Streams,Krathis,0
+greece,Streams,Vouraikos,0
+greece,Streams,Selinous,0
+greece,Streams,Pineios,0
+greece,Streams,Titanios,0
+greece,Streams,Enipeas,0
+greece,Streams,Apidanos,0
+greece,Streams,Onchestos,0
+greece,Streams,Charadros,0
+greece,Streams,Krios,0
+greece,Streams,Pamissos,0
+greece,Streams,Neda,0
+greece,Streams,Alpheios,0
+greece,Streams,Kladeos,0
+greece,Streams,Erymanthos,0
+greece,Streams,Peiros,0
+greece,Streams,Glaukos,0
+greece,Streams,Selleis,0
+greece,Streams,Inachos,0
+greece,Streams,Kephissos,0
+greece,Streams,Asopos,0
+greece,Streams,Ismenos,0
+greece,Streams,Dirke,0
+greece,Streams,Strymon,0
+greece,Streams,Angitis,0
+greece,Streams,Nestos,0
+greece,Streams,Kosynthos,0
+greece,Streams,Filiouris,0
+greece,Streams,Evros,0
+greece,Streams,Ardas,0
+greece,Streams,Erythropotamos,0
+greece,Streams,Axios,0
+greece,Streams,Loudias,0
+greece,Streams,Gallikos,0
+greece,Streams,Erigon,0
+greece,Streams,Kydnos,0
+greece,Streams,Gephyros,0
+greece,Streams,Kykhreus,0
+greece,Streams,Thermodon,0
+greece,Streams,Sarantaporos,0
+greece,Streams,Aoos,0
+greece,Streams,Drino,0
+greece,Streams,Kalamas,0
+greece,Streams,Thyamis,0
+greece,Streams,Achelos,0
+greece,Streams,Louros,0
+greece,Streams,Arachthos,0
+greece,Streams,Acheloos,0
+greece,Streams,Megdovas,0
+greece,Streams,Granitsiotis,0
+greece,Streams,Agrafiotis,0
+greece,Streams,Evinos,0
+greece,Streams,Mornos,0
+greece,Streams,Pleistos,0
+greece,Streams,Boagrios,0
+greece,Streams,Krios River,0
+greece,Streams,Spercheios,0
+greece,Streams,Gorgopotamos,0
+greece,Streams,Xerias,0
+greece,Streams,Sofaditis,0
+greece,Streams,Enipefs,0
+greece,Streams,Krannonas,0
+greece,Streams,Pamisos River,0
+greece,Streams,Pamiso,0
+greece,Streams,Mana,0
+greece,Streams,Langada,0
+greece,Streams,Lousias,0
+greece,Streams,Selemnos,0
+greece,Streams,Meganitas,0
+greece,Streams,Phoenix,0
+greece,Streams,Fonissa,0
+greece,Streams,Pikrodafni,0
+greece,Streams,Keramidia,0
+greece,Streams,Charadro,0
+greece,Streams,Myli,0
+greece,Streams,Geropotamos,0
+greece,Streams,Gazanos,0
+greece,Streams,Anapo,0
+greece,Streams,Koiliaris,0
+greece,Streams,Platanias,0
+greece,Streams,Keritis,0
+greece,Streams,Megalo Rema,0
+greece,Towns,Argostoli,0
+greece,Towns,Ermoupoli,0
+greece,Towns,Nafplio,0
+greece,Towns,Kalamata,0
+greece,Towns,Tripoli,0
+greece,Towns,Lamia,0
+greece,Towns,Agrinio,0
+greece,Towns,Kozani,0
+greece,Towns,Katerini,0
+greece,Towns,Trikala,0
+greece,Towns,Serres,0
+greece,Towns,Xanthi,0
+greece,Towns,Drama,0
+greece,Towns,Veria,0
+greece,Towns,Komotini,0
+greece,Towns,Alexandroupoli,0
+greece,Towns,Rethymno,0
+greece,Towns,Karditsa,0
+greece,Towns,Giannitsa,0
+greece,Towns,Preveza,0
+greece,Towns,Arta,0
+greece,Towns,Kilkis,0
+greece,Towns,Edessa,0
+greece,Towns,Florina,0
+greece,Towns,Kastoria,0
+greece,Towns,Corfu Town,0
+greece,Towns,Mytilene,0
+greece,Towns,Chios Town,0
+greece,Towns,Samos Town,0
+greece,Towns,Hermoupolis,0
+greece,Towns,Naxos Town,0
+greece,Towns,Paros Town,0
+greece,Towns,Thira,0
+greece,Towns,Zakynthos Town,0
+greece,Towns,Kefalonia Town,0
+greece,Towns,Argostolion,0
+greece,Towns,Lixouri,0
+greece,Towns,Lefkada Town,0
+greece,Towns,Ithaki,0
+greece,Towns,Pylos,0
+greece,Towns,Methoni,0
+greece,Towns,Koroni,0
+greece,Towns,Kyparissia,0
+greece,Towns,Messene,0
+greece,Towns,Sparta Town,0
+greece,Towns,Monemvasia,0
+greece,Towns,Githio,0
+greece,Towns,Gytheio,0
+greece,Towns,Mystras,0
+greece,Towns,Megalopoli,0
+greece,Towns,Dimitsana,0
+greece,Towns,Stemnitsa,0
+greece,Towns,Karytaina,0
+greece,Towns,Andritsaina,0
+greece,Towns,Olympia Town,0
+greece,Towns,Pyrgos,0
+greece,Towns,Amaliada,0
+greece,Towns,Gastouni,0
+greece,Towns,Kyllini,0
+greece,Towns,Patrai,0
+greece,Towns,Aigion,0
+greece,Towns,Kalavryta,0
+greece,Towns,Diakopto,0
+greece,Towns,Akrata,0
+greece,Towns,Xylokastro,0
+greece,Towns,Kiato,0
+greece,Towns,Nemea,0
+greece,Towns,Epidaurus,0
+greece,Towns,Troezen,0
+greece,Towns,Poros,0
+greece,Towns,Hydra Town,0
+greece,Towns,Spetses,0
+greece,Towns,Aegina Town,0
+greece,Towns,Salamis Town,0
+greece,Towns,Megara Town,0
+greece,Towns,Eleusis,0
+greece,Towns,Marathon Town,0
+greece,Towns,Rafina,0
+greece,Towns,Lavrio,0
+greece,Towns,Sounion,0
+greece,Towns,Brauron,0
+greece,Towns,Thorikos,0
+greece,Towns,Oropos,0
+greece,Towns,Tanagra,0
+greece,Towns,Plataea Town,0
+greece,Towns,Thespiae,0
+greece,Towns,Thisbe,0
+greece,Towns,Orchomenos,0
+greece,Towns,Chaeronea Town,0
+greece,Towns,Lebadeia,0
+greece,Towns,Delphi Town,0
+greece,Towns,Amphissa,0
+greece,Towns,Naupaktos,0
+greece,Towns,Messolonghi,0
+greece,Towns,Aetolikon,0
+greece,Towns,Thermon,0
+greece,Towns,Stratos,0
+greece,Towns,Ambrakia,0
+greece,Towns,Nikopolis,0
+greece,Towns,Parga,0
+greece,Towns,Igoumenitsa,0
+greece,Towns,Filiates,0
+greece,Towns,Paramythia,0
+greece,Towns,Dodoni,0
+greece,Towns,Metsovo,0
+greece,Towns,Ioannina Town,0
+greece,Towns,Konitsa,0
+greece,Towns,Kalampaka,0
+greece,Towns,Meteora,0
+greece,Towns,Grevena,0
+greece,Towns,Kastoria Town,0
+greece,Towns,Florina Town,0
+greece,Towns,Amyntaion,0
+greece,Towns,Ptolemaida,0
+greece,Towns,Kozani Town,0
+greece,Towns,Siatista,0
+greece,Towns,Velvento,0
+greece,Towns,Servia,0
+greece,Towns,Katerini Town,0
+greece,Towns,Dion,0
+greece,Towns,Litochoro,0
+greece,Towns,Platamonas,0
+greece,Towns,Elassona,0
+greece,Towns,Tyrnavos,0
+greece,Towns,Larissa Town,0
+greece,Towns,Farsala,0
+greece,Towns,Volos Town,0
+greece,Towns,Almyros,0
+greece,Towns,Stylida,0
+greece,Towns,Lamia Town,0
+greece,Towns,Atalanti,0
+greece,Towns,Amfissa,0
+greece,Towns,Livadeia,0
+greece,Towns,Thebes Town,0
+greece,Towns,Chalcis Town,0
+greece,Towns,Eretria,0
+greece,Towns,Amarynthos,0
+greece,Towns,Kymi,0
+greece,Towns,Karystos,0
+greece,Towns,Edipsos,0
+greece,Towns,Istiaia,0
+greece,Towns,Skiathos Town,0
+greece,Towns,Skopelos Town,0
+greece,Towns,Alonissos Town,0
+greece,Towns,Skyros Town,0
+greece,Towns,Kos Town,0
+greece,Towns,Kalymnos Town,0
+greece,Towns,Patmos Town,0
+greece,Towns,Leros,0
+greece,Towns,Astypalaia,0
+greece,Towns,Nisyros,0
+greece,Towns,Tilos,0
+greece,Towns,Symi,0
+greece,Towns,Rhodes Town,0
+greece,Towns,Lindos,0
+greece,Towns,Kamiros,0
+greece,Towns,Ialyssos,0
+greece,Towns,Karpathos Town,0
+greece,Towns,Kasos,0
+greece,Towns,Milos Town,0
+greece,Towns,Kimolos,0
+greece,Towns,Sifnos Town,0
+greece,Towns,Serifos Town,0
+greece,Towns,Kythnos,0
+greece,Towns,Kea,0
+greece,Towns,Andros Town,0
+greece,Towns,Tinos Town,0
+greece,Towns,Syros Town,0
+greece,Towns,Mykonos Town,0
+greece,Towns,Delos Town,0
+greece,Towns,Rheneia,0
+greece,Towns,Paros,0
+greece,Towns,Antiparos,0
+greece,Towns,Naxos,0
+greece,Towns,Amorgos Town,0
+greece,Towns,Ios Town,0
+greece,Towns,Thera,0
+greece,Towns,Folegandros Town,0
+greece,Towns,Sikinos,0
+greece,Towns,Anafi,0
+greece,Towns,Heraklion Town,0
+greece,Towns,Chania Town,0
+greece,Towns,Rethymnon,0
+greece,Towns,Agios Nikolaos,0
+greece,Towns,Ierapetra,0
+greece,Towns,Sitia,0
+greece,Towns,Kissamos,0
+greece,Towns,Paleochora,0
+greece,Towns,Sfakia,0
+greece,Towns,Loutro,0
+greece,Towns,Agia Roumeli,0
+greece,Towns,Samaria,0
+greece,Towns,Malia,0
+greece,Towns,Gortyn,0
+greece,Towns,Phaistos,0
+greece,Towns,Knossos,0
+greece,Towns,Lyttos,0
+greece,Towns,Gournia,0
+greece,Birds,Aetos,0
+greece,Birds,Geraki,0
+greece,Birds,Gypas,0
+greece,Birds,Pelargos,0
+greece,Birds,Pelekanos,0
+greece,Birds,Kyknos,0
+greece,Birds,Erodios,0
+greece,Birds,Alkyon,0
+greece,Birds,Aidoni,0
+greece,Birds,Chelidoni,0
+greece,Birds,Koukos,0
+greece,Birds,Glaros,0
+greece,Birds,Milanos,0
+greece,Birds,Platalea,0
+greece,Birds,Porphyrio,0
+greece,Birds,Tsichla,0
+greece,Birds,Laros,0
+greece,Birds,Trygoni,0
+greece,Birds,Skopos,0
+greece,Birds,Myioktonos,0
+greece,Birds,Agriochina,0
+greece,Birds,Peristeri,0
+greece,Birds,Spizaetos,0
+greece,Birds,Neraidogerako,0
+greece,Birds,Tyranas,0
+greece,Lakes,Trichonida,0
+greece,Lakes,Lyssimachia,0
+greece,Lakes,Amvrakia,0
+greece,Lakes,Ozeros,0
+greece,Lakes,Volvi,0
+greece,Lakes,Koroneia,0
+greece,Lakes,Kastoria,0
+greece,Lakes,Prespa,0
+greece,Lakes,Mikri Prespa,0
+greece,Lakes,Yliki,0
+greece,Lakes,Paralimni,0
+greece,Lakes,Vegoritida,0
+greece,Lakes,Chimaditis,0
+greece,Lakes,Petron,0
+greece,Lakes,Zazari,0
+greece,Lakes,Doirani,0
+greece,Lakes,Ismarida,0
+greece,Lakes,Mitrikou,0
+greece,Lakes,Vistonis,0
+greece,Lakes,Karla,0
+greece,Towns,Nafpaktos,0
+greece,Towns,Galaxidi,0
+greece,Towns,Amphissa,0
+greece,Towns,Monemvasia,0
+greece,Towns,Mystras,0
+greece,Towns,Geraki,0
+greece,Towns,Leonidio,0
+greece,Towns,Kyparissia,0
+greece,Towns,Koroni,0
+greece,Towns,Methoni,0
+greece,Towns,Pylos,0
+greece,Towns,Filiatra,0
+greece,Towns,Andritsena,0
+greece,Towns,Dimitsana,0
+greece,Towns,Stemnitsa,0
+greece,Towns,Vytina,0
+greece,Towns,Karytaina,0
+greece,Towns,Kastri,0
+greece,Towns,Arachova,0
+greece,Towns,Distomo,0
+greece,Towns,Osios Loukas,0
+greece,Towns,Livadeia,0
+greece,Towns,Thespies,0
+greece,Towns,Tanagra,0
+greece,Towns,Plataia,0
+# Britain
+britain,Heroes,Nelson,0
+britain,Heroes,Drake,0
+britain,Heroes,Cook,0
+britain,Heroes,Raleigh,0
+britain,Heroes,Wellington,0
+britain,Heroes,Marlborough,0
+britain,Heroes,Hood,0
+britain,Heroes,Rodney,0
+britain,Heroes,Jellicoe,0
+britain,Heroes,Beatty,0
+britain,Heroes,Cunningham,0
+britain,Heroes,Hawke,0
+britain,Heroes,Howe,0
+britain,Heroes,Collingwood,0
+britain,Heroes,Duncan,0
+britain,Heroes,Cornwallis,0
+britain,Heroes,Anson,0
+britain,Heroes,Benbow,0
+britain,Heroes,Blake,0
+britain,Heroes,Fisher,0
+britain,Heroes,Mountbatten,0
+britain,Heroes,Frobisher,0
+britain,Heroes,Gilbert,0
+britain,Heroes,Cavendish,0
+britain,Heroes,Grenville,0
+britain,Cities,London,0
+britain,Cities,Portsmouth,0
+britain,Cities,Plymouth,0
+britain,Cities,Edinburgh,0
+britain,Cities,Glasgow,0
+britain,Cities,Liverpool,0
+britain,Cities,Manchester,0
+britain,Cities,Birmingham,0
+britain,Cities,Bristol,0
+britain,Cities,Newcastle,0
+britain,Cities,Southampton,0
+britain,Cities,Belfast,0
+britain,Cities,Cardiff,0
+britain,Cities,Aberdeen,0
+britain,Cities,Dundee,0
+britain,Cities,York,0
+britain,Cities,Canterbury,0
+britain,Cities,Oxford,0
+britain,Cities,Cambridge,0
+britain,Cities,Coventry,0
+britain,Cities,Leicester,0
+britain,Cities,Nottingham,0
+britain,Cities,Sheffield,0
+britain,Cities,Leeds,0
+britain,Cities,Hull,0
+britain,Cities,Dover,0
+britain,Cities,Brighton,0
+britain,Cities,Exeter,0
+britain,Cities,Bath,0
+britain,Cities,Winchester,0
+britain,Royalty,Victoria,0
+britain,Royalty,Elizabeth,0
+britain,Royalty,George,0
+britain,Royalty,Edward,0
+britain,Royalty,William,0
+britain,Royalty,Mary,0
+britain,Royalty,Anne,0
+britain,Royalty,Henry,0
+britain,Royalty,Richard,0
+britain,Royalty,Charles,0
+britain,Royalty,James,0
+britain,Royalty,Alfred,0
+britain,Royalty,Arthur,0
+britain,Royalty,Albert,0
+britain,Royalty,Alexandra,0
+britain,Royalty,Charlotte,0
+britain,Royalty,Margaret,0
+britain,Royalty,Catherine,0
+britain,Royalty,Eleanor,0
+britain,Royalty,Matilda,0
+britain,Counties,Yorkshire,0
+britain,Counties,Cornwall,0
+britain,Counties,Devon,0
+britain,Counties,Kent,0
+britain,Counties,Norfolk,0
+britain,Counties,Suffolk,0
+britain,Counties,Essex,0
+britain,Counties,Sussex,0
+britain,Counties,Surrey,0
+britain,Counties,Hampshire,0
+britain,Counties,Dorset,0
+britain,Counties,Somerset,0
+britain,Counties,Gloucestershire,0
+britain,Counties,Worcestershire,0
+britain,Counties,Warwickshire,0
+britain,Counties,Staffordshire,0
+britain,Counties,Derbyshire,0
+britain,Counties,Lancashire,0
+britain,Counties,Cheshire,0
+britain,Counties,Shropshire,0
+britain,Counties,Lincolnshire,0
+britain,Counties,Northumberland,0
+britain,Counties,Cumberland,0
+britain,Counties,Westmorland,0
+britain,Counties,Durham,0
+britain,Rivers,Thames,0
+britain,Rivers,Severn,0
+britain,Rivers,Trent,0
+britain,Rivers,Mersey,0
+britain,Rivers,Clyde,0
+britain,Rivers,Dee,0
+britain,Rivers,Avon,0
+britain,Rivers,Tyne,0
+britain,Rivers,Wear,0
+britain,Rivers,Ouse,0
+britain,Rivers,Forth,0
+britain,Rivers,Spey,0
+britain,Rivers,Tweed,0
+britain,Rivers,Tay,0
+britain,Rivers,Eden,0
+britain,Battles,Trafalgar,0
+britain,Battles,Waterloo,0
+britain,Battles,Jutland,0
+britain,Battles,Blenheim,0
+britain,Battles,Agincourt,0
+britain,Battles,Crécy,0
+britain,Battles,Hastings,0
+britain,Battles,Bosworth,0
+britain,Battles,Culloden,0
+britain,Battles,Malplaquet,0
+britain,Battles,Ramillies,0
+britain,Battles,Oudenarde,0
+britain,Battles,Salamanca,0
+britain,Battles,Vittoria,0
+britain,Battles,Camperdown,0
+britain,Battles,Copenhagen,0
+britain,Battles,Nile,0
+britain,Battles,St Vincent,0
+britain,Mountains,Ben Nevis,0
+britain,Mountains,Snowdon,0
+britain,Mountains,Scafell Pike,0
+britain,Mountains,Helvellyn,0
+britain,Mountains,Ben Macdui,0
+britain,Mountains,Braeriach,0
+britain,Mountains,Cairn Toul,0
+britain,Mountains,Cairngorm,0
+britain,Mountains,Grampians,0
+britain,Mountains,Pennines,0
+britain,Mountains,Cheviot,0
+britain,Mountains,Cross Fell,0
+britain,Mountains,Dartmoor,0
+britain,Mountains,Exmoor,0
+britain,Mountains,Brecon Beacons,0
+britain,Birds,Puffin,0
+britain,Birds,Gannet,0
+britain,Birds,Osprey,0
+britain,Birds,Kestrel,0
+britain,Birds,Peregrine,0
+britain,Birds,Merlin,0
+britain,Birds,Sparrowhawk,0
+britain,Birds,Goshawk,0
+britain,Birds,Buzzard,0
+britain,Birds,Red Kite,0
+britain,Birds,Harrier,0
+britain,Birds,Golden Eagle,0
+britain,Birds,White-tailed Eagle,0
+britain,Birds,Raven,0
+britain,Birds,Jackdaw,0
+britain,Birds,Chough,0
+britain,Birds,Magpie,0
+britain,Birds,Jay,0
+britain,Birds,Robin,0
+britain,Birds,Blackbird,0
+britain,Birds,Nightingale,0
+britain,Birds,Wren,0
+britain,Birds,Kingfisher,0
+britain,Birds,Dipper,0
+britain,Birds,Oystercatcher,0
+britain,Birds,Avocet,0
+britain,Birds,Lapwing,0
+britain,Birds,Curlew,0
+britain,Birds,Whimbrel,0
+britain,Birds,Dunlin,0
+britain,Birds,Snipe,0
+britain,Birds,Woodcock,0
+britain,Birds,Redshank,0
+britain,Birds,Greenshank,0
+britain,Birds,Eider,0
+britain,Birds,Shelduck,0
+britain,Birds,Teal,0
+britain,Birds,Wigeon,0
+britain,Birds,Pintail,0
+britain,Birds,Pochard,0
+britain,Birds,Goldeneye,0
+britain,Birds,Goosander,0
+britain,Birds,Smew,0
+britain,Birds,Cormorant,0
+britain,Birds,Shag,0
+britain,Birds,Heron,0
+britain,Birds,Bittern,0
+britain,Birds,Swallow,0
+britain,Birds,Swift,0
+britain,Birds,Guillemot,0
+britain,Birds,Razorbill,0
+britain,Birds,Skua,0
+britain,Birds,Fulmar,0
+britain,Birds,Siskin,0
+britain,Birds,Bullfinch,0
+britain,Birds,Crossbill,0
+britain,Birds,Stonechat,0
+britain,Birds,Wheatear,0
+britain,Birds,Fieldfare,0
+britain,Birds,Redwing,0
+britain,Birds,Dotterel,0
+britain,Birds,Ptarmigan,0
+britain,Birds,Capercaillie,0
+britain,Birds,Grouse,0
+britain,Lakes,Windermere,0
+britain,Lakes,Ullswater,0
+britain,Lakes,Thirlmere,0
+britain,Lakes,Coniston Water,0
+britain,Lakes,Grasmere,0
+britain,Lakes,Rydal Water,0
+britain,Lakes,Bassenthwaite,0
+britain,Lakes,Derwent Water,0
+britain,Lakes,Bala,0
+britain,Lakes,Vyrnwy,0
+britain,Lakes,Loch Lomond,0
+britain,Lakes,Loch Ness,0
+britain,Lakes,Loch Tay,0
+britain,Lakes,Loch Awe,0
+britain,Lakes,Loch Katrine,0
+britain,Lakes,Loch Morar,0
+britain,Lakes,Loch Rannoch,0
+britain,Lakes,Loch Maree,0
+britain,Lakes,Loch Lochy,0
+britain,Lakes,Loch Earn,0
+britain,Streams,Windrush,0
+britain,Streams,Evenlode,0
+britain,Streams,Cherwell,0
+britain,Streams,Coin,0
+britain,Streams,Leach,0
+britain,Streams,Churn,0
+britain,Streams,Colne,0
+britain,Streams,Misbourne,0
+britain,Streams,Ver,0
+britain,Streams,Gade,0
+britain,Streams,Alre,0
+britain,Streams,Meon,0
+britain,Streams,Wylye,0
+britain,Streams,Bourne,0
+britain,Streams,Ebble,0
+britain,Streams,Nadder,0
+britain,Streams,Test,0
+britain,Streams,Anton,0
+britain,Streams,Lavant,0
+britain,Streams,Wey,0
+britain,Streams,Tillingbourne,0
+britain,Streams,Rother,0
+britain,Streams,Cuckmere,0
+britain,Streams,Loddon,0
+britain,Streams,Kennet,0
+britain,Towns,Alnwick,0
+britain,Towns,Ambleside,0
+britain,Towns,Arundel,0
+britain,Towns,Bakewell,0
+britain,Towns,Bamburgh,0
+britain,Towns,Bewdley,0
+britain,Towns,Bideford,0
+britain,Towns,Bodmin,0
+britain,Towns,Bridgnorth,0
+britain,Towns,Bridport,0
+britain,Towns,Burford,0
+britain,Towns,Chipping Campden,0
+britain,Towns,Cirencester,0
+britain,Towns,Cockermouth,0
+britain,Towns,Dartmouth,0
+britain,Towns,Dolgellau,0
+britain,Towns,Dunster,0
+britain,Towns,Faversham,0
+britain,Towns,Harlech,0
+britain,Towns,Helmsley,0
+britain,Towns,Kendal,0
+britain,Towns,Lavenham,0
+britain,Towns,Ludlow,0
+britain,Towns,Lyme Regis,0
+britain,Towns,Malmesbury,0
+britain,Towns,Monmouth,0
+britain,Towns,Morpeth,0
+britain,Towns,Much Wenlock,0
+britain,Towns,Padstow,0
+britain,Towns,Pershore,0
+# France
+france,Heroes,Napoleon,0
+france,Heroes,Lafayette,0
+france,Heroes,Richelieu,0
+france,Heroes,Clemenceau,0
+france,Heroes,De Gaulle,0
+france,Heroes,Joan of Arc,0
+france,Heroes,Charlemagne,0
+france,Heroes,Vercingetorix,0
+france,Heroes,Turenne,0
+france,Heroes,Condé,0
+france,Heroes,Suffren,0
+france,Heroes,Tourville,0
+france,Heroes,Duguay-Trouin,0
+france,Heroes,Jean Bart,0
+france,Heroes,Colbert,0
+france,Heroes,Vauban,0
+france,Heroes,Rochambeau,0
+france,Heroes,Ney,0
+france,Heroes,Massena,0
+france,Heroes,Murat,0
+france,Heroes,Lannes,0
+france,Heroes,Davout,0
+france,Heroes,Soult,0
+france,Heroes,Foch,0
+france,Heroes,Joffre,0
+france,Cities,Paris,0
+france,Cities,Marseille,0
+france,Cities,Lyon,0
+france,Cities,Toulon,0
+france,Cities,Brest,0
+france,Cities,Bordeaux,0
+france,Cities,Toulouse,0
+france,Cities,Nice,0
+france,Cities,Nantes,0
+france,Cities,Strasbourg,0
+france,Cities,Lille,0
+france,Cities,Rennes,0
+france,Cities,Reims,0
+france,Cities,Le Havre,0
+france,Cities,Rouen,0
+france,Cities,Orleans,0
+france,Cities,Dijon,0
+france,Cities,Clermont-Ferrand,0
+france,Cities,Montpellier,0
+france,Cities,Cherbourg,0
+france,Cities,Calais,0
+france,Cities,Dunkirk,0
+france,Cities,Rochefort,0
+france,Cities,La Rochelle,0
+france,Cities,Lorient,0
+france,Regions,Normandy,0
+france,Regions,Brittany,0
+france,Regions,Provence,0
+france,Regions,Burgundy,0
+france,Regions,Alsace,0
+france,Regions,Lorraine,0
+france,Regions,Champagne,0
+france,Regions,Aquitaine,0
+france,Regions,Languedoc,0
+france,Regions,Picardy,0
+france,Regions,Gascony,0
+france,Regions,Anjou,0
+france,Regions,Poitou,0
+france,Regions,Auvergne,0
+france,Regions,Dauphine,0
+france,Regions,Savoy,0
+france,Regions,Corsica,0
+france,Rivers,Seine,0
+france,Rivers,Loire,0
+france,Rivers,Rhone,0
+france,Rivers,Garonne,0
+france,Rivers,Dordogne,0
+france,Rivers,Somme,0
+france,Rivers,Marne,0
+france,Rivers,Oise,0
+france,Rivers,Meuse,0
+france,Rivers,Moselle,0
+france,Rivers,Saone,0
+france,Rivers,Charente,0
+france,Rivers,Adour,0
+france,Battles,Austerlitz,0
+france,Battles,Jena,0
+france,Battles,Wagram,0
+france,Battles,Friedland,0
+france,Battles,Marengo,0
+france,Battles,Rivoli,0
+france,Battles,Bouvines,0
+france,Battles,Fontenoy,0
+france,Battles,Denain,0
+france,Battles,Rocroi,0
+france,Battles,Verdun,0
+france,Battles,Marne,0
+france,Battles,Valmy,0
+france,Battles,Fleurus,0
+france,Mountains,Mont Blanc,0
+france,Mountains,Vosges,0
+france,Mountains,Jura,0
+france,Mountains,Pyrenees,0
+france,Mountains,Massif Central,0
+france,Mountains,Auvergne,0
+france,Mountains,Cévennes,0
+france,Mountains,Ardennes,0
+france,Mountains,Pelvoux,0
+france,Mountains,Mercantour,0
+france,Mountains,Belledonne,0
+france,Mountains,Chartreuse,0
+france,Mountains,Vercors,0
+france,Birds,Hirondelle,0
+france,Birds,Étourneau,0
+france,Birds,Merle,0
+france,Birds,Grive,0
+france,Birds,Rossignol,0
+france,Birds,Rouge-gorge,0
+france,Birds,Mésange,0
+france,Birds,Martin-pêcheur,0
+france,Birds,Pivert,0
+france,Birds,Coucou,0
+france,Birds,Chouette,0
+france,Birds,Buse,0
+france,Birds,Faucon,0
+france,Birds,Épervier,0
+france,Birds,Milan,0
+france,Birds,Balbuzard,0
+france,Birds,Aigle,0
+france,Birds,Vautour,0
+france,Birds,Cigogne,0
+france,Birds,Héron,0
+france,Birds,Spatule,0
+france,Birds,Flamant,0
+france,Birds,Cormoran,0
+france,Birds,Macareux,0
+france,Birds,Goéland,0
+france,Birds,Sterne,0
+france,Birds,Mouette,0
+france,Birds,Grèbe,0
+france,Birds,Sarcelle,0
+france,Birds,Harle,0
+france,Birds,Bernache,0
+france,Birds,Cygne,0
+france,Birds,Grue,0
+france,Birds,Huîtrier,0
+france,Birds,Vanneau,0
+france,Birds,Bécasse,0
+france,Birds,Bécassine,0
+france,Birds,Courlis,0
+france,Birds,Avocette,0
+france,Birds,Pluvier,0
+france,Birds,Chevalier,0
+france,Birds,Phalarope,0
+france,Birds,Canard,0
+france,Birds,Fuligule,0
+france,Birds,Garrot,0
+france,Birds,Eider,0
+france,Birds,Alouette,0
+france,Birds,Perdrix,0
+france,Birds,Faisan,0
+france,Birds,Grouse,0
+france,Lakes,Léman,0
+france,Lakes,Bourget,0
+france,Lakes,Annecy,0
+france,Lakes,Vassivière,0
+france,Lakes,Pareloup,0
+france,Lakes,Der-Chantecoq,0
+france,Lakes,Sainte-Croix,0
+france,Lakes,Serre-Ponçon,0
+france,Lakes,Nantua,0
+france,Lakes,Clairvaux,0
+france,Lakes,Biscarrosse,0
+france,Lakes,Lacanau,0
+france,Lakes,Parentis,0
+france,Lakes,Cazaux,0
+france,Lakes,Hourtin,0
+france,Lakes,Orient,0
+france,Lakes,Temple,0
+france,Lakes,Amance,0
+france,Lakes,Auzon,0
+france,Lakes,Gour de Tazenat,0
+france,Streams,Sorgue,0
+france,Streams,Ouvèze,0
+france,Streams,Arc,0
+france,Streams,Huveaune,0
+france,Streams,Gapeau,0
+france,Streams,Touloubre,0
+france,Streams,Ubaye,0
+france,Streams,Tinée,0
+france,Streams,Vésubie,0
+france,Streams,Roya,0
+france,Streams,Paillon,0
+france,Streams,Brague,0
+france,Streams,Loup,0
+france,Streams,Siagne,0
+france,Streams,Argens,0
+france,Streams,Nartuby,0
+france,Streams,Réal,0
+france,Streams,Bévéra,0
+france,Streams,Gapeau,0
+france,Streams,Var,0
+france,Towns,Amboise,0
+france,Towns,Autun,0
+france,Towns,Avallon,0
+france,Towns,Bayeux,0
+france,Towns,Beaune,0
+france,Towns,Blois,0
+france,Towns,Bourges,0
+france,Towns,Carcassonne,0
+france,Towns,Chartres,0
+france,Towns,Chinon,0
+france,Towns,Cognac,0
+france,Towns,Colmar,0
+france,Towns,Dinan,0
+france,Towns,Figeac,0
+france,Towns,Guérande,0
+france,Towns,Kaysersberg,0
+france,Towns,Laon,0
+france,Towns,Lectoure,0
+france,Towns,Loches,0
+france,Towns,Pézenas,0
+france,Towns,Provins,0
+france,Towns,Richelieu,0
+france,Towns,Riquewihr,0
+france,Towns,Sarlat,0
+france,Towns,Uzès,0
+# Germany
+germany,Heroes,Bismarck,0
+germany,Heroes,Frederick the Great,0
+germany,Heroes,Scharnhorst,0
+germany,Heroes,Gneisenau,0
+germany,Heroes,Moltke,0
+germany,Heroes,Hindenburg,0
+germany,Heroes,Ludendorff,0
+germany,Heroes,Blucher,0
+germany,Heroes,Clausewitz,0
+germany,Heroes,Yorck,0
+germany,Heroes,Seydlitz,0
+germany,Heroes,Lützow,0
+germany,Heroes,Stein,0
+germany,Heroes,Hardenberg,0
+germany,Heroes,Tirpitz,0
+germany,Heroes,Hipper,0
+germany,Heroes,Scheer,0
+germany,Heroes,Spee,0
+germany,Heroes,Derfflinger,0
+germany,Cities,Berlin,0
+germany,Cities,Hamburg,0
+germany,Cities,Bremen,0
+germany,Cities,Kiel,0
+germany,Cities,Dresden,0
+germany,Cities,Munich,0
+germany,Cities,Cologne,0
+germany,Cities,Frankfurt,0
+germany,Cities,Leipzig,0
+germany,Cities,Stuttgart,0
+germany,Cities,Hanover,0
+germany,Cities,Nuremberg,0
+germany,Cities,Dortmund,0
+germany,Cities,Essen,0
+germany,Cities,Düsseldorf,0
+germany,Cities,Breslau,0
+germany,Cities,Danzig,0
+germany,Cities,Königsberg,0
+germany,Cities,Stettin,0
+germany,Cities,Lübeck,0
+germany,Cities,Rostock,0
+germany,Cities,Magdeburg,0
+germany,Cities,Augsburg,0
+germany,Cities,Karlsruhe,0
+germany,Cities,Mannheim,0
+germany,Regions,Bavaria,0
+germany,Regions,Prussia,0
+germany,Regions,Saxony,0
+germany,Regions,Swabia,0
+germany,Regions,Brandenburg,0
+germany,Regions,Pomerania,0
+germany,Regions,Silesia,0
+germany,Regions,Westphalia,0
+germany,Regions,Rhineland,0
+germany,Regions,Franconia,0
+germany,Regions,Thuringia,0
+germany,Regions,Hesse,0
+germany,Regions,Holstein,0
+germany,Regions,Baden,0
+germany,Regions,Württemberg,0
+germany,Rivers,Rhine,0
+germany,Rivers,Elbe,0
+germany,Rivers,Danube,0
+germany,Rivers,Oder,0
+germany,Rivers,Weser,0
+germany,Rivers,Main,0
+germany,Rivers,Neckar,0
+germany,Rivers,Spree,0
+germany,Rivers,Isar,0
+germany,Rivers,Mosel,0
+germany,Rivers,Ruhr,0
+germany,Rivers,Ems,0
+germany,Rivers,Saale,0
+germany,Battles,Tannenberg,0
+germany,Battles,Sedan,0
+germany,Battles,Leipzig,0
+germany,Battles,Rossbach,0
+germany,Battles,Leuthen,0
+germany,Battles,Zorndorf,0
+germany,Battles,Königgrätz,0
+germany,Battles,Teutoburg,0
+germany,Battles,Dogger Bank,0
+germany,Mountains,Zugspitze,0
+germany,Mountains,Watzmann,0
+germany,Mountains,Brocken,0
+germany,Mountains,Feldberg,0
+germany,Mountains,Fichtelberg,0
+germany,Mountains,Großer Arber,0
+germany,Mountains,Erbeskopf,0
+germany,Mountains,Rhön,0
+germany,Mountains,Taunus,0
+germany,Mountains,Eifel,0
+germany,Mountains,Sauerland,0
+germany,Mountains,Harz,0
+germany,Mountains,Schwarzwald,0
+germany,Mountains,Bayerische Alpen,0
+germany,Birds,Amsel,0
+germany,Birds,Star,0
+germany,Birds,Schwalbe,0
+germany,Birds,Kohlmeise,0
+germany,Birds,Blaumeise,0
+germany,Birds,Kleiber,0
+germany,Birds,Eisvogel,0
+germany,Birds,Schwarzspecht,0
+germany,Birds,Kuckuck,0
+germany,Birds,Uhu,0
+germany,Birds,Waldkauz,0
+germany,Birds,Mäusebussard,0
+germany,Birds,Habicht,0
+germany,Birds,Sperber,0
+germany,Birds,Rotmilan,0
+germany,Birds,Schwarzmilan,0
+germany,Birds,Fischadler,0
+germany,Birds,Seeadler,0
+germany,Birds,Steinadler,0
+germany,Birds,Wespenbussard,0
+germany,Birds,Turmfalke,0
+germany,Birds,Wanderfalke,0
+germany,Birds,Baumfalke,0
+germany,Birds,Kranich,0
+germany,Birds,Weißstorch,0
+germany,Birds,Silberreiher,0
+germany,Birds,Kormoran,0
+germany,Birds,Rabe,0
+germany,Birds,Dohle,0
+germany,Birds,Elster,0
+germany,Birds,Eichelhäher,0
+germany,Birds,Pirol,0
+germany,Birds,Rotkehlchen,0
+germany,Birds,Zaunkönig,0
+germany,Birds,Buchfink,0
+germany,Birds,Stieglitz,0
+germany,Birds,Gimpel,0
+germany,Birds,Möwe,0
+germany,Birds,Seeschwalbe,0
+germany,Birds,Haubentaucher,0
+germany,Birds,Krickente,0
+germany,Birds,Reiherente,0
+germany,Birds,Austernfischer,0
+germany,Birds,Kiebitz,0
+germany,Birds,Brachvogel,0
+germany,Birds,Bekassine,0
+germany,Birds,Waldschnepfe,0
+germany,Birds,Eiderente,0
+germany,Birds,Gänsesäger,0
+germany,Birds,Wachtel,0
+germany,Birds,Rebhuhn,0
+germany,Birds,Fasan,0
+germany,Birds,Wasseramsel,0
+germany,Lakes,Bodensee,0
+germany,Lakes,Chiemsee,0
+germany,Lakes,Ammersee,0
+germany,Lakes,Starnberger See,0
+germany,Lakes,Tegernsee,0
+germany,Lakes,Schliersee,0
+germany,Lakes,Königssee,0
+germany,Lakes,Titisee,0
+germany,Lakes,Schluchsee,0
+germany,Lakes,Müritz,0
+germany,Lakes,Schweriner See,0
+germany,Lakes,Plauer See,0
+germany,Lakes,Kummerower See,0
+germany,Lakes,Tollensesee,0
+germany,Lakes,Großer Plöner See,0
+germany,Lakes,Selenter See,0
+germany,Lakes,Schaalsee,0
+germany,Lakes,Ratzeburger See,0
+germany,Lakes,Alster,0
+germany,Lakes,Arendsee,0
+germany,Streams,Würm,0
+germany,Streams,Amper,0
+germany,Streams,Loisach,0
+germany,Streams,Mangfall,0
+germany,Streams,Leitzach,0
+germany,Streams,Schlierach,0
+germany,Streams,Weißach,0
+germany,Streams,Gaißach,0
+germany,Streams,Walchen,0
+germany,Streams,Kanker,0
+germany,Streams,Murach,0
+germany,Streams,Vils,0
+germany,Streams,Regen,0
+germany,Streams,Schwarzach,0
+germany,Streams,Laber,0
+germany,Streams,Laaber,0
+germany,Streams,Paar,0
+germany,Streams,Sempt,0
+germany,Streams,Strogen,0
+germany,Streams,Isenach,0
+germany,Towns,Bamberg,0
+germany,Towns,Dinkelsbühl,0
+germany,Towns,Freising,0
+germany,Towns,Goslar,0
+germany,Towns,Hameln,0
+germany,Towns,Höchstädt,0
+germany,Towns,Landsberg,0
+germany,Towns,Meissen,0
+germany,Towns,Merseburg,0
+germany,Towns,Miltenberg,0
+germany,Towns,Murnau,0
+germany,Towns,Naumburg,0
+germany,Towns,Nördlingen,0
+germany,Towns,Paderborn,0
+germany,Towns,Passau,0
+germany,Towns,Quedlinburg,0
+germany,Towns,Rothenburg,0
+germany,Towns,Schwäbisch Hall,0
+germany,Towns,Soest,0
+germany,Towns,Stralsund,0
+germany,Towns,Tangermünde,0
+germany,Towns,Tübingen,0
+germany,Towns,Wasserburg,0
+germany,Towns,Wittenberg,0
+germany,Towns,Xanten,0
+# USA
+usa,Heroes,Washington,0
+usa,Heroes,Lincoln,0
+usa,Heroes,Grant,0
+usa,Heroes,Roosevelt,0
+usa,Heroes,Eisenhower,0
+usa,Heroes,Dewey,0
+usa,Heroes,Farragut,0
+usa,Heroes,Porter,0
+usa,Heroes,Mahan,0
+usa,Heroes,Sims,0
+usa,Heroes,Nimitz,0
+usa,Heroes,Halsey,0
+usa,Heroes,MacArthur,0
+usa,Heroes,Pershing,0
+usa,Heroes,Jones,0
+usa,Heroes,Perry,0
+usa,Heroes,Decatur,0
+usa,Heroes,Hull,0
+usa,Heroes,Lawrence,0
+usa,Heroes,Sampson,0
+usa,Heroes,Schley,0
+usa,Heroes,Jackson,0
+usa,Heroes,Lee,0
+usa,Heroes,Sherman,0
+usa,Heroes,Sheridan,0
+usa,Cities,New York,0
+usa,Cities,Boston,0
+usa,Cities,Philadelphia,0
+usa,Cities,Baltimore,0
+usa,Cities,San Francisco,0
+usa,Cities,Los Angeles,0
+usa,Cities,Chicago,0
+usa,Cities,Seattle,0
+usa,Cities,Portland,0
+usa,Cities,Norfolk,0
+usa,Cities,Charleston,0
+usa,Cities,Savannah,0
+usa,Cities,New Orleans,0
+usa,Cities,Mobile,0
+usa,Cities,Houston,0
+usa,Cities,San Diego,0
+usa,Cities,Miami,0
+usa,Cities,Tampa,0
+usa,Cities,Detroit,0
+usa,Cities,Cleveland,0
+usa,Cities,Pittsburgh,0
+usa,Cities,St Louis,0
+usa,Cities,Minneapolis,0
+usa,Cities,Denver,0
+usa,Cities,Phoenix,0
+usa,States,Virginia,0
+usa,States,Texas,0
+usa,States,California,0
+usa,States,Arizona,0
+usa,States,Montana,0
+usa,States,Nevada,0
+usa,States,Oregon,0
+usa,States,Washington,0
+usa,States,Idaho,0
+usa,States,Wyoming,0
+usa,States,Colorado,0
+usa,States,New Mexico,0
+usa,States,Utah,0
+usa,States,Alaska,0
+usa,States,Hawaii,0
+usa,States,Oklahoma,0
+usa,States,Kansas,0
+usa,States,Nebraska,0
+usa,States,South Dakota,0
+usa,States,North Dakota,0
+usa,States,Minnesota,0
+usa,States,Wisconsin,0
+usa,States,Michigan,0
+usa,States,Illinois,0
+usa,States,Indiana,0
+usa,States,Ohio,0
+usa,States,Iowa,0
+usa,States,Missouri,0
+usa,States,Arkansas,0
+usa,States,Louisiana,0
+usa,States,Mississippi,0
+usa,States,Alabama,0
+usa,States,Tennessee,0
+usa,States,Kentucky,0
+usa,States,Georgia,0
+usa,States,Florida,0
+usa,States,South Carolina,0
+usa,States,North Carolina,0
+usa,States,West Virginia,0
+usa,States,Pennsylvania,0
+usa,States,New York,0
+usa,States,Vermont,0
+usa,States,New Hampshire,0
+usa,States,Maine,0
+usa,States,Massachusetts,0
+usa,States,Rhode Island,0
+usa,States,Connecticut,0
+usa,States,New Jersey,0
+usa,States,Delaware,0
+usa,States,Maryland,0
+usa,Rivers,Mississippi,0
+usa,Rivers,Missouri,0
+usa,Rivers,Ohio,0
+usa,Rivers,Colorado,0
+usa,Rivers,Columbia,0
+usa,Rivers,Rio Grande,0
+usa,Rivers,Arkansas,0
+usa,Rivers,Red River,0
+usa,Rivers,Snake,0
+usa,Rivers,Tennessee,0
+usa,Rivers,Cumberland,0
+usa,Rivers,Platte,0
+usa,Rivers,Yellowstone,0
+usa,Rivers,Hudson,0
+usa,Rivers,Delaware,0
+usa,Rivers,Potomac,0
+usa,Rivers,Susquehanna,0
+usa,Rivers,James,0
+usa,Rivers,Roanoke,0
+usa,Rivers,Savannah,0
+usa,Rivers,Alabama,0
+usa,Rivers,Sacramento,0
+usa,Rivers,Willamette,0
+usa,Rivers,Yukon,0
+usa,Battles,Yorktown,0
+usa,Battles,Gettysburg,0
+usa,Battles,Midway,0
+usa,Battles,Saratoga,0
+usa,Battles,Antietam,0
+usa,Battles,Shiloh,0
+usa,Battles,Vicksburg,0
+usa,Battles,Bunker Hill,0
+usa,Battles,Trenton,0
+usa,Battles,Princeton,0
+usa,Battles,New Orleans,0
+usa,Battles,Manila Bay,0
+usa,Battles,Santiago,0
+usa,Battles,Chancellorsville,0
+usa,Birds,Bald Eagle,0
+usa,Birds,Osprey,0
+usa,Birds,Condor,0
+usa,Birds,Peregrine,0
+usa,Birds,Prairie Falcon,0
+usa,Birds,Kestrel,0
+usa,Birds,Merlin,0
+usa,Birds,Cooper,0
+usa,Birds,Red-tail,0
+usa,Birds,Harrier,0
+usa,Birds,Golden Eagle,0
+usa,Birds,Raven,0
+usa,Birds,Mockingbird,0
+usa,Birds,Cardinal,0
+usa,Birds,Bluebird,0
+usa,Birds,Oriole,0
+usa,Birds,Tanager,0
+usa,Birds,Bunting,0
+usa,Birds,Pelican,0
+usa,Birds,Frigatebird,0
+usa,Birds,Anhinga,0
+usa,Birds,Heron,0
+usa,Birds,Egret,0
+usa,Birds,Ibis,0
+usa,Birds,Spoonbill,0
+usa,Birds,Trumpeter,0
+usa,Birds,Canvasback,0
+usa,Birds,Bufflehead,0
+usa,Birds,Loon,0
+usa,Birds,Sandhill,0
+usa,Birds,Whooping Crane,0
+usa,Birds,Killdeer,0
+usa,Birds,Snipe,0
+usa,Birds,Curlew,0
+usa,Birds,Godwit,0
+usa,Birds,Dowitcher,0
+usa,Birds,Dunlin,0
+usa,Birds,Willet,0
+usa,Birds,Puffin,0
+usa,Birds,Murre,0
+usa,Birds,Albatross,0
+usa,Birds,Petrel,0
+usa,Birds,Tern,0
+usa,Birds,Skimmer,0
+usa,Birds,Pintail,0
+usa,Birds,Mallard,0
+usa,Birds,Teal,0
+usa,Birds,Wigeon,0
+usa,Birds,Merganser,0
+usa,Birds,Roadrunner,0
+usa,Birds,Nighthawk,0
+usa,Birds,Purple Martin,0
+usa,Lakes,Superior,0
+usa,Lakes,Michigan,0
+usa,Lakes,Huron,0
+usa,Lakes,Erie,0
+usa,Lakes,Ontario,0
+usa,Lakes,Champlain,0
+usa,Lakes,Flathead,0
+usa,Lakes,Crater,0
+usa,Lakes,Tahoe,0
+usa,Lakes,Okeechobee,0
+usa,Lakes,Pontchartrain,0
+usa,Lakes,Winnebago,0
+usa,Lakes,Mead,0
+usa,Lakes,Powell,0
+usa,Lakes,Shasta,0
+usa,Lakes,Travis,0
+usa,Lakes,Lanier,0
+usa,Lakes,Hartwell,0
+usa,Lakes,Ouachita,0
+usa,Lakes,Cumberland,0
+usa,Streams,Brandywine,0
+usa,Streams,Antietam,0
+usa,Streams,Kanawha,0
+usa,Streams,Wabash,0
+usa,Streams,Tippecanoe,0
+usa,Streams,Muskingum,0
+usa,Streams,Scioto,0
+usa,Streams,Olentangy,0
+usa,Streams,Cuyahoga,0
+usa,Streams,Chagrin,0
+usa,Streams,Huron,0
+usa,Streams,Raisin,0
+usa,Streams,Kalamazoo,0
+usa,Streams,Clinton,0
+usa,Streams,Rouge,0
+usa,Streams,Saline,0
+usa,Streams,Stony,0
+usa,Streams,Rocky,0
+usa,Streams,Shenandoah,0
+usa,Streams,Rappahannock,0
+usa,Mountains,Denali,0
+usa,Mountains,Whitney,0
+usa,Mountains,Elbert,0
+usa,Mountains,Rainier,0
+usa,Mountains,Shasta,0
+usa,Mountains,Hood,0
+usa,Mountains,Baker,0
+usa,Mountains,Olympus,0
+usa,Mountains,Granite Peak,0
+usa,Mountains,Borah Peak,0
+usa,Mountains,Kings Peak,0
+usa,Mountains,Wheeler Peak,0
+usa,Mountains,Gannett Peak,0
+usa,Mountains,Cloud Peak,0
+usa,Mountains,Fremont Peak,0
+usa,Mountains,Harney Peak,0
+usa,Mountains,Humphreys Peak,0
+usa,Mountains,Pikes Peak,0
+usa,Mountains,Blanca Peak,0
+usa,Mountains,Uncompahgre,0
+usa,Mountains,Castle Peak,0
+usa,Mountains,Maroon Bells,0
+usa,Mountains,Longs Peak,0
+usa,Mountains,Grand Teton,0
+usa,Mountains,Guadalupe Peak,0
+usa,Towns,Abilene,0
+usa,Towns,Bozeman,0
+usa,Towns,Brattleboro,0
+usa,Towns,Burlington,0
+usa,Towns,Carlisle,0
+usa,Towns,Cooperstown,0
+usa,Towns,Deadwood,0
+usa,Towns,Dodge City,0
+usa,Towns,Ellsworth,0
+usa,Towns,Eureka,0
+usa,Towns,Galena,0
+usa,Towns,Georgetown,0
+usa,Towns,Hannibal,0
+usa,Towns,Independence,0
+usa,Towns,Laramie,0
+usa,Towns,Lexington,0
+usa,Towns,Natchez,0
+usa,Towns,Natchitoches,0
+usa,Towns,Newburyport,0
+usa,Towns,Princeton,0
+usa,Towns,Rutland,0
+usa,Towns,Saratoga,0
+usa,Towns,Taos,0
+usa,Towns,Tombstone,0
+usa,Towns,Williamsburg,0
+# Russia
+russia,Heroes,Peter the Great,0
+russia,Heroes,Catherine the Great,0
+russia,Heroes,Suvorov,0
+russia,Heroes,Kutuzov,0
+russia,Heroes,Zhukov,0
+russia,Heroes,Nakhimov,0
+russia,Heroes,Ushakov,0
+russia,Heroes,Makarov,0
+russia,Heroes,Kolchak,0
+russia,Heroes,Bagration,0
+russia,Heroes,Barclay de Tolly,0
+russia,Heroes,Kornilov,0
+russia,Heroes,Potemkin,0
+russia,Heroes,Rumyantsev,0
+russia,Heroes,Alexander Nevsky,0
+russia,Heroes,Dmitry Donskoy,0
+russia,Cities,Moscow,0
+russia,Cities,Petersburg,0
+russia,Cities,Sevastopol,0
+russia,Cities,Vladivostok,0
+russia,Cities,Archangel,0
+russia,Cities,Murmansk,0
+russia,Cities,Odessa,0
+russia,Cities,Kiev,0
+russia,Cities,Minsk,0
+russia,Cities,Riga,0
+russia,Cities,Tallinn,0
+russia,Cities,Kazan,0
+russia,Cities,Volgograd,0
+russia,Cities,Rostov,0
+russia,Cities,Novorossiysk,0
+russia,Cities,Astrakhan,0
+russia,Cities,Kronstadt,0
+russia,Cities,Smolensk,0
+russia,Cities,Novgorod,0
+russia,Cities,Pskov,0
+russia,Cities,Tula,0
+russia,Cities,Yaroslavl,0
+russia,Rivers,Volga,0
+russia,Rivers,Don,0
+russia,Rivers,Dnieper,0
+russia,Rivers,Ob,0
+russia,Rivers,Lena,0
+russia,Rivers,Yenisei,0
+russia,Rivers,Amur,0
+russia,Rivers,Ural,0
+russia,Rivers,Dvina,0
+russia,Rivers,Neva,0
+russia,Rivers,Moskva,0
+russia,Rivers,Oka,0
+russia,Rivers,Kama,0
+russia,Rivers,Angara,0
+russia,Rivers,Pechora,0
+russia,Battles,Borodino,0
+russia,Battles,Poltava,0
+russia,Battles,Stalingrad,0
+russia,Battles,Kursk,0
+russia,Battles,Tsushima,0
+russia,Battles,Sinope,0
+russia,Battles,Gangut,0
+russia,Battles,Chesma,0
+russia,Battles,Kulikovo,0
+russia,Battles,Ice,0
+russia,Battles,Narva,0
+russia,Mountains,Elbrus,0
+russia,Mountains,Dykh-Tau,0
+russia,Mountains,Shkhara,0
+russia,Mountains,Kazbek,0
+russia,Mountains,Ushba,0
+russia,Mountains,Ural,0
+russia,Mountains,Narodnaya,0
+russia,Mountains,Payer,0
+russia,Mountains,Caucasus,0
+russia,Mountains,Altai,0
+russia,Mountains,Sayans,0
+russia,Mountains,Klyuchevskaya,0
+russia,Mountains,Beluha,0
+russia,Birds,Berkut,0
+russia,Birds,Orel,0
+russia,Birds,Sokol,0
+russia,Birds,Krechet,0
+russia,Birds,Yastreb,0
+russia,Birds,Korshun,0
+russia,Birds,Filin,0
+russia,Birds,Sova,0
+russia,Birds,Zhuravl,0
+russia,Birds,Lastochka,0
+russia,Birds,Voron,0
+russia,Birds,Soroka,0
+russia,Birds,Soyka,0
+russia,Birds,Skvorets,0
+russia,Birds,Solovey,0
+russia,Birds,Snegir,0
+russia,Birds,Shchegol,0
+russia,Birds,Chayka,0
+russia,Birds,Krachka,0
+russia,Birds,Gaga,0
+russia,Birds,Lebed,0
+russia,Birds,Gus,0
+russia,Birds,Kulik,0
+russia,Birds,Bekas,0
+russia,Birds,Drozd,0
+russia,Birds,Teterev,0
+russia,Birds,Gluhar,0
+russia,Birds,Ryabchik,0
+russia,Birds,Zhavoronok,0
+russia,Birds,Lyska,0
+russia,Birds,Gagara,0
+russia,Birds,Kryakva,0
+russia,Birds,Utka,0
+russia,Birds,Orlan,0
+russia,Birds,Strizh,0
+russia,Birds,Drofa,0
+russia,Birds,Strepet,0
+russia,Birds,Syp,0
+russia,Birds,Neophron,0
+russia,Birds,Perepel,0
+russia,Birds,Korostel,0
+russia,Lakes,Baikal,0
+russia,Lakes,Ladoga,0
+russia,Lakes,Onega,0
+russia,Lakes,Chudskoe,0
+russia,Lakes,Pskovskoe,0
+russia,Lakes,Beloye,0
+russia,Lakes,Ilmen,0
+russia,Lakes,Seliger,0
+russia,Lakes,Imandra,0
+russia,Lakes,Lovozero,0
+russia,Lakes,Umbozero,0
+russia,Lakes,Vygozero,0
+russia,Lakes,Segozero,0
+russia,Lakes,Topozero,0
+russia,Lakes,Pyaozero,0
+russia,Lakes,Kovdozero,0
+russia,Lakes,Kenozero,0
+russia,Lakes,Vozhe,0
+russia,Lakes,Kubenskoye,0
+russia,Lakes,Lacha,0
+russia,Streams,Shodnya,0
+russia,Streams,Setun,0
+russia,Streams,Presnya,0
+russia,Streams,Nakhabinka,0
+russia,Streams,Goretovka,0
+russia,Streams,Skhodnya,0
+russia,Streams,Khimka,0
+russia,Streams,Neglinnaya,0
+russia,Streams,Yauza,0
+russia,Streams,Nara,0
+russia,Streams,Protva,0
+russia,Streams,Lopasnya,0
+russia,Streams,Pakhra,0
+russia,Streams,Osetr,0
+russia,Streams,Trostna,0
+russia,Streams,Mozhayka,0
+russia,Streams,Istra,0
+russia,Streams,Ruza,0
+russia,Streams,Bystraya,0
+russia,Streams,Rybnitsa,0
+russia,Towns,Torzhok,0
+russia,Towns,Uglich,0
+russia,Towns,Pereslavl,0
+russia,Towns,Aleksandrov,0
+russia,Towns,Kasimov,0
+russia,Towns,Serpukhov,0
+russia,Towns,Zvenigorod,0
+russia,Towns,Borovsk,0
+russia,Towns,Mozhaisk,0
+russia,Towns,Vereya,0
+russia,Towns,Dmitrov,0
+russia,Towns,Kimry,0
+russia,Towns,Ostashkov,0
+russia,Towns,Porkhov,0
+russia,Towns,Gdov,0
+russia,Towns,Staraya Russa,0
+russia,Towns,Borovichi,0
+russia,Towns,Tikhvin,0
+russia,Towns,Shlisselburg,0
+russia,Towns,Tutaev,0
+russia,Towns,Myshkin,0
+russia,Towns,Kalyazin,0
+russia,Towns,Kashin,0
+russia,Towns,Volokolamsk,0
+russia,Towns,Rzhev,0
+# Italy
+italy,Heroes,Caesar,0
+italy,Heroes,Augustus,0
+italy,Heroes,Garibaldi,0
+italy,Heroes,Cavour,0
+italy,Heroes,Mazzini,0
+italy,Heroes,Victor Emmanuel,0
+italy,Heroes,Scipio,0
+italy,Heroes,Pompey,0
+italy,Heroes,Marcellus,0
+italy,Heroes,Fabius,0
+italy,Heroes,Camillus,0
+italy,Heroes,Trajan,0
+italy,Heroes,Hadrian,0
+italy,Heroes,Marcus Aurelius,0
+italy,Heroes,Constantine,0
+italy,Heroes,Belisarius,0
+italy,Heroes,Narses,0
+italy,Cities,Rome,0
+italy,Cities,Venice,0
+italy,Cities,Genoa,0
+italy,Cities,Naples,0
+italy,Cities,Milan,0
+italy,Cities,Turin,0
+italy,Cities,Florence,0
+italy,Cities,Palermo,0
+italy,Cities,Messina,0
+italy,Cities,Taranto,0
+italy,Cities,La Spezia,0
+italy,Cities,Trieste,0
+italy,Cities,Ancona,0
+italy,Cities,Pisa,0
+italy,Cities,Livorno,0
+italy,Cities,Bari,0
+italy,Cities,Cagliari,0
+italy,Cities,Bologna,0
+italy,Cities,Verona,0
+italy,Cities,Padua,0
+italy,Cities,Ravenna,0
+italy,Cities,Salerno,0
+italy,Regions,Tuscany,0
+italy,Regions,Lombardy,0
+italy,Regions,Sicily,0
+italy,Regions,Sardinia,0
+italy,Regions,Venetia,0
+italy,Regions,Piedmont,0
+italy,Regions,Liguria,0
+italy,Regions,Campania,0
+italy,Regions,Calabria,0
+italy,Regions,Apulia,0
+italy,Regions,Latium,0
+italy,Regions,Umbria,0
+italy,Regions,Emilia,0
+italy,Regions,Marche,0
+italy,Rivers,Po,0
+italy,Rivers,Adige,0
+italy,Rivers,Tiber,0
+italy,Rivers,Arno,0
+italy,Rivers,Piave,0
+italy,Rivers,Tagliamento,0
+italy,Rivers,Isonzo,0
+italy,Rivers,Reno,0
+italy,Battles,Zama,0
+italy,Battles,Cannae,0
+italy,Battles,Alesia,0
+italy,Battles,Pharsalus,0
+italy,Battles,Actium,0
+italy,Battles,Lepanto,0
+italy,Battles,Lissa,0
+italy,Battles,Solferino,0
+italy,Battles,Magenta,0
+italy,Mountains,Gran Sasso,0
+italy,Mountains,Cervino,0
+italy,Mountains,Monte Rosa,0
+italy,Mountains,Dolomiti,0
+italy,Mountains,Stelvio,0
+italy,Mountains,Apennino,0
+italy,Mountains,Etna,0
+italy,Mountains,Vesuvio,0
+italy,Mountains,Stromboli,0
+italy,Mountains,Pollino,0
+italy,Mountains,Aspromonte,0
+italy,Mountains,Majella,0
+italy,Birds,Rondine,0
+italy,Birds,Rondone,0
+italy,Birds,Merlo,0
+italy,Birds,Tordo,0
+italy,Birds,Pettirosso,0
+italy,Birds,Fringuello,0
+italy,Birds,Cardellino,0
+italy,Birds,Rigogolo,0
+italy,Birds,Cuculo,0
+italy,Birds,Upupa,0
+italy,Birds,Martin Pescatore,0
+italy,Birds,Gruccione,0
+italy,Birds,Ghiandaia,0
+italy,Birds,Gazza,0
+italy,Birds,Corvo,0
+italy,Birds,Falco,0
+italy,Birds,Aquila,0
+italy,Birds,Sparviero,0
+italy,Birds,Poiana,0
+italy,Birds,Nibbio,0
+italy,Birds,Astore,0
+italy,Birds,Gheppio,0
+italy,Birds,Allocco,0
+italy,Birds,Civetta,0
+italy,Birds,Barbagianni,0
+italy,Birds,Airone,0
+italy,Birds,Cicogna,0
+italy,Birds,Gabbiano,0
+italy,Birds,Sterna,0
+italy,Birds,Cormorano,0
+italy,Birds,Pellicano,0
+italy,Birds,Germano,0
+italy,Birds,Alzavola,0
+italy,Birds,Moriglione,0
+italy,Birds,Svasso,0
+italy,Birds,Folaga,0
+italy,Birds,Beccaccia,0
+italy,Birds,Beccaccino,0
+italy,Birds,Chiurlo,0
+italy,Birds,Totano,0
+italy,Birds,Piviere,0
+italy,Birds,Allodola,0
+italy,Birds,Capinera,0
+italy,Birds,Saltimpalo,0
+italy,Birds,Codirosso,0
+italy,Birds,Culbianco,0
+italy,Birds,Passero,0
+italy,Lakes,Garda,0
+italy,Lakes,Maggiore,0
+italy,Lakes,Como,0
+italy,Lakes,Trasimeno,0
+italy,Lakes,Bolsena,0
+italy,Lakes,Bracciano,0
+italy,Lakes,Vico,0
+italy,Lakes,Lugano,0
+italy,Lakes,Varese,0
+italy,Lakes,Orta,0
+italy,Lakes,Iseo,0
+italy,Lakes,Idro,0
+italy,Lakes,Ledro,0
+italy,Lakes,Toblino,0
+italy,Lakes,Caldonazzo,0
+italy,Lakes,Levico,0
+italy,Lakes,Scanno,0
+italy,Lakes,Nemi,0
+italy,Lakes,Albano,0
+italy,Lakes,Martignano,0
+italy,Streams,Lima,0
+italy,Streams,Pescia,0
+italy,Streams,Bisenzio,0
+italy,Streams,Mugnone,0
+italy,Streams,Ema,0
+italy,Streams,Arbia,0
+italy,Streams,Ombrone,0
+italy,Streams,Farma,0
+italy,Streams,Merse,0
+italy,Streams,Cecina,0
+italy,Streams,Cornia,0
+italy,Streams,Pecora,0
+italy,Streams,Bruna,0
+italy,Streams,Albegna,0
+italy,Streams,Fiora,0
+italy,Streams,Marta,0
+italy,Streams,Mignone,0
+italy,Streams,Arrone,0
+italy,Streams,Trasubbie,0
+italy,Streams,Palombina,0
+italy,Towns,Alberobello,0
+italy,Towns,Amalfi,0
+italy,Towns,Anacapri,0
+italy,Towns,Anagni,0
+italy,Towns,Ascoli Piceno,0
+italy,Towns,Bevagna,0
+italy,Towns,Bosa,0
+italy,Towns,Cortona,0
+italy,Towns,Erice,0
+italy,Towns,Gubbio,0
+italy,Towns,Lovere,0
+italy,Towns,Lucignano,0
+italy,Towns,Matera,0
+italy,Towns,Montefalco,0
+italy,Towns,Montepulciano,0
+italy,Towns,Monteriggioni,0
+italy,Towns,Orvieto,0
+italy,Towns,Ostuni,0
+italy,Towns,Pitigliano,0
+italy,Towns,Positano,0
+italy,Towns,Ravello,0
+italy,Towns,San Gimignano,0
+italy,Towns,Sirmione,0
+italy,Towns,Spoleto,0
+italy,Towns,Urbino,0
+# Japan
+japan,Heroes,Togo,0
+japan,Heroes,Yamamoto,0
+japan,Heroes,Takeda Shingen,0
+japan,Heroes,Oda Nobunaga,0
+japan,Heroes,Tokugawa Ieyasu,0
+japan,Heroes,Toyotomi Hideyoshi,0
+japan,Heroes,Date Masamune,0
+japan,Heroes,Uesugi Kenshin,0
+japan,Heroes,Minamoto Yoritomo,0
+japan,Heroes,Kusunoki Masashige,0
+japan,Heroes,Saigo Takamori,0
+japan,Heroes,Nogi,0
+japan,Heroes,Oyama,0
+japan,Heroes,Kuroki,0
+japan,Heroes,Kamimura,0
+japan,Cities,Tokyo,0
+japan,Cities,Kyoto,0
+japan,Cities,Osaka,0
+japan,Cities,Nagasaki,0
+japan,Cities,Hiroshima,0
+japan,Cities,Yokohama,0
+japan,Cities,Kobe,0
+japan,Cities,Nagoya,0
+japan,Cities,Kure,0
+japan,Cities,Sasebo,0
+japan,Cities,Yokosuka,0
+japan,Cities,Fukuoka,0
+japan,Cities,Sendai,0
+japan,Cities,Sapporo,0
+japan,Cities,Kagoshima,0
+japan,Cities,Niigata,0
+japan,Cities,Kumamoto,0
+japan,Provinces,Yamato,0
+japan,Provinces,Musashi,0
+japan,Provinces,Kaga,0
+japan,Provinces,Mutsu,0
+japan,Provinces,Shinano,0
+japan,Provinces,Hizen,0
+japan,Provinces,Settsu,0
+japan,Provinces,Owari,0
+japan,Provinces,Ise,0
+japan,Provinces,Suruga,0
+japan,Provinces,Echigo,0
+japan,Provinces,Tosa,0
+japan,Provinces,Satsuma,0
+japan,Provinces,Choshu,0
+japan,Provinces,Aki,0
+japan,Provinces,Bungo,0
+japan,Provinces,Hyuga,0
+japan,Mountains,Fuji,0
+japan,Mountains,Hiei,0
+japan,Mountains,Kongo,0
+japan,Mountains,Kirishima,0
+japan,Mountains,Haruna,0
+japan,Mountains,Asama,0
+japan,Mountains,Yari,0
+japan,Mountains,Hotaka,0
+japan,Mountains,Tateyama,0
+japan,Mountains,Hakusan,0
+japan,Mountains,Aso,0
+japan,Mountains,Daisen,0
+japan,Battles,Tsushima,0
+japan,Battles,Sekigahara,0
+japan,Battles,Nagashino,0
+japan,Battles,Kawanakajima,0
+japan,Battles,Dan-no-ura,0
+japan,Battles,Okehazama,0
+japan,Battles,Shiroyama,0
+japan,Birds,Tsuru,0
+japan,Birds,Hayabusa,0
+japan,Birds,Taka,0
+japan,Birds,Washi,0
+japan,Birds,Karasu,0
+japan,Birds,Tsubame,0
+japan,Birds,Suzume,0
+japan,Birds,Uguisu,0
+japan,Birds,Kawasemi,0
+japan,Birds,Fukurō,0
+japan,Birds,Kiji,0
+japan,Birds,Sagi,0
+japan,Birds,Tobi,0
+japan,Birds,Kamome,0
+japan,Birds,Shigi,0
+japan,Birds,Toki,0
+japan,Birds,Hototogisu,0
+japan,Birds,Umineko,0
+japan,Birds,Ajisashi,0
+japan,Birds,Kibitaki,0
+japan,Birds,Ruribitaki,0
+japan,Birds,Shijūkara,0
+japan,Birds,Yamagara,0
+japan,Birds,Hiyodori,0
+japan,Birds,Mozu,0
+japan,Birds,Aogera,0
+japan,Birds,Ōtaka,0
+japan,Birds,Ōruri,0
+japan,Birds,Aosagi,0
+japan,Birds,Kosagi,0
+japan,Birds,Goisagi,0
+japan,Birds,Akashōbin,0
+japan,Birds,Aobazuku,0
+japan,Birds,Yamasemi,0
+japan,Birds,Tancho,0
+japan,Birds,Kumataka,0
+japan,Birds,Ōjiro Washi,0
+japan,Birds,Yama Dori,0
+japan,Seas,Nihonkai,0
+japan,Seas,Seto Naikai,0
+japan,Seas,Taiheiyō,0
+japan,Seas,Okhotsk Kai,0
+japan,Seas,Higashi Shina Kai,0
+japan,Seas,Tsugaru Kaikyō,0
+japan,Seas,Kanmon,0
+japan,Seas,Bungo,0
+japan,Seas,Kii,0
+japan,Seas,Sagami Nada,0
+japan,Seas,Ise Wan,0
+japan,Seas,Tokyo Wan,0
+japan,Seas,Osaka Wan,0
+japan,Seas,Suruga Wan,0
+japan,Seas,Mutsu Wan,0
+japan,Islands,Hokkaido,0
+japan,Islands,Honshu,0
+japan,Islands,Kyushu,0
+japan,Islands,Shikoku,0
+japan,Islands,Okinawa,0
+japan,Islands,Tsushima,0
+japan,Islands,Iki,0
+japan,Islands,Sado,0
+japan,Islands,Awaji,0
+japan,Islands,Oshima,0
+japan,Islands,Izu Oshima,0
+japan,Islands,Miyajima,0
+japan,Islands,Tokunoshima,0
+japan,Islands,Iriomote,0
+japan,Islands,Ishigaki,0
+japan,Islands,Miyako,0
+japan,Islands,Amami,0
+japan,Islands,Tanegashima,0
+japan,Islands,Yakushima,0
+japan,Islands,Okushiri,0
+japan,Islands,Rishiri,0
+japan,Islands,Rebun,0
+japan,Islands,Chichi-jima,0
+japan,Islands,Haha-jima,0
+japan,Islands,Iwo-jima,0
+japan,Islands,Yonaguni,0
+japan,Islands,Kume,0
+japan,Islands,Ogasawara,0
+japan,Islands,Yoron,0
+japan,Islands,Kikai,0
+japan,Islands,Aguni,0
+japan,Islands,Zamami,0
+japan,Rivers,Shinano,0
+japan,Rivers,Tone,0
+japan,Rivers,Ishikari,0
+japan,Rivers,Kitakami,0
+japan,Rivers,Kiso,0
+japan,Rivers,Tenryu,0
+japan,Rivers,Yoshino,0
+japan,Rivers,Chikugo,0
+japan,Rivers,Yodo,0
+japan,Rivers,Mogami,0
+japan,Rivers,Abukuma,0
+japan,Rivers,Naka,0
+japan,Rivers,Tama,0
+japan,Rivers,Ara,0
+japan,Rivers,Nishiki,0
+japan,Rivers,Ōi,0
+japan,Rivers,Abe,0
+japan,Rivers,Kinu,0
+japan,Rivers,Agano,0
+japan,Rivers,Shimanto,0
+japan,Rivers,Oyodo,0
+japan,Rivers,Kumano,0
+japan,Rivers,Oirase,0
+japan,Rivers,Kuzuryu,0
+japan,Rivers,Mimi,0
+japan,Rivers,Kuma,0
+japan,Rivers,Ōyodo,0
+japan,Rivers,Niyodo,0
+japan,Rivers,Kakita,0
+japan,Rivers,Funatsu,0
+japan,Lakes,Biwa,0
+japan,Lakes,Kasumigaura,0
+japan,Lakes,Saroma,0
+japan,Lakes,Inawashiro,0
+japan,Lakes,Suwa,0
+japan,Lakes,Ashi,0
+japan,Lakes,Tazawa,0
+japan,Lakes,Towada,0
+japan,Lakes,Mashu,0
+japan,Lakes,Kussharo,0
+japan,Lakes,Shikotsu,0
+japan,Lakes,Yamanaka,0
+japan,Lakes,Kawaguchi,0
+japan,Lakes,Sai,0
+japan,Lakes,Motosuko,0
+japan,Lakes,Shoji,0
+japan,Lakes,Motosu,0
+japan,Provinces,Mutsu,0
+japan,Provinces,Dewa,0
+japan,Provinces,Echigo,0
+japan,Provinces,Kaga,0
+japan,Provinces,Noto,0
+japan,Provinces,Etchū,0
+japan,Provinces,Echizen,0
+japan,Provinces,Yamato,0
+japan,Provinces,Ise,0
+japan,Provinces,Owari,0
+japan,Provinces,Mikawa,0
+japan,Provinces,Tōtōmi,0
+japan,Provinces,Suruga,0
+japan,Provinces,Kai,0
+japan,Provinces,Shinano,0
+japan,Provinces,Musashi,0
+japan,Provinces,Sagami,0
+japan,Provinces,Kōzuke,0
+japan,Provinces,Shimotsuke,0
+japan,Provinces,Hitachi,0
+japan,Provinces,Harima,0
+japan,Provinces,Bizen,0
+japan,Provinces,Bitchū,0
+japan,Provinces,Bingo,0
+japan,Provinces,Aki,0
+japan,Provinces,Suō,0
+japan,Provinces,Nagato,0
+japan,Provinces,Iyo,0
+japan,Provinces,Tosa,0
+japan,Provinces,Satsuma,0
+japan,Provinces,Bungo,0
+japan,Provinces,Chikuzen,0
+japan,Provinces,Buzen,0
+japan,Provinces,Hizen,0
+japan,Provinces,Higo,0
+japan,Provinces,Ōsumi,0
+japan,Provinces,Settsu,0
+japan,Clans,Tokugawa,0
+japan,Clans,Minamoto,0
+japan,Clans,Taira,0
+japan,Clans,Fujiwara,0
+japan,Clans,Shimazu,0
+japan,Clans,Date,0
+japan,Clans,Oda,0
+japan,Clans,Takeda,0
+japan,Clans,Uesugi,0
+japan,Clans,Imagawa,0
+japan,Clans,Hojo,0
+japan,Clans,Mori,0
+japan,Clans,Chosokabe,0
+japan,Clans,Otomo,0
+japan,Clans,Toyotomi,0
+japan,Clans,Sanada,0
+japan,Clans,Maeda,0
+japan,Clans,Kuroda,0
+japan,Clans,Ii,0
+japan,Clans,Yamauchi,0
+japan,Clans,Satake,0
+japan,Clans,Asai,0
+japan,Flowers,Sakura,0
+japan,Flowers,Ume,0
+japan,Flowers,Kiku,0
+japan,Flowers,Botan,0
+japan,Flowers,Fuji,0
+japan,Flowers,Ayame,0
+japan,Flowers,Tsubaki,0
+japan,Flowers,Ran,0
+japan,Flowers,Sumire,0
+japan,Flowers,Momiji,0
+japan,Flowers,Hagi,0
+japan,Flowers,Kikyo,0
+japan,Flowers,Nadeshiko,0
+japan,Flowers,Asagao,0
+japan,Flowers,Himawari,0
+japan,Flowers,Ajisai,0
+japan,Flowers,Tanpopo,0
+japan,Flowers,Hasu,0
+japan,Flowers,Yamabuki,0
+japan,Flowers,Komurasaki,0
+japan,Winds,Kamikaze,0
+japan,Winds,Hayate,0
+japan,Winds,Arashi,0
+japan,Winds,Murasame,0
+japan,Winds,Nowaki,0
+japan,Winds,Shigure,0
+japan,Winds,Harukaze,0
+japan,Winds,Yukikaze,0
+japan,Winds,Shirayuki,0
+japan,Winds,Fubuki,0
+japan,Winds,Ayanami,0
+japan,Winds,Ushio,0
+japan,Winds,Asashio,0
+japan,Winds,Kuroshio,0
+japan,Winds,Oyashio,0
+japan,Winds,Akigumo,0
+japan,Winds,Natsugumo,0
+japan,Winds,Harugumo,0
+japan,Winds,Fuyutsuki,0
+japan,Winds,Akizuki,0
+japan,Winds,Haruzuki,0
+japan,Winds,Satsuki,0
+japan,Winds,Kisaragi,0
+japan,Winds,Yayoi,0
+japan,Winds,Fumizuki,0
+japan,Winds,Nagatsuki,0
+japan,Winds,Uzuki,0
+japan,Winds,Hazuki,0
+japan,Winds,Minazuki,0
+japan,Winds,Kazagumo,0
+japan,Virtues,Gi,0
+japan,Virtues,Yū,0
+japan,Virtues,Jin,0
+japan,Virtues,Rei,0
+japan,Virtues,Makoto,0
+japan,Virtues,Meiyo,0
+japan,Virtues,Chūgi,0
+japan,Virtues,Kenkyō,0
+japan,Virtues,Seishin,0
+japan,Virtues,Bushido,0
+japan,Virtues,Mushin,0
+japan,Virtues,Zanshin,0
+japan,Virtues,Yamato,0
+# Towns available for large Japan classes (MinShips = 20)
+japan,Towns,Aizu,20
+japan,Towns,Akita,20
+japan,Towns,Akō,20
+japan,Towns,Aomori,20
+japan,Towns,Asahikawa,20
+japan,Towns,Atami,20
+japan,Towns,Beppu,20
+japan,Towns,Chiba,20
+japan,Towns,Chichibu,20
+japan,Towns,Dazaifu,20
+japan,Towns,Fukui,20
+japan,Towns,Fukushima,20
+japan,Towns,Gifu,20
+japan,Towns,Hakata,20
+japan,Towns,Hakodate,20
+japan,Towns,Hamamatsu,20
+japan,Towns,Hikone,20
+japan,Towns,Himeji,20
+japan,Towns,Hitachi,20
+japan,Towns,Hōfu,20
+japan,Towns,Ichinoseki,20
+japan,Towns,Imabari,20
+japan,Towns,Itō,20
+japan,Towns,Iwata,20
+japan,Towns,Izumo,20
+japan,Towns,Kamakura,20
+japan,Towns,Kanazawa,20
+japan,Towns,Kawagoe,20
+japan,Towns,Kofu,20
+japan,Towns,Kōchi,20
+japan,Towns,Kōriyama,20
+japan,Towns,Matsue,20
+japan,Towns,Matsumoto,20
+japan,Towns,Matsuyama,20
+japan,Towns,Maizuru,20
+japan,Towns,Mito,20
+japan,Towns,Miyazaki,20
+japan,Towns,Morioka,20
+japan,Towns,Nagaoka,20
+japan,Towns,Nara,20
+japan,Towns,Nikkō,20
+japan,Towns,Numazu,20
+japan,Towns,Obama,20
+japan,Towns,Ogaki,20
+japan,Towns,Okayama,20
+japan,Towns,Okazaki,20
+japan,Towns,Otaru,20
+japan,Towns,Ōtsu,20
+japan,Towns,Sakai,20
+japan,Towns,Sakata,20
+japan,Towns,Shimizu,20
+japan,Towns,Shizuoka,20
+japan,Towns,Takasaki,20
+japan,Towns,Takamatsu,20
+japan,Towns,Tochigi,20
+japan,Towns,Toyama,20
+japan,Towns,Toyohashi,20
+japan,Towns,Tsu,20
+japan,Towns,Utsunomiya,20
+japan,Towns,Yamagata,20
+japan,Towns,Yamaguchi,20
+japan,Towns,Yonago,20
+japan,Towns,Tottori,20
+japan,Towns,Fukuyama,20
+japan,Towns,Ube,20
+japan,Towns,Iwakuni,20
+japan,Towns,Hagi,20
+japan,Towns,Shimonoseki,20
+japan,Towns,Kokura,20
+japan,Towns,Naha,20
+japan,Towns,Taira,20
+japan,Towns,Mihara,20
+japan,Towns,Imari,20
+japan,Towns,Arita,20
+japan,Towns,Isahaya,20
+japan,Towns,Omura,20
+japan,Towns,Shimabara,20
+japan,Towns,Tamana,20
+japan,Towns,Hita,20
+japan,Towns,Nakatsu,20
+japan,Towns,Usuki,20
+japan,Towns,Saeki,20
+japan,Towns,Nobeoka,20
+japan,Towns,Mimitsu,20
+japan,Towns,Miyakonojo,20
+japan,Towns,Kanoya,20
+japan,Towns,Makurazaki,20
+japan,Towns,Chiran,20
+japan,Towns,Kaseda,20
+japan,Towns,Ibusuki,20
+japan,Towns,Kushikino,20
+japan,Towns,Akune,20
+japan,Towns,Izumi,20
+japan,Towns,Sendai-shi,20
+japan,Towns,Uwajima,20
+japan,Towns,Nïihama,20
+japan,Towns,Saijō,20
+japan,Towns,Imabari,20
+japan,Towns,Ōzu,20
+japan,Towns,Sukumo,20
+japan,Towns,Nakamura,20
+japan,Towns,Muroto,20
+japan,Towns,Aki,20
+japan,Towns,Tosashimizu,20
+japan,Towns,Susaki,20
+japan,Towns,Kōchi-shi,20
+japan,Towns,Tosa,20
+japan,Towns,Shimanto-shi,20
+japan,Towns,Kubokawa,20
+japan,Streams,Meguro,0
+japan,Streams,Kandagawa,0
+japan,Streams,Shakujii,0
+japan,Streams,Zenpukuji,0
+japan,Streams,Nogawa,0
+japan,Streams,Tsurumai,0
+japan,Streams,Yamazaki,0
+japan,Streams,Azuma,0
+japan,Streams,Ayase,0
+japan,Streams,Koisawa,0
+japan,Streams,Motoarakawa,0
+japan,Streams,Furukawa,0
+japan,Streams,Kitazawa,0
+japan,Streams,Togawa,0
+japan,Streams,Yazawa,0
+japan,Streams,Nomikawa,0
+japan,Streams,Tsurumikawa,0
+japan,Streams,Yagisawa,0
+japan,Streams,Iruma,0
+japan,Streams,Takase,0
+japan,Streams,Kabira,0
+japan,Streams,Shimanto,0
+# Spain
+spain,Heroes,El Cid,0
+spain,Heroes,Ferdinand,0
+spain,Heroes,Isabella,0
+spain,Heroes,Cortés,0
+spain,Heroes,Pizarro,0
+spain,Heroes,Balboa,0
+spain,Heroes,Magellan,0
+spain,Heroes,Cervantes,0
+spain,Heroes,Don Juan,0
+spain,Heroes,Alba,0
+spain,Heroes,Parma,0
+spain,Heroes,Spinola,0
+spain,Heroes,Gonzalo de Córdoba,0
+spain,Cities,Madrid,0
+spain,Cities,Barcelona,0
+spain,Cities,Valencia,0
+spain,Cities,Seville,0
+spain,Cities,Cadiz,0
+spain,Cities,Cartagena,0
+spain,Cities,Bilbao,0
+spain,Cities,Málaga,0
+spain,Cities,Toledo,0
+spain,Cities,Granada,0
+spain,Cities,Córdoba,0
+spain,Cities,Zaragoza,0
+spain,Cities,Santander,0
+spain,Cities,Vigo,0
+spain,Cities,La Coruña,0
+spain,Cities,Ferrol,0
+spain,Cities,Alicante,0
+spain,Regions,Castile,0
+spain,Regions,Aragon,0
+spain,Regions,Catalonia,0
+spain,Regions,Andalusia,0
+spain,Regions,Galicia,0
+spain,Regions,Asturias,0
+spain,Regions,Leon,0
+spain,Regions,Navarre,0
+spain,Regions,Valencia,0
+spain,Regions,Murcia,0
+spain,Regions,Extremadura,0
+spain,Rivers,Tagus,0
+spain,Rivers,Ebro,0
+spain,Rivers,Duero,0
+spain,Rivers,Guadalquivir,0
+spain,Rivers,Guadiana,0
+spain,Rivers,Miño,0
+spain,Rivers,Júcar,0
+spain,Rivers,Segura,0
+spain,Battles,Lepanto,0
+spain,Battles,Pavia,0
+spain,Battles,Breda,0
+spain,Battles,Rocroi,0
+spain,Battles,Las Navas,0
+spain,Mountains,Mulhacén,0
+spain,Mountains,Aneto,0
+spain,Mountains,Alcazaba,0
+spain,Mountains,Pyrenees,0
+spain,Mountains,Sierra Nevada,0
+spain,Mountains,Guadarrama,0
+spain,Mountains,Picos de Europa,0
+spain,Mountains,Gredos,0
+spain,Mountains,Montseny,0
+spain,Mountains,Teide,0
+spain,Mountains,Cantabria,0
+spain,Birds,Cigüeña,0
+spain,Birds,Grulla,0
+spain,Birds,Flamenco,0
+spain,Birds,Avutarda,0
+spain,Birds,Águila,0
+spain,Birds,Quebrantahuesos,0
+spain,Birds,Buitre,0
+spain,Birds,Alimoche,0
+spain,Birds,Milano,0
+spain,Birds,Aguilucho,0
+spain,Birds,Gavilán,0
+spain,Birds,Azor,0
+spain,Birds,Alcotán,0
+spain,Birds,Cernícalo,0
+spain,Birds,Halcón,0
+spain,Birds,Búho,0
+spain,Birds,Lechuza,0
+spain,Birds,Garza,0
+spain,Birds,Espátula,0
+spain,Birds,Martinete,0
+spain,Birds,Ánade,0
+spain,Birds,Cerceta,0
+spain,Birds,Gaviota,0
+spain,Birds,Charrán,0
+spain,Birds,Alcatraz,0
+spain,Birds,Pagaza,0
+spain,Birds,Mirlo,0
+spain,Birds,Zorzal,0
+spain,Birds,Petirojo,0
+spain,Birds,Colirrojo,0
+spain,Birds,Tarabilla,0
+spain,Birds,Collalba,0
+spain,Birds,Carbonero,0
+spain,Birds,Herrerillo,0
+spain,Birds,Trepador,0
+spain,Birds,Golondrina,0
+spain,Birds,Avión,0
+spain,Birds,Vencejo,0
+spain,Birds,Cuco,0
+spain,Birds,Abubilla,0
+spain,Birds,Abejaruco,0
+spain,Birds,Carraca,0
+spain,Birds,Martín Pescador,0
+spain,Birds,Alondra,0
+spain,Birds,Focha,0
+spain,Birds,Porrón,0
+spain,Birds,Morito,0
+spain,Birds,Cigüeñuela,0
+spain,Birds,Avoceta,0
+spain,Birds,Zarapito,0
+spain,Birds,Archibebe,0
+spain,Birds,Ostrero,0
+spain,Lakes,Sanabria,0
+spain,Lakes,Banyoles,0
+spain,Lakes,Gallocanta,0
+spain,Lakes,Fuente de Piedra,0
+spain,Lakes,Albufera,0
+spain,Lakes,Sant Maurici,0
+spain,Lakes,Carucedo,0
+spain,Lakes,Ruidera,0
+spain,Lakes,Peñalara,0
+spain,Lakes,Enol,0
+spain,Lakes,Ercina,0
+spain,Lakes,Estany Negre,0
+spain,Lakes,Mar Menor,0
+spain,Lakes,Gento,0
+spain,Lakes,Bacivèr,0
+spain,Lakes,Estany Llong,0
+spain,Lakes,Aigüestortes,0
+spain,Lakes,Llebreta,0
+spain,Streams,Manzanares,0
+spain,Streams,Tajuña,0
+spain,Streams,Guadarrama,0
+spain,Streams,Tormes,0
+spain,Streams,Yeltes,0
+spain,Streams,Huebra,0
+spain,Streams,Voltoya,0
+spain,Streams,Trabancos,0
+spain,Streams,Zapardiel,0
+spain,Streams,Eresma,0
+spain,Streams,Cega,0
+spain,Streams,Pirón,0
+spain,Streams,Adaja,0
+spain,Streams,Almar,0
+spain,Streams,Valmuza,0
+spain,Streams,Gamo,0
+spain,Streams,Ambles,0
+spain,Streams,Corneja,0
+spain,Streams,Jerte,0
+spain,Streams,Ambroz,0
+spain,Towns,Albarracín,0
+spain,Towns,Almagro,0
+spain,Towns,Arcos de la Frontera,0
+spain,Towns,Baeza,0
+spain,Towns,Besalú,0
+spain,Towns,Brihuega,0
+spain,Towns,Carmona,0
+spain,Towns,Consuegra,0
+spain,Towns,Daroca,0
+spain,Towns,Frías,0
+spain,Towns,Hita,0
+spain,Towns,Lerma,0
+spain,Towns,Medinaceli,0
+spain,Towns,Morella,0
+spain,Towns,Pals,0
+spain,Towns,Pedraza,0
+spain,Towns,Peñíscola,0
+spain,Towns,Priego,0
+spain,Towns,Ronda,0
+spain,Towns,Sepúlveda,0
+spain,Towns,Sigüenza,0
+spain,Towns,Trujillo,0
+spain,Towns,Vélez Blanco,0
+spain,Towns,Vilafamés,0
+spain,Towns,Zamora,0
+# Austria
+austria,Heroes,Eugene,0
+austria,Heroes,Radetzky,0
+austria,Heroes,Charles,0
+austria,Heroes,Montecuccoli,0
+austria,Heroes,Wallenstein,0
+austria,Heroes,Tegetthoff,0
+austria,Cities,Vienna,0
+austria,Cities,Trieste,0
+austria,Cities,Pola,0
+austria,Cities,Prague,0
+austria,Cities,Budapest,0
+austria,Cities,Graz,0
+austria,Cities,Salzburg,0
+austria,Cities,Innsbruck,0
+austria,Cities,Linz,0
+austria,Cities,Klagenfurt,0
+austria,Cities,Fiume,0
+austria,Cities,Ragusa,0
+austria,Regions,Tyrol,0
+austria,Regions,Styria,0
+austria,Regions,Carinthia,0
+austria,Regions,Bohemia,0
+austria,Regions,Moravia,0
+austria,Regions,Galicia,0
+austria,Regions,Istria,0
+austria,Regions,Dalmatia,0
+austria,Rivers,Danube,0
+austria,Rivers,Inn,0
+austria,Rivers,Drava,0
+austria,Rivers,Sava,0
+austria,Rivers,Enns,0
+austria,Rivers,Mur,0
+austria,Rivers,Salzach,0
+austria,Battles,Vienna,0
+austria,Battles,Lissa,0
+austria,Battles,Aspern,0
+austria,Battles,Zenta,0
+austria,Birds,Steinadler,0
+austria,Birds,Bartgeier,0
+austria,Birds,Weißstorch,0
+austria,Birds,Fischadler,0
+austria,Birds,Wanderfalke,0
+austria,Birds,Turmfalke,0
+austria,Birds,Bussard,0
+austria,Birds,Habicht,0
+austria,Birds,Sperber,0
+austria,Birds,Rotmilan,0
+austria,Birds,Graureiher,0
+austria,Birds,Kormoran,0
+austria,Birds,Haubentaucher,0
+austria,Birds,Eisvogel,0
+austria,Birds,Wiedehopf,0
+austria,Birds,Nachtigall,0
+austria,Birds,Amsel,0
+austria,Birds,Rotkehlchen,0
+austria,Birds,Buchfink,0
+austria,Birds,Blaumeise,0
+austria,Birds,Kleiber,0
+austria,Birds,Kuckuck,0
+austria,Birds,Uhu,0
+austria,Birds,Waldkauz,0
+austria,Birds,Specht,0
+austria,Birds,Elster,0
+austria,Birds,Kolkrabe,0
+austria,Birds,Rebhuhn,0
+austria,Birds,Kranich,0
+austria,Lakes,Neusiedler See,0
+austria,Lakes,Wörthersee,0
+austria,Lakes,Attersee,0
+austria,Lakes,Traunsee,0
+austria,Lakes,Hallstätter See,0
+austria,Lakes,Mondsee,0
+austria,Lakes,Wolfgangsee,0
+austria,Lakes,Zeller See,0
+austria,Lakes,Weißensee,0
+austria,Lakes,Millstätter See,0
+austria,Lakes,Faaker See,0
+austria,Lakes,Achensee,0
+austria,Lakes,Plansee,0
+austria,Lakes,Gosausee,0
+austria,Lakes,Almsee,0
+austria,Lakes,Toplitzsee,0
+austria,Lakes,Grundlsee,0
+austria,Lakes,Altausseer See,0
+austria,Lakes,Hechtsee,0
+austria,Lakes,Lunzer See,0
+austria,Streams,Traun,0
+austria,Streams,Steyr,0
+austria,Streams,Salza,0
+austria,Streams,Schwarza,0
+austria,Streams,Mürz,0
+austria,Streams,Lieser,0
+austria,Streams,Gail,0
+austria,Streams,Isel,0
+austria,Streams,Feistritz,0
+austria,Streams,Raab,0
+austria,Streams,Lafnitz,0
+austria,Streams,Pinka,0
+austria,Streams,Zaya,0
+austria,Streams,Thaya,0
+austria,Streams,Kamp,0
+austria,Streams,Krems,0
+austria,Streams,Ybbs,0
+austria,Streams,Erlauf,0
+austria,Streams,Melk,0
+austria,Streams,Pielach,0
+austria,Mountains,Großglockner,0
+austria,Mountains,Wildspitze,0
+austria,Mountains,Similaun,0
+austria,Mountains,Dachstein,0
+austria,Mountains,Schneeberg,0
+austria,Mountains,Hochkönig,0
+austria,Mountains,Sonnblick,0
+austria,Mountains,Ankogel,0
+austria,Mountains,Hochalmspitze,0
+austria,Mountains,Schober,0
+austria,Mountains,Kreuzeck,0
+austria,Mountains,Raxalpe,0
+austria,Mountains,Ötscher,0
+austria,Mountains,Untersberg,0
+austria,Mountains,Gosaukamm,0
+austria,Mountains,Grimming,0
+austria,Mountains,Kaisergebirge,0
+austria,Mountains,Silvretta,0
+austria,Mountains,Arlberg,0
+austria,Mountains,Preber,0
+austria,Towns,Hallstatt,0
+austria,Towns,Dürnstein,0
+austria,Towns,Freistadt,0
+austria,Towns,Gmunden,0
+austria,Towns,Waidhofen,0
+austria,Towns,Klosterneuburg,0
+austria,Towns,Mödling,0
+austria,Towns,Leoben,0
+austria,Towns,Judenburg,0
+austria,Towns,Murau,0
+austria,Towns,Tamsweg,0
+austria,Towns,Radstadt,0
+austria,Towns,Schladming,0
+austria,Towns,Vöcklabruck,0
+austria,Towns,Braunau,0
+austria,Towns,Schärding,0
+austria,Towns,Zwettl,0
+austria,Towns,Krems,0
+austria,Towns,Gmünd,0
+austria,Towns,Horn,0
+austria,Towns,Hollabrunn,0
+austria,Towns,Stockerau,0
+austria,Towns,Baden,0
+austria,Towns,Neunkirchen,0
+austria,Towns,Melk,0
+# China
+china,Heroes,Qin Shi Huang,0
+china,Heroes,Emperor Wu,0
+china,Heroes,Genghis Khan,0
+china,Heroes,Kublai Khan,0
+china,Heroes,Zheng He,0
+china,Heroes,Sun Tzu,0
+china,Heroes,Yue Fei,0
+china,Heroes,Guan Yu,0
+china,Heroes,Cao Cao,0
+china,Heroes,Liu Bei,0
+china,Heroes,Zhao Yun,0
+china,Heroes,Lü Bu,0
+china,Heroes,Zhou Yu,0
+china,Heroes,Zhuge Liang,0
+china,Heroes,Hong Xiuquan,0
+china,Heroes,Zuo Zongtang,0
+china,Heroes,Li Hongzhang,0
+china,Heroes,Yuan Shikai,0
+china,Heroes,Sun Yat-sen,0
+china,Heroes,Chiang Kai-shek,0
+china,Cities,Beijing,0
+china,Cities,Shanghai,0
+china,Cities,Tianjin,0
+china,Cities,Guangzhou,0
+china,Cities,Nanjing,0
+china,Cities,Chongqing,0
+china,Cities,Wuhan,0
+china,Cities,Xi'an,0
+china,Cities,Hangzhou,0
+china,Cities,Chengdu,0
+china,Cities,Qingdao,0
+china,Cities,Dalian,0
+china,Cities,Fuzhou,0
+china,Cities,Xiamen,0
+china,Cities,Ningbo,0
+china,Cities,Suzhou,0
+china,Cities,Nanchang,0
+china,Cities,Changsha,0
+china,Cities,Kunming,0
+china,Cities,Harbin,0
+china,Cities,Jinan,0
+china,Cities,Shenyang,0
+china,Cities,Taiyuan,0
+china,Cities,Lanzhou,0
+china,Cities,Urumqi,0
+china,Provinces,Guangdong,0
+china,Provinces,Shandong,0
+china,Provinces,Henan,0
+china,Provinces,Sichuan,0
+china,Provinces,Jiangsu,0
+china,Provinces,Hebei,0
+china,Provinces,Hunan,0
+china,Provinces,Anhui,0
+china,Provinces,Hubei,0
+china,Provinces,Zhejiang,0
+china,Provinces,Guangxi,0
+china,Provinces,Yunnan,0
+china,Provinces,Jiangxi,0
+china,Provinces,Liaoning,0
+china,Provinces,Fujian,0
+china,Provinces,Shaanxi,0
+china,Provinces,Shanxi,0
+china,Provinces,Guizhou,0
+china,Provinces,Jilin,0
+china,Provinces,Gansu,0
+china,Rivers,Yangtze,0
+china,Rivers,Yellow River,0
+china,Rivers,Pearl River,0
+china,Rivers,Mekong,0
+china,Rivers,Brahmaputra,0
+china,Rivers,Amur,0
+china,Rivers,Liao,0
+china,Rivers,Hai,0
+china,Rivers,Huai,0
+china,Rivers,Min,0
+china,Rivers,Han,0
+china,Rivers,Wei,0
+china,Rivers,Fen,0
+china,Rivers,Gan,0
+china,Rivers,Xiang,0
+china,Mountains,Himalayas,0
+china,Mountains,Kunlun,0
+china,Mountains,Tian Shan,0
+china,Mountains,Altai,0
+china,Mountains,Qinling,0
+china,Mountains,Nanling,0
+china,Mountains,Wuyi,0
+china,Mountains,Taihang,0
+china,Mountains,Changbai,0
+china,Mountains,Hengduan,0
+china,Battles,Red Cliffs,0
+china,Battles,Guandu,0
+china,Battles,Fei River,0
+china,Battles,Yamen,0
+china,Battles,Lake Poyang,0
+china,Birds,Baihe,0
+china,Birds,Dandinhe,0
+china,Birds,Zhuaniao,0
+china,Birds,Kongque,0
+china,Birds,Yuanyang,0
+china,Birds,Tiange,0
+china,Birds,Dayan,0
+china,Birds,Yan,0
+china,Birds,Ying,0
+china,Birds,Xique,0
+china,Birds,Wuya,0
+china,Birds,Dujuan,0
+china,Birds,Huangli,0
+china,Birds,Feicui,0
+china,Birds,Bailu,0
+china,Birds,Canglu,0
+china,Birds,Luci,0
+china,Birds,Baipilu,0
+china,Birds,Yelu,0
+china,Birds,Jinzhi,0
+china,Birds,Cuiniao,0
+china,Birds,Zhuque,0
+china,Birds,Baigu,0
+china,Birds,Yanque,0
+china,Birds,Lüque,0
+china,Birds,Suanque,0
+china,Birds,Jinji,0
+china,Lakes,Qinghai,0
+china,Lakes,Dongting,0
+china,Lakes,Poyang,0
+china,Lakes,Taihu,0
+china,Lakes,Hongze,0
+china,Lakes,Chaohu,0
+china,Lakes,Bosten,0
+china,Lakes,Nam Co,0
+china,Lakes,Siling Co,0
+china,Lakes,Yamdrok,0
+china,Lakes,Manasarovar,0
+china,Lakes,Dalinor,0
+china,Lakes,Ebinur,0
+china,Lakes,Gyaring,0
+china,Lakes,Zhari Nam Co,0
+china,Lakes,Hala Hu,0
+china,Lakes,Kusai Hu,0
+china,Lakes,Ngoring,0
+china,Streams,Fen,0
+china,Streams,Wei,0
+china,Streams,Jing,0
+china,Streams,Luo,0
+china,Streams,Yi,0
+china,Streams,Hong,0
+china,Streams,Ru,0
+china,Streams,Ying,0
+china,Streams,Bahe,0
+china,Streams,Chanhe,0
+china,Streams,Jinghe,0
+china,Streams,Yuhe,0
+china,Streams,Chaobai,0
+china,Streams,Juma,0
+china,Streams,Yihe,0
+china,Streams,Huihe,0
+china,Streams,Minghe,0
+china,Streams,Qinhe,0
+china,Streams,Zhanghe,0
+china,Streams,Tanghe,0
+china,Streams,Jiulong,0
+china,Towns,Wuzhen,0
+china,Towns,Tongji,0
+china,Towns,Xitang,0
+china,Towns,Nanxun,0
+china,Towns,Zhouzhuang,0
+china,Towns,Jinxi,0
+china,Towns,Mudu,0
+china,Towns,Luzhi,0
+china,Towns,Fengjing,0
+china,Towns,Jinze,0
+china,Towns,Zhujiajiao,0
+china,Towns,Qibao,0
+china,Towns,Fenghuang,0
+china,Towns,Dali,0
+china,Towns,Yangshuo,0
+china,Towns,Hongcun,0
+china,Towns,Xidi,0
+china,Towns,Langzhong,0
+china,Towns,Songpan,0
+china,Towns,Luodai,0
+china,Towns,Huaiyuan,0
+china,Towns,Wuyuan,0
+china,Towns,Bishan,0
+china,Towns,Huanglongxi,0
+china,Towns,Nanfeng,0
+# Portugal
+portugal,Heroes,Vasco da Gama,0
+portugal,Heroes,Ferdinand Magellan,0
+portugal,Heroes,Bartolomeu Dias,0
+portugal,Heroes,Henry the Navigator,0
+portugal,Heroes,Pedro Álvares Cabral,0
+portugal,Heroes,Afonso de Albuquerque,0
+portugal,Heroes,Nuno Álvares Pereira,0
+portugal,Heroes,Marquis of Pombal,0
+portugal,Heroes,Infante Dom Henrique,0
+portugal,Heroes,Dom João II,0
+portugal,Heroes,Dom Afonso Henriques,0
+portugal,Heroes,Dom Sebastião,0
+portugal,Heroes,Duarte Pacheco Pereira,0
+portugal,Heroes,Francisco de Almeida,0
+portugal,Heroes,Dom Pedro I,0
+portugal,Cities,Lisbon,0
+portugal,Cities,Porto,0
+portugal,Cities,Coimbra,0
+portugal,Cities,Braga,0
+portugal,Cities,Évora,0
+portugal,Cities,Faro,0
+portugal,Cities,Setúbal,0
+portugal,Cities,Funchal,0
+portugal,Cities,Aveiro,0
+portugal,Cities,Viseu,0
+portugal,Cities,Leiria,0
+portugal,Cities,Guimarães,0
+portugal,Cities,Santarém,0
+portugal,Cities,Viana do Castelo,0
+portugal,Cities,Ponta Delgada,0
+portugal,Regions,Algarve,0
+portugal,Regions,Alentejo,0
+portugal,Regions,Minho,0
+portugal,Regions,Douro,0
+portugal,Regions,Beira,0
+portugal,Regions,Trás-os-Montes,0
+portugal,Regions,Estremadura,0
+portugal,Regions,Ribatejo,0
+portugal,Regions,Madeira,0
+portugal,Regions,Azores,0
+portugal,Rivers,Tagus,0
+portugal,Rivers,Douro,0
+portugal,Rivers,Mondego,0
+portugal,Rivers,Guadiana,0
+portugal,Rivers,Sado,0
+portugal,Rivers,Minho,0
+portugal,Rivers,Lima,0
+portugal,Rivers,Cávado,0
+portugal,Rivers,Vouga,0
+portugal,Rivers,Zêzere,0
+portugal,Battles,Aljubarrota,0
+portugal,Battles,Ourique,0
+portugal,Battles,Diu,0
+portugal,Battles,São Mamede,0
+portugal,Battles,Atoleiros,0
+portugal,Birds,Águia,0
+portugal,Birds,Falcão,0
+portugal,Birds,Abutre,0
+portugal,Birds,Cegonha,0
+portugal,Birds,Garça,0
+portugal,Birds,Pelicano,0
+portugal,Birds,Cisne,0
+portugal,Birds,Cuco,0
+portugal,Birds,Andorinha,0
+portugal,Birds,Rola,0
+portugal,Birds,Melro,0
+portugal,Birds,Rouxinol,0
+portugal,Birds,Toutinegra,0
+portugal,Birds,Pintassilgo,0
+portugal,Birds,Tentilhão,0
+portugal,Birds,Chapim,0
+portugal,Birds,Trepadeira,0
+portugal,Birds,Pisco,0
+portugal,Birds,Estorninho,0
+portugal,Birds,Pica-pau,0
+portugal,Birds,Coruja,0
+portugal,Birds,Mocho,0
+portugal,Birds,Gaivota,0
+portugal,Birds,Maçarico,0
+portugal,Birds,Peneireiro,0
+portugal,Birds,Milhafre,0
+portugal,Birds,Açor,0
+portugal,Birds,Pardal,0
+portugal,Birds,Pombo,0
+portugal,Birds,Pomba-torcaz,0
+portugal,Lakes,Alqueva,0
+portugal,Lakes,Castelo de Bode,0
+portugal,Lakes,Aguieira,0
+portugal,Lakes,Crestuma,0
+portugal,Lakes,Pocinho,0
+portugal,Lakes,Fratel,0
+portugal,Lakes,Carrapatelo,0
+portugal,Lakes,Torrão,0
+portugal,Lakes,Alto Lindoso,0
+portugal,Lakes,Salamonde,0
+portugal,Lakes,Caniçada,0
+portugal,Lakes,Venda Nova,0
+portugal,Lakes,Alto Rabagão,0
+portugal,Lakes,Bouçã,0
+portugal,Lakes,Vilar de Tabuaço,0
+portugal,Streams,Vez,0
+portugal,Streams,Laboreiro,0
+portugal,Streams,Gavieira,0
+portugal,Streams,Ramiscal,0
+portugal,Streams,Cabril,0
+portugal,Streams,Labruja,0
+portugal,Streams,Este,0
+portugal,Streams,Leça,0
+portugal,Streams,Tâmega,0
+portugal,Streams,Rabaçal,0
+portugal,Streams,Tuela,0
+portugal,Streams,Mente,0
+portugal,Streams,Baceiro,0
+portugal,Streams,Côa,0
+portugal,Streams,Dão,0
+portugal,Streams,Alva,0
+portugal,Streams,Ceira,0
+portugal,Streams,Mondego,0
+portugal,Mountains,Estrela,0
+portugal,Mountains,Gerês,0
+portugal,Mountains,Lousã,0
+portugal,Mountains,Gardunha,0
+portugal,Mountains,Malcata,0
+portugal,Mountains,Montemuro,0
+portugal,Mountains,Açor,0
+portugal,Mountains,Freita,0
+portugal,Mountains,Marão,0
+portugal,Mountains,Caramulo,0
+portugal,Mountains,Montejunto,0
+portugal,Mountains,Sintra,0
+portugal,Mountains,Caldeirão,0
+portugal,Mountains,Grândola,0
+portugal,Mountains,Cercal,0
+portugal,Towns,Óbidos,0
+portugal,Towns,Monsanto,0
+portugal,Towns,Marvão,0
+portugal,Towns,Castelo de Vide,0
+portugal,Towns,Mértola,0
+portugal,Towns,Alcácer do Sal,0
+portugal,Towns,Alvito,0
+portugal,Towns,Moura,0
+portugal,Towns,Serpa,0
+portugal,Towns,Grândola,0
+portugal,Towns,Alcoutim,0
+portugal,Towns,Castro Marim,0
+portugal,Towns,Silves,0
+portugal,Towns,Aljezur,0
+portugal,Towns,Monchique,0
+portugal,Towns,Sagres,0
+portugal,Towns,Tavira,0
+portugal,Towns,Olhão,0
+portugal,Towns,Almodôvar,0
+portugal,Towns,Estremoz,0
+portugal,Towns,Borba,0
+portugal,Towns,Elvas,0
+# Netherlands
+netherlands,Heroes,Michiel de Ruyter,0
+netherlands,Heroes,Maarten Tromp,0
+netherlands,Heroes,Piet Hein,0
+netherlands,Heroes,Willem van Oranje,0
+netherlands,Heroes,Johan de Witt,0
+netherlands,Heroes,Abel Tasman,0
+netherlands,Heroes,Willem Barentsz,0
+netherlands,Heroes,Jacob van Heemskerck,0
+netherlands,Heroes,Cornelis de Houtman,0
+netherlands,Heroes,Jan Pieterszoon Coen,0
+netherlands,Heroes,Witte de With,0
+netherlands,Heroes,Cornelis Tromp,0
+netherlands,Heroes,Jan van Speijk,0
+netherlands,Heroes,Frederik Hendrik,0
+netherlands,Heroes,Maurits van Nassau,0
+netherlands,Cities,Amsterdam,0
+netherlands,Cities,Rotterdam,0
+netherlands,Cities,Den Haag,0
+netherlands,Cities,Utrecht,0
+netherlands,Cities,Eindhoven,0
+netherlands,Cities,Groningen,0
+netherlands,Cities,Tilburg,0
+netherlands,Cities,Haarlem,0
+netherlands,Cities,Arnhem,0
+netherlands,Cities,Nijmegen,0
+netherlands,Cities,Enschede,0
+netherlands,Cities,Leiden,0
+netherlands,Cities,Dordrecht,0
+netherlands,Cities,Maastricht,0
+netherlands,Cities,Delft,0
+netherlands,Cities,Vlissingen,0
+netherlands,Cities,Den Helder,0
+netherlands,Cities,Middelburg,0
+netherlands,Cities,Alkmaar,0
+netherlands,Cities,Zwolle,0
+netherlands,Cities,Breda,0
+netherlands,Cities,Bergen op Zoom,0
+netherlands,Provinces,Holland,0
+netherlands,Provinces,Zeeland,0
+netherlands,Provinces,Gelderland,0
+netherlands,Provinces,Utrecht,0
+netherlands,Provinces,Friesland,0
+netherlands,Provinces,Groningen,0
+netherlands,Provinces,Drenthe,0
+netherlands,Provinces,Overijssel,0
+netherlands,Provinces,Vlaanderen,0
+netherlands,Provinces,Brabant,0
+netherlands,Provinces,Limburg,0
+netherlands,Provinces,Guelders,0
+netherlands,Rivers,Rijn,0
+netherlands,Rivers,Maas,0
+netherlands,Rivers,IJssel,0
+netherlands,Rivers,Waal,0
+netherlands,Rivers,Lek,0
+netherlands,Rivers,Schelde,0
+netherlands,Rivers,Vecht,0
+netherlands,Rivers,Ems,0
+netherlands,Rivers,Zaan,0
+netherlands,Rivers,Amstel,0
+netherlands,Rivers,Rotte,0
+netherlands,Rivers,Gouwe,0
+netherlands,Battles,Chatham,0
+netherlands,Battles,Duins,0
+netherlands,Battles,Texel,0
+netherlands,Battles,Kijkduin,0
+netherlands,Battles,Gibraltar,0
+netherlands,Battles,Schooneveld,0
+netherlands,Battles,Vierdaagse Zeeslag,0
+netherlands,Battles,Lowestoft,0
+netherlands,Battles,Solebay,0
+netherlands,Battles,Kamperduin,0
+netherlands,Battles,Doggerbank,0
+netherlands,Battles,Heiligerlee,0
+netherlands,Battles,Nieuwpoort,0
+netherlands,Battles,Lepanto,0
+netherlands,Battles,Navarino,0
+netherlands,Islands,Texel,0
+netherlands,Islands,Vlieland,0
+netherlands,Islands,Terschelling,0
+netherlands,Islands,Ameland,0
+netherlands,Islands,Schiermonnikoog,0
+netherlands,Islands,Walcheren,0
+netherlands,Islands,Schouwen,0
+netherlands,Islands,Goeree,0
+netherlands,Islands,Voorne,0
+netherlands,Islands,Tholen,0
+netherlands,Islands,Noord-Beveland,0
+netherlands,Islands,Zuid-Beveland,0
+netherlands,Islands,Marken,0
+netherlands,Islands,Urk,0
+netherlands,Islands,Curaçao,0
+netherlands,Islands,Aruba,0
+netherlands,Islands,Bonaire,0
+netherlands,Islands,Sint Maarten,0
+netherlands,Islands,Saba,0
+netherlands,Islands,Sint Eustatius,0
+netherlands,Colonies,Batavia,0
+netherlands,Colonies,Java,0
+netherlands,Colonies,Sumatra,0
+netherlands,Colonies,Borneo,0
+netherlands,Colonies,Celebes,0
+netherlands,Colonies,Ambon,0
+netherlands,Colonies,Banda,0
+netherlands,Colonies,Ternate,0
+netherlands,Colonies,Timor,0
+netherlands,Colonies,Malakka,0
+netherlands,Colonies,Ceylon,0
+netherlands,Colonies,Suriname,0
+netherlands,Colonies,Formosa,0
+netherlands,Colonies,Kaapkolonie,0
+netherlands,Colonies,Nieuw-Amsterdam,0
+netherlands,Colonies,Nieuw-Guinea,0
+netherlands,Colonies,Deshima,0
+netherlands,Colonies,Tranquebar,0
+netherlands,Golden Age,Rembrandt,0
+netherlands,Golden Age,Vermeer,0
+netherlands,Golden Age,Spinoza,0
+netherlands,Golden Age,Erasmus,0
+netherlands,Golden Age,Leeuwenhoek,0
+netherlands,Golden Age,Huygens,0
+netherlands,Golden Age,Grotius,0
+netherlands,Golden Age,Frans Hals,0
+netherlands,Golden Age,Jan Steen,0
+netherlands,Golden Age,Ruisdael,0
+netherlands,Golden Age,Vondel,0
+netherlands,Golden Age,Simon Stevin,0
+netherlands,Golden Age,Pieter de Hooch,0
+netherlands,Golden Age,Gerard ter Borch,0
+netherlands,Golden Age,Swammerdam,0
+netherlands,Golden Age,Hooft,0
+netherlands,Golden Age,Bredero,0
+netherlands,Virtues,Eendracht,0
+netherlands,Virtues,Vrijheid,0
+netherlands,Virtues,Vrede,0
+netherlands,Virtues,Trouw,0
+netherlands,Virtues,Hoop,0
+netherlands,Virtues,Kracht,0
+netherlands,Virtues,Eer,0
+netherlands,Virtues,Moed,0
+netherlands,Virtues,Volharding,0
+netherlands,Virtues,Waarheid,0
+netherlands,Virtues,Roem,0
+netherlands,Virtues,Triomf,0
+netherlands,Virtues,Overwinning,0
+netherlands,Virtues,Welvaart,0
+netherlands,Virtues,Wacht,0
+netherlands,Virtues,Verdediger,0
+netherlands,Virtues,Standvastig,0
+netherlands,Virtues,Getrouw,0
+netherlands,Virtues,Dapper,0
+netherlands,Virtues,Beschermer,0
+netherlands,Flowers,Tulp,0
+netherlands,Flowers,Roos,0
+netherlands,Flowers,Anjelier,0
+netherlands,Flowers,Hyacint,0
+netherlands,Flowers,Narcis,0
+netherlands,Flowers,Iris,0
+netherlands,Flowers,Dahlia,0
+netherlands,Flowers,Lelie,0
+netherlands,Flowers,Orchidee,0
+netherlands,Flowers,Chrysant,0
+netherlands,Flowers,Magnolia,0
+netherlands,Flowers,Amaryllis,0
+netherlands,Flowers,Gladiool,0
+netherlands,Flowers,Hortensia,0
+netherlands,Flowers,Begonia,0
+netherlands,Flowers,Crocus,0
+netherlands,Flowers,Anemoon,0
+netherlands,Flowers,Fresia,0
+netherlands,Flowers,Viooltje,0
+netherlands,Flowers,Zonnebloem,0
+netherlands,Royal House,Oranje,0
+netherlands,Royal House,Nassau,0
+netherlands,Royal House,Wilhelmina,0
+netherlands,Royal House,Juliana,0
+netherlands,Royal House,Beatrix,0
+netherlands,Royal House,Emma,0
+netherlands,Royal House,Willem I,0
+netherlands,Royal House,Willem II,0
+netherlands,Royal House,Willem III,0
+netherlands,Royal House,Hendrik,0
+netherlands,Royal House,Amalia,0
+netherlands,Royal House,Margriet,0
+netherlands,Royal House,Irene,0
+netherlands,Seas,Noordzee,0
+netherlands,Seas,Waddenzee,0
+netherlands,Seas,Zuiderzee,0
+netherlands,Seas,IJsselmeer,0
+netherlands,Seas,Oosterschelde,0
+netherlands,Seas,Westerschelde,0
+netherlands,Seas,Grevelingen,0
+netherlands,Seas,Hollandsch Diep,0
+netherlands,Seas,Haringvliet,0
+netherlands,Seas,Markermeer,0
+netherlands,Seas,Dollard,0
+netherlands,Seas,Volkerak,0
+netherlands,Animals,Leeuw,0
+netherlands,Animals,Adelaar,0
+netherlands,Animals,Valk,0
+netherlands,Animals,Havik,0
+netherlands,Animals,Zwaan,0
+netherlands,Animals,Haring,0
+netherlands,Animals,Walvis,0
+netherlands,Animals,Dolfijn,0
+netherlands,Animals,Zeehond,0
+netherlands,Animals,Beer,0
+netherlands,Animals,Stier,0
+netherlands,Animals,Arend,0
+netherlands,Animals,Haai,0
+netherlands,Animals,Otter,0
+netherlands,Animals,Reiger,0
+netherlands,Animals,Wolf,0
+netherlands,Animals,Vos,0
+netherlands,Animals,Das,0
+netherlands,Animals,Bever,0
+netherlands,Animals,Hermelijn,0
+netherlands,Animals,Wezel,0
+netherlands,Animals,Marter,0
+netherlands,Animals,Lynx,0
+netherlands,Animals,Hert,0
+netherlands,Animals,Ram,0
+netherlands,Animals,Everzwijn,0
+netherlands,Animals,Robbe,0
+netherlands,Animals,Bruinvis,0
+netherlands,Animals,Orka,0
+netherlands,Animals,Potvis,0
+netherlands,Animals,Narwal,0
+netherlands,Animals,Snoek,0
+netherlands,Animals,Kabeljauw,0
+netherlands,Animals,Zalm,0
+netherlands,Animals,Paling,0
+netherlands,Animals,Tong,0
+netherlands,Animals,Schol,0
+netherlands,Animals,Makreel,0
+netherlands,Animals,Kreeft,0
+netherlands,Animals,Krab,0
+netherlands,Animals,Inktvis,0
+netherlands,Animals,Horzel,0
+netherlands,Birds,Grutto,0
+netherlands,Birds,Kievit,0
+netherlands,Birds,Scholekster,0
+netherlands,Birds,Ooievaar,0
+netherlands,Birds,Lepelaar,0
+netherlands,Birds,Aalscholver,0
+netherlands,Birds,Fuut,0
+netherlands,Birds,IJsvogel,0
+netherlands,Birds,Nachtegaal,0
+netherlands,Birds,Raaf,0
+netherlands,Birds,Kraai,0
+netherlands,Birds,Ekster,0
+netherlands,Birds,Gaai,0
+netherlands,Birds,Buizerd,0
+netherlands,Birds,Torenvalk,0
+netherlands,Birds,Slechtvalk,0
+netherlands,Birds,Zeearend,0
+netherlands,Birds,Visarend,0
+netherlands,Birds,Sperwer,0
+netherlands,Birds,Wespendief,0
+netherlands,Birds,Havik,0
+netherlands,Birds,Wulp,0
+netherlands,Birds,Tureluur,0
+netherlands,Birds,Kemphaan,0
+netherlands,Birds,Kluut,0
+netherlands,Birds,Kokmeeuw,0
+netherlands,Birds,Zilvermeeuw,0
+netherlands,Birds,Stormmeeuw,0
+netherlands,Birds,Visdief,0
+netherlands,Birds,Roerdomp,0
+netherlands,Birds,Kraanvogel,0
+netherlands,Birds,Merel,0
+netherlands,Birds,Spreeuw,0
+netherlands,Birds,Lijster,0
+netherlands,Birds,Roodborst,0
+netherlands,Birds,Koolmees,0
+netherlands,Birds,Pimpelmees,0
+netherlands,Birds,Staartmees,0
+netherlands,Birds,Boomklever,0
+netherlands,Birds,Winterkoning,0
+netherlands,Birds,Wielewaal,0
+netherlands,Birds,Putter,0
+netherlands,Birds,Vink,0
+netherlands,Birds,Goudvink,0
+netherlands,Birds,Kneu,0
+netherlands,Birds,Rietgors,0
+netherlands,Birds,Hop,0
+netherlands,Birds,Koekoek,0
+netherlands,Birds,Gierzwaluw,0
+netherlands,Birds,Boerenzwaluw,0
+netherlands,Birds,Oeverzwaluw,0
+netherlands,Birds,Dodaars,0
+netherlands,Birds,Slobeend,0
+netherlands,Birds,Kuifeend,0
+netherlands,Birds,Pijlstaart,0
+netherlands,Birds,Brilduiker,0
+netherlands,Birds,Nonnetje,0
+netherlands,Birds,Zaagbek,0
+netherlands,Birds,Rotgans,0
+netherlands,Birds,Brandgans,0
+netherlands,Streams,Aa,0
+netherlands,Streams,Berkel,0
+netherlands,Streams,Regge,0
+netherlands,Streams,Dinkel,0
+netherlands,Streams,Dommel,0
+netherlands,Streams,Geul,0
+netherlands,Streams,Gulp,0
+netherlands,Streams,Roer,0
+netherlands,Streams,Swalm,0
+netherlands,Streams,Hunze,0
+netherlands,Streams,Tjonger,0
+netherlands,Streams,Reest,0
+netherlands,Streams,Lende,0
+netherlands,Streams,Boorne,0
+netherlands,Streams,Linge,0
+netherlands,Streams,Oude IJssel,0
+netherlands,Streams,Mark,0
+netherlands,Streams,Reusel,0
+netherlands,Streams,Beerze,0
+netherlands,Streams,Tongelreep,0
+netherlands,Streams,Leij,0
+netherlands,Streams,Run,0
+netherlands,Streams,Gender,0
+netherlands,Streams,Groote Aa,0
+netherlands,Streams,Vledder Aa,0
+netherlands,Streams,Ruiner Aa,0
+netherlands,Streams,Beilerstroom,0
+netherlands,Streams,Elpstroom,0
+netherlands,Streams,Essche Stroom,0
+netherlands,Streams,Mussel Aa,0
+netherlands,Streams,Ruiten Aa,0
+netherlands,Streams,Vliet,0
+netherlands,Streams,Angstel,0
+netherlands,Streams,Kromme Rijn,0
+netherlands,Streams,Wold Aa,0
+netherlands,Streams,Steenwijk Aa,0
+netherlands,Streams,Loodiep,0
+netherlands,Streams,Rolder Diep,0
+netherlands,Streams,Grebbe,0
+netherlands,Streams,Zandleij,0
+netherlands,Streams,Demer,0
+netherlands,Streams,Dijle,0
+netherlands,Streams,Leie,0
+netherlands,Streams,Zenne,0
+netherlands,Streams,Dender,0
+netherlands,Streams,Nete,0
+netherlands,Streams,Rupel,0
+netherlands,Streams,Gete,0
+netherlands,Streams,Jeker,0
+netherlands,Streams,Voer,0
+netherlands,Streams,Geleenbeek,0
+netherlands,Streams,Eyserbeek,0
+netherlands,Streams,Roode Beek,0
+netherlands,Streams,Noorbeek,0
+netherlands,Streams,Molenbeek,0
+netherlands,Lakes,Tjeukemeer,0
+netherlands,Lakes,Sneekermeer,0
+netherlands,Lakes,Slotermeer,0
+netherlands,Lakes,Heegermeer,0
+netherlands,Lakes,Fluessen,0
+netherlands,Lakes,Langweerder Wielen,0
+netherlands,Lakes,Lauwersmeer,0
+netherlands,Lakes,Pikmar,0
+netherlands,Lakes,Koevordermeer,0
+netherlands,Lakes,Helomermeer,0
+netherlands,Lakes,Grutte Wielen,0
+netherlands,Lakes,Rottige Meente,0
+netherlands,Lakes,Ketelmeer,0
+netherlands,Lakes,Zwarte Meer,0
+netherlands,Lakes,Drontermeer,0
+netherlands,Lakes,Eemmeer,0
+netherlands,Lakes,Gooimeer,0
+netherlands,Lakes,Vossemeer,0
+netherlands,Lakes,Wolderwijd,0
+netherlands,Lakes,Veluwemeer,0
+netherlands,Lakes,Nuldernauw,0
+netherlands,Lakes,Nijkerkernauw,0
+netherlands,Lakes,Flevo,0
+netherlands,Lakes,Almere,0
+netherlands,Lakes,Leekstermeer,0
+netherlands,Lakes,Zuidlaardermeer,0
+netherlands,Lakes,Paterswoldse Meer,0
+netherlands,Lakes,Schildmeer,0
+netherlands,Lakes,Foxholstermeer,0
+netherlands,Lakes,Brandemeer,0
+netherlands,Lakes,Weerribben,0
+netherlands,Lakes,De Wieden,0
+netherlands,Lakes,Braassemermeer,0
+netherlands,Lakes,Loosdrecht,0
+netherlands,Lakes,Reeuwijk,0
+netherlands,Lakes,Biesbosch,0
+netherlands,Lakes,Rottemeren,0
+netherlands,Lakes,Kralingen,0
+# Towns available for large classes (MinShips = 20)
+netherlands,Towns,Hoorn,20
+netherlands,Towns,Enkhuizen,20
+netherlands,Towns,Medemblik,20
+netherlands,Towns,Purmerend,20
+netherlands,Towns,Zaandam,20
+netherlands,Towns,Edam,20
+netherlands,Towns,Volendam,20
+netherlands,Towns,Monnickendam,20
+netherlands,Towns,Naarden,20
+netherlands,Towns,Weesp,20
+netherlands,Towns,Muiden,20
+netherlands,Towns,Hilversum,20
+netherlands,Towns,Bussum,20
+netherlands,Towns,Heerhugowaard,20
+netherlands,Towns,Schagen,20
+netherlands,Towns,Leeuwarden,20
+netherlands,Towns,Sneek,20
+netherlands,Towns,Harlingen,20
+netherlands,Towns,Bolsward,20
+netherlands,Towns,Franeker,20
+netherlands,Towns,Dokkum,20
+netherlands,Towns,Hindeloopen,20
+netherlands,Towns,Stavoren,20
+netherlands,Towns,Workum,20
+netherlands,Towns,Makkum,20
+netherlands,Towns,IJlst,20
+netherlands,Towns,Sloten,20
+netherlands,Towns,Gouda,20
+netherlands,Towns,Schiedam,20
+netherlands,Towns,Vlaardingen,20
+netherlands,Towns,Zoetermeer,20
+netherlands,Towns,Gorinchem,20
+netherlands,Towns,Schoonhoven,20
+netherlands,Towns,Woerden,20
+netherlands,Towns,Katwijk,20
+netherlands,Towns,Noordwijk,20
+netherlands,Towns,Brielle,20
+netherlands,Towns,Hellevoetsluis,20
+netherlands,Towns,Oudewater,20
+netherlands,Towns,Ridderkerk,20
+netherlands,Towns,Amersfoort,20
+netherlands,Towns,Zeist,20
+netherlands,Towns,Soest,20
+netherlands,Towns,Breukelen,20
+netherlands,Towns,Maarssen,20
+netherlands,Towns,Nieuwegein,20
+netherlands,Towns,IJsselstein,20
+netherlands,Towns,Montfoort,20
+netherlands,Towns,Veere,20
+netherlands,Towns,Zierikzee,20
+netherlands,Towns,Goes,20
+netherlands,Towns,Hulst,20
+netherlands,Towns,Terneuzen,20
+netherlands,Towns,Sluis,20
+netherlands,Towns,Brouwershaven,20
+netherlands,Towns,Helmond,20
+netherlands,Towns,Oss,20
+netherlands,Towns,Waalwijk,20
+netherlands,Towns,Roosendaal,20
+netherlands,Towns,Veghel,20
+netherlands,Towns,Grave,20
+netherlands,Towns,Geertruidenberg,20
+netherlands,Towns,Heusden,20
+netherlands,Towns,Boxtel,20
+netherlands,Towns,Vught,20
+netherlands,Towns,Tiel,20
+netherlands,Towns,Doetinchem,20
+netherlands,Towns,Harderwijk,20
+netherlands,Towns,Elburg,20
+netherlands,Towns,Wageningen,20
+netherlands,Towns,Zutphen,20
+netherlands,Towns,Groenlo,20
+netherlands,Towns,Lochem,20
+netherlands,Towns,Doesburg,20
+netherlands,Towns,Hattem,20
+netherlands,Towns,Culemborg,20
+netherlands,Towns,Zaltbommel,20
+netherlands,Towns,Nijkerk,20
+netherlands,Towns,Winterswijk,20
+netherlands,Towns,Buren,20
+netherlands,Towns,Deventer,20
+netherlands,Towns,Kampen,20
+netherlands,Towns,Oldenzaal,20
+netherlands,Towns,Almelo,20
+netherlands,Towns,Hengelo,20
+netherlands,Towns,Steenwijk,20
+netherlands,Towns,Blokzijl,20
+netherlands,Towns,Hasselt,20
+netherlands,Towns,Vollenhove,20
+netherlands,Towns,Delfzijl,20
+netherlands,Towns,Appingedam,20
+netherlands,Towns,Veendam,20
+netherlands,Towns,Winschoten,20
+netherlands,Towns,Stadskanaal,20
+netherlands,Towns,Assen,20
+netherlands,Towns,Emmen,20
+netherlands,Towns,Hoogeveen,20
+netherlands,Towns,Meppel,20
+netherlands,Towns,Coevorden,20
+netherlands,Towns,Roermond,20
+netherlands,Towns,Venlo,20
+netherlands,Towns,Weert,20
+netherlands,Towns,Sittard,20
+netherlands,Towns,Heerlen,20
+netherlands,Towns,Valkenburg,20
+netherlands,Towns,Gennep,20
+netherlands,Towns,Venray,20
+netherlands,Towns,Gent,20
+netherlands,Towns,Brugge,20
+netherlands,Towns,Antwerpen,20
+netherlands,Towns,Mechelen,20
+netherlands,Towns,Leuven,20
+netherlands,Towns,Kortrijk,20
+netherlands,Towns,Ieper,20
+netherlands,Towns,Oudenaarde,20
+netherlands,Towns,Dendermonde,20
+netherlands,Towns,Aalst,20
+netherlands,Towns,Turnhout,20
+netherlands,Towns,Hasselt,20
+netherlands,Towns,Tongeren,20
+# Ottoman
+ottoman,Heroes,Suleiman,0
+ottoman,Heroes,Mehmed II,0
+ottoman,Heroes,Selim I,0
+ottoman,Heroes,Bayezid I,0
+ottoman,Heroes,Murad I,0
+ottoman,Heroes,Osman I,0
+ottoman,Heroes,Barbarossa,0
+ottoman,Heroes,Piri Reis,0
+ottoman,Heroes,Turgut Reis,0
+ottoman,Heroes,Oruc Reis,0
+ottoman,Heroes,Kemal Reis,0
+ottoman,Heroes,Mahmud II,0
+ottoman,Heroes,Abdülhamid II,0
+ottoman,Heroes,Mustafa Kemal,0
+ottoman,Heroes,Enver Pasha,0
+ottoman,Cities,Constantinople,0
+ottoman,Cities,Istanbul,0
+ottoman,Cities,Ankara,0
+ottoman,Cities,Smyrna,0
+ottoman,Cities,Bursa,0
+ottoman,Cities,Edirne,0
+ottoman,Cities,Konya,0
+ottoman,Cities,Salonika,0
+ottoman,Cities,Damascus,0
+ottoman,Cities,Baghdad,0
+ottoman,Cities,Cairo,0
+ottoman,Cities,Aleppo,0
+ottoman,Cities,Beirut,0
+ottoman,Cities,Jerusalem,0
+ottoman,Cities,Mecca,0
+ottoman,Cities,Medina,0
+ottoman,Cities,Erzurum,0
+ottoman,Cities,Trabzon,0
+ottoman,Cities,Adana,0
+ottoman,Cities,Diyarbakır,0
+ottoman,Regions,Anatolia,0
+ottoman,Regions,Rumelia,0
+ottoman,Regions,Syria,0
+ottoman,Regions,Mesopotamia,0
+ottoman,Regions,Egypt,0
+ottoman,Regions,Arabia,0
+ottoman,Regions,Thrace,0
+ottoman,Regions,Macedonia,0
+ottoman,Regions,Bosnia,0
+ottoman,Regions,Albania,0
+ottoman,Rivers,Tigris,0
+ottoman,Rivers,Euphrates,0
+ottoman,Rivers,Nile,0
+ottoman,Rivers,Jordan,0
+ottoman,Rivers,Orontes,0
+ottoman,Rivers,Kızılırmak,0
+ottoman,Rivers,Sakarya,0
+ottoman,Rivers,Menderes,0
+ottoman,Battles,Manzikert,0
+ottoman,Battles,Kosovo,0
+ottoman,Battles,Nicopolis,0
+ottoman,Battles,Varna,0
+ottoman,Battles,Mohács,0
+ottoman,Battles,Preveza,0
+ottoman,Battles,Lepanto,0
+ottoman,Birds,Kartal,0
+ottoman,Birds,Şahin,0
+ottoman,Birds,Akbaba,0
+ottoman,Birds,Balıkçıl,0
+ottoman,Birds,Turna,0
+ottoman,Birds,Pelikan,0
+ottoman,Birds,Kuğu,0
+ottoman,Birds,Leylek,0
+ottoman,Birds,Yalıçapkını,0
+ottoman,Birds,Bülbül,0
+ottoman,Birds,Guguk,0
+ottoman,Birds,Kırlangıç,0
+ottoman,Birds,Karga,0
+ottoman,Birds,Saksağan,0
+ottoman,Birds,Baykuş,0
+ottoman,Birds,İbibik,0
+ottoman,Birds,Flamingo,0
+ottoman,Birds,Sülün,0
+ottoman,Birds,Keklik,0
+ottoman,Birds,Bıldırcın,0
+ottoman,Birds,Üveyik,0
+ottoman,Birds,Serçe,0
+ottoman,Birds,İspinoz,0
+ottoman,Birds,Saka,0
+ottoman,Birds,Çavuşkuşu,0
+ottoman,Birds,Arı Kuşu,0
+ottoman,Birds,Kızılgerdan,0
+ottoman,Birds,Çalıkuşu,0
+ottoman,Birds,Atmaca,0
+ottoman,Lakes,Tuz,0
+ottoman,Lakes,Van,0
+ottoman,Lakes,Beyşehir,0
+ottoman,Lakes,İznik,0
+ottoman,Lakes,Sapanca,0
+ottoman,Lakes,Burdur,0
+ottoman,Lakes,Eğirdir,0
+ottoman,Lakes,Akşehir,0
+ottoman,Lakes,Eber,0
+ottoman,Lakes,Ulubat,0
+ottoman,Lakes,Manyas,0
+ottoman,Lakes,Marmara,0
+ottoman,Lakes,Abant,0
+ottoman,Lakes,Kovada,0
+ottoman,Lakes,Karagöl,0
+ottoman,Lakes,Balık,0
+ottoman,Lakes,Karamık,0
+ottoman,Lakes,Acıgöl,0
+ottoman,Lakes,Çorak,0
+ottoman,Lakes,Sivri,0
+ottoman,Streams,Nilüfer,0
+ottoman,Streams,Kocaçay,0
+ottoman,Streams,Gönen,0
+ottoman,Streams,Biga,0
+ottoman,Streams,Orhaneli,0
+ottoman,Streams,Susurluk,0
+ottoman,Streams,Akhisar,0
+ottoman,Streams,Nif,0
+ottoman,Streams,Tahtalı,0
+ottoman,Streams,İncesu,0
+ottoman,Streams,Sarıkaya,0
+ottoman,Streams,Deliçay,0
+ottoman,Streams,Köprüçay,0
+ottoman,Streams,Aksu,0
+ottoman,Streams,Karpuzçay,0
+ottoman,Streams,Alara,0
+ottoman,Streams,Dim,0
+ottoman,Streams,Kadıncık,0
+ottoman,Streams,Zamantı,0
+ottoman,Streams,Göksu,0
+ottoman,Mountains,Ağrı,0
+ottoman,Mountains,Erciyes,0
+ottoman,Mountains,Palandöken,0
+ottoman,Mountains,Uludağ,0
+ottoman,Mountains,Kaçkar,0
+ottoman,Mountains,Süphan,0
+ottoman,Mountains,Tendürek,0
+ottoman,Mountains,Bolkar,0
+ottoman,Mountains,Taurus,0
+ottoman,Mountains,Ilgaz,0
+ottoman,Mountains,Köroğlu,0
+ottoman,Mountains,Amanos,0
+ottoman,Mountains,Nur,0
+ottoman,Mountains,Olympus,0
+ottoman,Mountains,Ida,0
+ottoman,Mountains,Sipylus,0
+ottoman,Mountains,Latmus,0
+ottoman,Mountains,Honaz,0
+ottoman,Mountains,Karadağ,0
+ottoman,Mountains,Bey Dağları,0
+ottoman,Towns,Afyon,0
+ottoman,Towns,Akşehir,0
+ottoman,Towns,Amasya,0
+ottoman,Towns,Amasra,0
+ottoman,Towns,Bolu,0
+ottoman,Towns,Çanakkale,0
+ottoman,Towns,Isparta,0
+ottoman,Towns,Kastamonu,0
+ottoman,Towns,Kütahya,0
+ottoman,Towns,Maraş,0
+ottoman,Towns,Ordu,0
+ottoman,Towns,Rize,0
+ottoman,Towns,Sinop,0
+ottoman,Towns,Tokat,0
+ottoman,Towns,Zonguldak,0
+ottoman,Towns,Çorum,0
+ottoman,Towns,Giresun,0
+ottoman,Towns,Nevşehir,0
+ottoman,Towns,Niğde,0
+ottoman,Towns,Yozgat,0
+ottoman,Towns,Tire,0
+ottoman,Towns,Akhisar,0
+ottoman,Towns,Bandırma,0
+ottoman,Towns,Gönen,0
+ottoman,Towns,Gelibolu,0
+# Brazil
+brazil,Heroes,Pedro I,0
+brazil,Heroes,Pedro II,0
+brazil,Heroes,Tiradentes,0
+brazil,Heroes,Duque de Caxias,0
+brazil,Heroes,Marquês de Tamandaré,0
+brazil,Heroes,Almirante Barroso,0
+brazil,Heroes,Benjamin Constant,0
+brazil,Heroes,Deodoro da Fonseca,0
+brazil,Heroes,Floriano Peixoto,0
+brazil,Heroes,Santos Dumont,0
+brazil,Heroes,Zumbi dos Palmares,0
+brazil,Heroes,José Bonifácio,0
+brazil,Heroes,Getúlio Vargas,0
+brazil,Cities,Rio de Janeiro,0
+brazil,Cities,São Paulo,0
+brazil,Cities,Brasília,0
+brazil,Cities,Salvador,0
+brazil,Cities,Recife,0
+brazil,Cities,Fortaleza,0
+brazil,Cities,Belém,0
+brazil,Cities,Manaus,0
+brazil,Cities,Curitiba,0
+brazil,Cities,Porto Alegre,0
+brazil,Cities,Belo Horizonte,0
+brazil,Cities,Natal,0
+brazil,Cities,Santos,0
+brazil,Cities,Vitória,0
+brazil,Cities,Florianópolis,0
+brazil,Cities,Maceió,0
+brazil,Cities,João Pessoa,0
+brazil,Cities,Aracaju,0
+brazil,Cities,Teresina,0
+brazil,Cities,São Luís,0
+brazil,States,São Paulo,0
+brazil,States,Minas Gerais,0
+brazil,States,Rio de Janeiro,0
+brazil,States,Bahia,0
+brazil,States,Pará,0
+brazil,States,Paraná,0
+brazil,States,Rio Grande do Sul,0
+brazil,States,Pernambuco,0
+brazil,States,Ceará,0
+brazil,States,Amazonas,0
+brazil,States,Santa Catarina,0
+brazil,States,Goiás,0
+brazil,States,Maranhão,0
+brazil,States,Espírito Santo,0
+brazil,States,Paraíba,0
+brazil,States,Mato Grosso,0
+brazil,States,Rio Grande do Norte,0
+brazil,States,Alagoas,0
+brazil,States,Piauí,0
+brazil,States,Sergipe,0
+brazil,Rivers,Amazon,0
+brazil,Rivers,Paraná,0
+brazil,Rivers,São Francisco,0
+brazil,Rivers,Tocantins,0
+brazil,Rivers,Paraguay,0
+brazil,Rivers,Uruguay,0
+brazil,Rivers,Madeira,0
+brazil,Rivers,Tapajós,0
+brazil,Rivers,Negro,0
+brazil,Rivers,Xingu,0
+brazil,Rivers,Araguaia,0
+brazil,Rivers,Parnaíba,0
+brazil,Battles,Riachuelo,0
+brazil,Battles,Tuiuti,0
+brazil,Battles,Guararapes,0
+brazil,Battles,Monte Caseros,0
+brazil,Birds,Arara-azul,0
+brazil,Birds,Tucano,0
+brazil,Birds,Papagaio,0
+brazil,Birds,Bem-te-vi,0
+brazil,Birds,Seriema,0
+brazil,Birds,Mutum,0
+brazil,Birds,Gavião-real,0
+brazil,Birds,Urubu-rei,0
+brazil,Birds,Quero-quero,0
+brazil,Birds,Garça-branca,0
+brazil,Birds,Martim-pescador,0
+brazil,Birds,João-de-barro,0
+brazil,Birds,Sabiá,0
+brazil,Birds,Colibri,0
+brazil,Birds,Harpia,0
+brazil,Birds,Socó,0
+brazil,Birds,Beija-flor,0
+brazil,Birds,Carcará,0
+brazil,Birds,Tuiuiú,0
+brazil,Birds,Maçarico,0
+brazil,Birds,Periquito,0
+brazil,Birds,Canário,0
+brazil,Birds,Anu,0
+brazil,Birds,Nambu,0
+brazil,Birds,Arapaçu,0
+brazil,Birds,Chupim,0
+brazil,Birds,Bacurau,0
+brazil,Birds,Maitaca,0
+brazil,Birds,Surucuá,0
+brazil,Lakes,Tucuruí,0
+brazil,Lakes,Sobradinho,0
+brazil,Lakes,Serra da Mesa,0
+brazil,Lakes,Furnas,0
+brazil,Lakes,Itaipu,0
+brazil,Lakes,Nova Ponte,0
+brazil,Lakes,Balbina,0
+brazil,Lakes,Três Marias,0
+brazil,Lakes,Ibitinga,0
+brazil,Lakes,Barra Bonita,0
+brazil,Lakes,Capivara,0
+brazil,Lakes,Jurumirim,0
+brazil,Lakes,Lajeado,0
+brazil,Lakes,Coaracy Nunes,0
+brazil,Lakes,Peixe Angical,0
+brazil,Streams,Piracicaba,0
+brazil,Streams,Capivari,0
+brazil,Streams,Mogi-Guaçu,0
+brazil,Streams,Jaguari,0
+brazil,Streams,Sapucaí,0
+brazil,Streams,Verde,0
+brazil,Streams,Pardo,0
+brazil,Streams,Turvo,0
+brazil,Streams,Canoas,0
+brazil,Streams,Jacutinga,0
+brazil,Streams,Pelotas,0
+brazil,Streams,Antas,0
+brazil,Streams,Pelotinhas,0
+brazil,Streams,Gravataí,0
+brazil,Streams,Sinos,0
+brazil,Streams,Caí,0
+brazil,Streams,Taquari,0
+brazil,Mountains,Neblina,0
+brazil,Mountains,Bandeira,0
+brazil,Mountains,Itatiaia,0
+brazil,Mountains,Caparaó,0
+brazil,Mountains,Pedra Azul,0
+brazil,Mountains,Pedra do Sino,0
+brazil,Mountains,Pão de Açúcar,0
+brazil,Mountains,Corcovado,0
+brazil,Mountains,Mantiqueira,0
+brazil,Mountains,Bocaina,0
+brazil,Mountains,Cipó,0
+brazil,Mountains,Diamantina,0
+brazil,Mountains,Borborema,0
+brazil,Mountains,Ibiapaba,0
+brazil,Mountains,Araripe,0
+brazil,Mountains,Espinhaço,0
+brazil,Mountains,Chapada,0
+brazil,Mountains,Roraima,0
+brazil,Mountains,Marins,0
+brazil,Mountains,Agulhas Negras,0
+brazil,Towns,Paraty,0
+brazil,Towns,Ouro Preto,0
+brazil,Towns,Tiradentes,0
+brazil,Towns,Olinda,0
+brazil,Towns,Alcântara,0
+brazil,Towns,Laguna,0
+brazil,Towns,Mariana,0
+brazil,Towns,Sabará,0
+brazil,Towns,Serro,0
+brazil,Towns,Lençóis,0
+brazil,Towns,Cachoeira,0
+brazil,Towns,Penedo,0
+brazil,Towns,Pirenópolis,0
+brazil,Towns,Goiás,0
+brazil,Towns,Cavalcante,0
+brazil,Towns,Antonina,0
+brazil,Towns,Morretes,0
+brazil,Towns,Paranaguá,0
+brazil,Towns,São Francisco do Sul,0
+brazil,Towns,Iguape,0
+brazil,Towns,Cananeia,0
+brazil,Towns,Igarassu,0
+brazil,Towns,São Cristóvão,0
+brazil,Towns,Mucugê,0
+brazil,Towns,Rio de Contas,0
+# Argentina
+argentina,Heroes,José de San Martín,0
+argentina,Heroes,Manuel Belgrano,0
+argentina,Heroes,Guillermo Brown,0
+argentina,Heroes,Juan Manuel de Rosas,0
+argentina,Heroes,Domingo Faustino Sarmiento,0
+argentina,Heroes,Bartolomé Mitre,0
+argentina,Heroes,Julio Argentino Roca,0
+argentina,Heroes,Martín Miguel de Güemes,0
+argentina,Heroes,Juan Lavalle,0
+argentina,Heroes,Hipólito Bouchard,0
+argentina,Cities,Buenos Aires,0
+argentina,Cities,Córdoba,0
+argentina,Cities,Rosario,0
+argentina,Cities,Mendoza,0
+argentina,Cities,La Plata,0
+argentina,Cities,San Miguel de Tucumán,0
+argentina,Cities,Mar del Plata,0
+argentina,Cities,Salta,0
+argentina,Cities,Santa Fe,0
+argentina,Cities,San Juan,0
+argentina,Cities,Resistencia,0
+argentina,Cities,Neuquén,0
+argentina,Cities,Posadas,0
+argentina,Cities,Bahía Blanca,0
+argentina,Cities,Paraná,0
+argentina,Cities,Corrientes,0
+argentina,Provinces,Buenos Aires,0
+argentina,Provinces,Córdoba,0
+argentina,Provinces,Santa Fe,0
+argentina,Provinces,Mendoza,0
+argentina,Provinces,Tucumán,0
+argentina,Provinces,Entre Ríos,0
+argentina,Provinces,Salta,0
+argentina,Provinces,Chaco,0
+argentina,Provinces,Corrientes,0
+argentina,Provinces,Misiones,0
+argentina,Provinces,San Juan,0
+argentina,Provinces,Jujuy,0
+argentina,Provinces,San Luis,0
+argentina,Provinces,Catamarca,0
+argentina,Provinces,La Rioja,0
+argentina,Provinces,Formosa,0
+argentina,Provinces,Neuquén,0
+argentina,Provinces,Río Negro,0
+argentina,Provinces,Chubut,0
+argentina,Provinces,Santa Cruz,0
+argentina,Rivers,Paraná,0
+argentina,Rivers,Uruguay,0
+argentina,Rivers,Paraguay,0
+argentina,Rivers,Río de la Plata,0
+argentina,Rivers,Salado,0
+argentina,Rivers,Colorado,0
+argentina,Rivers,Negro,0
+argentina,Rivers,Chubut,0
+argentina,Rivers,Deseado,0
+argentina,Rivers,Santa Cruz,0
+argentina,Mountains,Aconcagua,0
+argentina,Mountains,Ojos del Salado,0
+argentina,Mountains,Tupungato,0
+argentina,Mountains,Mercedario,0
+argentina,Mountains,Pissis,0
+argentina,Birds,Hornero,0
+argentina,Birds,Cóndor,0
+argentina,Birds,Ñandú,0
+argentina,Birds,Chimango,0
+argentina,Birds,Cauquén,0
+argentina,Birds,Bandurria,0
+argentina,Birds,Espátula,0
+argentina,Birds,Caracara,0
+argentina,Birds,Chorlito,0
+argentina,Birds,Gaviota,0
+argentina,Birds,Carancho,0
+argentina,Birds,Boyero,0
+argentina,Birds,Tero,0
+argentina,Birds,Flamenco,0
+argentina,Birds,Perdiz,0
+argentina,Birds,Loica,0
+argentina,Birds,Cabecita Negra,0
+argentina,Birds,Picaflor,0
+argentina,Birds,Biguá,0
+argentina,Birds,Garza,0
+argentina,Birds,Chajá,0
+argentina,Birds,Pijije,0
+argentina,Birds,Cuclillo,0
+argentina,Birds,Pato Cuchara,0
+argentina,Birds,Gallareta,0
+argentina,Birds,Chiricote,0
+argentina,Birds,Churrinche,0
+argentina,Birds,Federal,0
+argentina,Lakes,Nahuel Huapi,0
+argentina,Lakes,Argentino,0
+argentina,Lakes,Viedma,0
+argentina,Lakes,General Carrera,0
+argentina,Lakes,Colhué Huapí,0
+argentina,Lakes,Musters,0
+argentina,Lakes,Cardiel,0
+argentina,Lakes,San Martín,0
+argentina,Lakes,Cochrane,0
+argentina,Lakes,Belgrano,0
+argentina,Lakes,Epecuén,0
+argentina,Lakes,Traful,0
+argentina,Lakes,Futalaufquen,0
+argentina,Lakes,Rivadavia,0
+argentina,Lakes,Puelo,0
+argentina,Lakes,Lácar,0
+argentina,Lakes,Mascardi,0
+argentina,Lakes,Meliquina,0
+argentina,Lakes,Falkner,0
+argentina,Lakes,Curruhué,0
+argentina,Streams,Chimehuin,0
+argentina,Streams,Malleo,0
+argentina,Streams,Aluminé,0
+argentina,Streams,Caleufu,0
+argentina,Streams,Collón Curá,0
+argentina,Streams,Varvarco,0
+argentina,Streams,Nahueve,0
+argentina,Streams,Agrio,0
+argentina,Streams,Lileo,0
+argentina,Streams,Rahue,0
+argentina,Streams,Rucachoroi,0
+argentina,Streams,Loncopué,0
+argentina,Streams,Reñileuvú,0
+argentina,Streams,Curi Leuvú,0
+argentina,Streams,Barrancas,0
+argentina,Streams,Senguer,0
+argentina,Streams,Mayo,0
+argentina,Streams,Chalía,0
+argentina,Streams,Chubut,0
+argentina,Streams,Deseado,0
+argentina,Towns,Chascomús,0
+argentina,Towns,Chivilcoy,0
+argentina,Towns,Pergamino,0
+argentina,Towns,Salto,0
+argentina,Towns,Rojas,0
+argentina,Towns,Lincoln,0
+argentina,Towns,Saladillo,0
+argentina,Towns,Las Flores,0
+argentina,Towns,Lobos,0
+argentina,Towns,Luján,0
+argentina,Towns,Mercedes,0
+argentina,Towns,Bolívar,0
+argentina,Towns,Trenque Lauquen,0
+argentina,Towns,Pehuajó,0
+argentina,Towns,Olavarría,0
+argentina,Towns,Laprida,0
+argentina,Towns,Dolores,0
+argentina,Towns,Necochea,0
+argentina,Towns,Tres Arroyos,0
+argentina,Towns,Coronel Dorrego,0
+argentina,Towns,Carmen de Patagones,0
+argentina,Towns,Esquel,0
+argentina,Towns,Trelew,0
+argentina,Towns,Puerto Madryn,0
+argentina,Towns,El Bolsón,0
+# Chile
+chile,Heroes,Bernardo O'Higgins,0
+chile,Heroes,Arturo Prat,0
+chile,Heroes,Manuel Rodríguez,0
+chile,Heroes,José Miguel Carrera,0
+chile,Heroes,Manuel Baquedano,0
+chile,Heroes,Diego Portales,0
+chile,Heroes,Ramón Freire,0
+chile,Heroes,Patricio Lynch,0
+chile,Heroes,Juan Williams Rebolledo,0
+chile,Heroes,Carlos Condell,0
+chile,Cities,Santiago,0
+chile,Cities,Valparaíso,0
+chile,Cities,Concepción,0
+chile,Cities,La Serena,0
+chile,Cities,Antofagasta,0
+chile,Cities,Temuco,0
+chile,Cities,Rancagua,0
+chile,Cities,Talca,0
+chile,Cities,Arica,0
+chile,Cities,Chillán,0
+chile,Cities,Iquique,0
+chile,Cities,Puerto Montt,0
+chile,Cities,Coquimbo,0
+chile,Cities,Osorno,0
+chile,Cities,Valdivia,0
+chile,Cities,Punta Arenas,0
+chile,Regions,Atacama,0
+chile,Regions,Coquimbo,0
+chile,Regions,Valparaíso,0
+chile,Regions,Metropolitana,0
+chile,Regions,Maule,0
+chile,Regions,Bío Bío,0
+chile,Regions,Araucanía,0
+chile,Regions,Los Lagos,0
+chile,Regions,Aysén,0
+chile,Regions,Magallanes,0
+chile,Regions,Tarapacá,0
+chile,Regions,Antofagasta,0
+chile,Rivers,Loa,0
+chile,Rivers,Elqui,0
+chile,Rivers,Aconcagua,0
+chile,Rivers,Maipo,0
+chile,Rivers,Maule,0
+chile,Rivers,Bío Bío,0
+chile,Rivers,Imperial,0
+chile,Rivers,Toltén,0
+chile,Rivers,Valdivia,0
+chile,Rivers,Bueno,0
+chile,Battles,Iquique,0
+chile,Battles,Angamos,0
+chile,Battles,Chacabuco,0
+chile,Battles,Maipú,0
+chile,Battles,Rancagua,0
+chile,Birds,Cóndor,0
+chile,Birds,Queltehue,0
+chile,Birds,Caiquén,0
+chile,Birds,Flamenco,0
+chile,Birds,Cormorán,0
+chile,Birds,Pelícano,0
+chile,Birds,Gaviota,0
+chile,Birds,Zorzal,0
+chile,Birds,Carpintero,0
+chile,Birds,Fardela,0
+chile,Birds,Pato vapor,0
+chile,Birds,Huala,0
+chile,Birds,Yeco,0
+chile,Birds,Churrete,0
+chile,Birds,Torcaza,0
+chile,Birds,Chuncho,0
+chile,Birds,Cachudito,0
+chile,Birds,Pitío,0
+chile,Birds,Loica,0
+chile,Birds,Diuca,0
+chile,Birds,Jilguero,0
+chile,Birds,Picaflor,0
+chile,Birds,Bandurria,0
+chile,Birds,Tiuque,0
+chile,Lakes,Llanquihue,0
+chile,Lakes,Ranco,0
+chile,Lakes,Todos los Santos,0
+chile,Lakes,Villarrica,0
+chile,Lakes,Calafquén,0
+chile,Lakes,Panguipulli,0
+chile,Lakes,Riñihue,0
+chile,Lakes,Maihue,0
+chile,Lakes,Rupanco,0
+chile,Lakes,Caburgua,0
+chile,Lakes,Huillinco,0
+chile,Lakes,Cucao,0
+chile,Lakes,Icalma,0
+chile,Lakes,Galletué,0
+chile,Lakes,Pellaifa,0
+chile,Lakes,Tinquilco,0
+chile,Lakes,Colico,0
+chile,Lakes,Pirihueico,0
+chile,Lakes,Riesco,0
+chile,Lakes,Caburga,0
+chile,Streams,Aconcagua,0
+chile,Streams,Elqui,0
+chile,Streams,Limarí,0
+chile,Streams,Choapa,0
+chile,Streams,Petorca,0
+chile,Streams,Ligua,0
+chile,Streams,Mapocho,0
+chile,Streams,Clarillo,0
+chile,Streams,Angostura,0
+chile,Streams,Tinguiririca,0
+chile,Streams,Claro,0
+chile,Streams,Teno,0
+chile,Streams,Chimbarongo,0
+chile,Streams,Caliboro,0
+chile,Streams,Perquilauquén,0
+chile,Streams,Longaví,0
+chile,Streams,Achibueno,0
+chile,Streams,Purapel,0
+chile,Streams,Cauquenes,0
+chile,Streams,Bullileo,0
+chile,Mountains,Ojos del Salado,0
+chile,Mountains,San Valentín,0
+chile,Mountains,Llullaillaco,0
+chile,Mountains,Parinacota,0
+chile,Mountains,Pomerape,0
+chile,Mountains,Choshuenco,0
+chile,Mountains,Villarrica,0
+chile,Mountains,Osorno,0
+chile,Mountains,Tronador,0
+chile,Mountains,Calbuco,0
+chile,Mountains,Mocho,0
+chile,Mountains,Lanín,0
+chile,Mountains,Puyehue,0
+chile,Mountains,Descabezado,0
+chile,Mountains,Planchón,0
+chile,Mountains,Antuco,0
+chile,Mountains,Llaima,0
+chile,Mountains,Chillán,0
+chile,Mountains,Copahue,0
+chile,Mountains,Peteroa,0
+chile,Towns,Zapallar,0
+chile,Towns,Papudo,0
+chile,Towns,Pichilemu,0
+chile,Towns,Constitución,0
+chile,Towns,Dichato,0
+chile,Towns,Coronel,0
+chile,Towns,Lota,0
+chile,Towns,Lebu,0
+chile,Towns,Arauco,0
+chile,Towns,Purén,0
+chile,Towns,Lumaco,0
+chile,Towns,Traiguén,0
+chile,Towns,Victoria,0
+chile,Towns,Lautaro,0
+chile,Towns,Yumbel,0
+chile,Towns,Quirihue,0
+chile,Towns,Parral,0
+chile,Towns,Linares,0
+chile,Towns,Cauquenes,0
+chile,Towns,Molina,0
+chile,Towns,Curepto,0
+chile,Towns,Licantén,0
+chile,Towns,Carahue,0
+chile,Towns,Pitrufquén,0
+chile,Towns,Futrono,0
+# Belgium
+belgium,Heroes,Leopold I,0
+belgium,Heroes,Leopold II,0
+belgium,Heroes,Albert I,0
+belgium,Heroes,Godfrey of Bouillon,0
+belgium,Heroes,Charles V,0
+belgium,Heroes,Ambiorix,0
+belgium,Heroes,Gerardus Mercator,0
+belgium,Heroes,Peter Paul Rubens,0
+belgium,Cities,Brussels,0
+belgium,Cities,Antwerp,0
+belgium,Cities,Ghent,0
+belgium,Cities,Bruges,0
+belgium,Cities,Liège,0
+belgium,Cities,Namur,0
+belgium,Cities,Charleroi,0
+belgium,Cities,Mons,0
+belgium,Cities,Leuven,0
+belgium,Cities,Mechelen,0
+belgium,Cities,Ostend,0
+belgium,Cities,Tournai,0
+belgium,Cities,Hasselt,0
+belgium,Cities,Kortrijk,0
+belgium,Cities,Aalst,0
+belgium,Regions,Flanders,0
+belgium,Regions,Wallonia,0
+belgium,Regions,Brabant,0
+belgium,Regions,Hainaut,0
+belgium,Regions,Liège,0
+belgium,Regions,Limburg,0
+belgium,Regions,Luxembourg,0
+belgium,Regions,Namur,0
+belgium,Regions,Antwerp,0
+belgium,Regions,East Flanders,0
+belgium,Regions,West Flanders,0
+belgium,Rivers,Scheldt,0
+belgium,Rivers,Meuse,0
+belgium,Rivers,Yser,0
+belgium,Rivers,Sambre,0
+belgium,Rivers,Lys,0
+belgium,Rivers,Dender,0
+belgium,Battles,Waterloo,0
+belgium,Battles,Golden Spurs,0
+belgium,Battles,Yser,0
+belgium,Birds,Faucon,0
+belgium,Birds,Autour,0
+belgium,Birds,Buse,0
+belgium,Birds,Milan,0
+belgium,Birds,Cigogne,0
+belgium,Birds,Héron,0
+belgium,Birds,Cormoran,0
+belgium,Birds,Grèbe,0
+belgium,Birds,Martin-pêcheur,0
+belgium,Birds,Huppe,0
+belgium,Birds,Rossignol,0
+belgium,Birds,Merle,0
+belgium,Birds,Rouge-gorge,0
+belgium,Birds,Mésange,0
+belgium,Birds,Sittelle,0
+belgium,Birds,Coucou,0
+belgium,Birds,Grand-duc,0
+belgium,Birds,Effraie,0
+belgium,Birds,Pic,0
+belgium,Birds,Pie,0
+belgium,Birds,Tourterelle,0
+belgium,Birds,Loriot,0
+belgium,Birds,Perdrix,0
+belgium,Birds,Bécasse,0
+belgium,Birds,Guêpier,0
+belgium,Lakes,Gileppe,0
+belgium,Lakes,Plate Taille,0
+belgium,Lakes,Eau d'Heure,0
+belgium,Lakes,Bambois,0
+belgium,Lakes,Bütgenbach,0
+belgium,Lakes,Robertville,0
+belgium,Lakes,Vierre,0
+belgium,Lakes,Nisramont,0
+belgium,Lakes,Viroin,0
+belgium,Lakes,Hoëgne,0
+belgium,Lakes,Warche,0
+belgium,Lakes,Vesdre,0
+belgium,Lakes,Ternell,0
+belgium,Lakes,Eau Rouge,0
+belgium,Lakes,Blankaart,0
+belgium,Streams,Amblève,0
+belgium,Streams,Ourthe,0
+belgium,Streams,Semois,0
+belgium,Streams,Lesse,0
+belgium,Streams,Lomme,0
+belgium,Streams,Eau Noire,0
+belgium,Streams,Biesme,0
+belgium,Streams,Orneau,0
+belgium,Streams,Dyle,0
+belgium,Streams,Grande Gette,0
+belgium,Streams,Petite Gette,0
+belgium,Streams,Demer,0
+belgium,Streams,Kleine Nete,0
+belgium,Streams,Grote Nete,0
+belgium,Streams,Mark,0
+belgium,Streams,Zwalm,0
+belgium,Streams,Maarkebeek,0
+belgium,Streams,IJzer,0
+belgium,Streams,Poperingevaart,0
+belgium,Mountains,Botrange,0
+belgium,Mountains,Baraque Michel,0
+belgium,Mountains,Baraque de Fraiture,0
+belgium,Mountains,Mont Rigi,0
+belgium,Mountains,Croix Scay,0
+belgium,Mountains,Héribus,0
+belgium,Mountains,Vieux Pays,0
+belgium,Mountains,Hautes Fagnes,0
+belgium,Mountains,Ardenne,0
+belgium,Mountains,Bois de Saint-Hubert,0
+belgium,Towns,Binche,0
+belgium,Towns,Bouillon,0
+belgium,Towns,Chimay,0
+belgium,Towns,Dinant,0
+belgium,Towns,Durbuy,0
+belgium,Towns,Enghien,0
+belgium,Towns,Huy,0
+belgium,Towns,La Roche,0
+belgium,Towns,Limbourg,0
+belgium,Towns,Malmedy,0
+belgium,Towns,Marche,0
+belgium,Towns,Nivelles,0
+belgium,Towns,Philippeville,0
+belgium,Towns,Rochefort,0
+belgium,Towns,Saint-Hubert,0
+belgium,Towns,Spa,0
+belgium,Towns,Stavelot,0
+belgium,Towns,Tienen,0
+belgium,Towns,Tongeren,0
+belgium,Towns,Veurne,0
+belgium,Towns,Virton,0
+belgium,Towns,Wavre,0
+belgium,Towns,Gembloux,0
+belgium,Towns,Ath,0
+belgium,Towns,Andenne,0
+# Denmark
+denmark,Heroes,Valdemar,0
+denmark,Heroes,Canute,0
+denmark,Heroes,Christian IV,0
+denmark,Heroes,Frederick II,0
+denmark,Heroes,Niels Juel,0
+denmark,Heroes,Peter Tordenskjold,0
+denmark,Heroes,Hans Christian Ørsted,0
+denmark,Heroes,Tycho Brahe,0
+denmark,Cities,Copenhagen,0
+denmark,Cities,Aarhus,0
+denmark,Cities,Odense,0
+denmark,Cities,Aalborg,0
+denmark,Cities,Esbjerg,0
+denmark,Cities,Roskilde,0
+denmark,Cities,Kolding,0
+denmark,Cities,Horsens,0
+denmark,Cities,Vejle,0
+denmark,Cities,Randers,0
+denmark,Cities,Frederiksberg,0
+denmark,Cities,Helsingør,0
+denmark,Cities,Silkeborg,0
+denmark,Cities,Næstved,0
+denmark,Cities,Viborg,0
+denmark,Regions,Zealand,0
+denmark,Regions,Funen,0
+denmark,Regions,Jutland,0
+denmark,Regions,Bornholm,0
+denmark,Regions,Lolland,0
+denmark,Regions,Falster,0
+denmark,Regions,Greenland,0
+denmark,Regions,Faroe Islands,0
+denmark,Straits,Øresund,0
+denmark,Straits,Great Belt,0
+denmark,Straits,Little Belt,0
+denmark,Straits,Skagerrak,0
+denmark,Straits,Kattegat,0
+denmark,Battles,Copenhagen,0
+denmark,Battles,Lund,0
+denmark,Battles,Helsingborg,0
+denmark,Birds,Havørn,0
+denmark,Birds,Vandrefalk,0
+denmark,Birds,Rød Glente,0
+denmark,Birds,Fiskeørn,0
+denmark,Birds,Sort Stork,0
+denmark,Birds,Hvid Stork,0
+denmark,Birds,Grå Hejre,0
+denmark,Birds,Isfugl,0
+denmark,Birds,Hærfugl,0
+denmark,Birds,Nattergal,0
+denmark,Birds,Solsort,0
+denmark,Birds,Rødkælk,0
+denmark,Birds,Blåmejse,0
+denmark,Birds,Musvit,0
+denmark,Birds,Spætmejse,0
+denmark,Birds,Gøg,0
+denmark,Birds,Skovhornugle,0
+denmark,Birds,Bogfinke,0
+denmark,Birds,Landsvale,0
+denmark,Birds,Mursejler,0
+denmark,Birds,Stenpikker,0
+denmark,Birds,Agerhøne,0
+denmark,Birds,Skovsnepe,0
+denmark,Birds,Vibe,0
+denmark,Birds,Knopsvane,0
+denmark,Birds,Troldand,0
+denmark,Birds,Gravand,0
+denmark,Birds,Dompap,0
+denmark,Birds,Nøddekrige,0
+denmark,Rivers,Gudenå,0
+denmark,Rivers,Skjern Å,0
+denmark,Rivers,Storå,0
+denmark,Rivers,Suså,0
+denmark,Rivers,Karup Å,0
+denmark,Rivers,Odense Å,0
+denmark,Rivers,Varde Å,0
+denmark,Rivers,Ribe Å,0
+denmark,Rivers,Kongeå,0
+denmark,Rivers,Vidå,0
+denmark,Rivers,Brede Å,0
+denmark,Rivers,Holme Å,0
+denmark,Rivers,Lindenborg Å,0
+denmark,Rivers,Simested Å,0
+denmark,Rivers,Nørreå,0
+denmark,Rivers,Grindsted Å,0
+denmark,Rivers,Vejle Å,0
+denmark,Rivers,Bygholm Å,0
+denmark,Rivers,Villestrup Å,0
+denmark,Rivers,Salten Å,0
+denmark,Lakes,Arresø,0
+denmark,Lakes,Esrum Sø,0
+denmark,Lakes,Furesø,0
+denmark,Lakes,Julsø,0
+denmark,Lakes,Skanderborg Sø,0
+denmark,Lakes,Silkeborg Langsø,0
+denmark,Lakes,Almind Sø,0
+denmark,Lakes,Hald Sø,0
+denmark,Lakes,Mossø,0
+denmark,Lakes,Gurre Sø,0
+denmark,Lakes,Bagsværd Sø,0
+denmark,Lakes,Lyngby Sø,0
+denmark,Lakes,Fårup Sø,0
+denmark,Lakes,Ravn Sø,0
+denmark,Lakes,Viborg Sø,0
+denmark,Streams,Binderup Å,0
+denmark,Streams,Mølle Å,0
+denmark,Streams,Grejs Å,0
+denmark,Streams,Gadbjerg Å,0
+denmark,Streams,Omme Å,0
+denmark,Streams,Bølling Å,0
+denmark,Streams,Havelse Å,0
+denmark,Streams,Mern Å,0
+denmark,Streams,Tubæk Å,0
+denmark,Streams,Jersie Å,0
+denmark,Streams,Uggerby Å,0
+denmark,Streams,Lerkenfeld Å,0
+denmark,Streams,Bastrup Å,0
+denmark,Streams,Ryå,0
+denmark,Streams,Stadil Å,0
+denmark,Towns,Dragør,0
+denmark,Towns,Ribe,0
+denmark,Towns,Vordingborg,0
+denmark,Towns,Præstø,0
+denmark,Towns,Stege,0
+denmark,Towns,Nakskov,0
+denmark,Towns,Maribo,0
+denmark,Towns,Nysted,0
+denmark,Towns,Rødby,0
+denmark,Towns,Ærøskøbing,0
+denmark,Towns,Faaborg,0
+denmark,Towns,Assens,0
+denmark,Towns,Bogense,0
+denmark,Towns,Kerteminde,0
+denmark,Towns,Rudkøbing,0
+denmark,Towns,Marstal,0
+denmark,Towns,Rønne,0
+denmark,Towns,Nexø,0
+denmark,Towns,Allinge,0
+denmark,Towns,Gudhjem,0
+denmark,Towns,Hasle,0
+denmark,Towns,Holbæk,0
+denmark,Towns,Kalundborg,0
+denmark,Towns,Korsør,0
+denmark,Towns,Thisted,0
+# Norway
+norway,Heroes,Harald Hardrada,0
+norway,Heroes,Olaf II,0
+norway,Heroes,Haakon VII,0
+norway,Heroes,Fridtjof Nansen,0
+norway,Heroes,Roald Amundsen,0
+norway,Heroes,Thor Heyerdahl,0
+norway,Heroes,Peter Wessel Tordenskiold,0
+norway,Heroes,Olav Tryggvason,0
+norway,Cities,Oslo,0
+norway,Cities,Bergen,0
+norway,Cities,Trondheim,0
+norway,Cities,Stavanger,0
+norway,Cities,Kristiansand,0
+norway,Cities,Tromsø,0
+norway,Cities,Drammen,0
+norway,Cities,Fredrikstad,0
+norway,Cities,Bodø,0
+norway,Cities,Ålesund,0
+norway,Cities,Tønsberg,0
+norway,Cities,Moss,0
+norway,Cities,Sandefjord,0
+norway,Cities,Haugesund,0
+norway,Cities,Narvik,0
+norway,Regions,Vestland,0
+norway,Regions,Trøndelag,0
+norway,Regions,Nordland,0
+norway,Regions,Finnmark,0
+norway,Regions,Østlandet,0
+norway,Regions,Sørlandet,0
+norway,Fjords,Sognefjorden,0
+norway,Fjords,Hardangerfjorden,0
+norway,Fjords,Geirangerfjorden,0
+norway,Fjords,Nærøyfjorden,0
+norway,Fjords,Lysefjorden,0
+norway,Fjords,Nordfjord,0
+norway,Mountains,Galdhøpiggen,0
+norway,Mountains,Glittertind,0
+norway,Mountains,Snøhetta,0
+norway,Battles,Stiklestad,0
+norway,Battles,Svolder,0
+norway,Battles,Hafrsfjord,0
+norway,Birds,Havørn,0
+norway,Birds,Pilgrimsfalk,0
+norway,Birds,Kongeørn,0
+norway,Birds,Fiskgjuse,0
+norway,Birds,Lunde,0
+norway,Birds,Lomvi,0
+norway,Birds,Alke,0
+norway,Birds,Ærfugl,0
+norway,Birds,Havsule,0
+norway,Birds,Ismåke,0
+norway,Birds,Snøugle,0
+norway,Birds,Hubro,0
+norway,Birds,Kattugle,0
+norway,Birds,Rødstrupe,0
+norway,Birds,Svarttrost,0
+norway,Birds,Bokfink,0
+norway,Birds,Blåmeis,0
+norway,Birds,Kjøttmeis,0
+norway,Birds,Spurveugle,0
+norway,Birds,Myrsnipe,0
+norway,Birds,Teist,0
+norway,Birds,Storskarv,0
+norway,Birds,Ramn,0
+norway,Birds,Ringdue,0
+norway,Birds,Sanglerke,0
+norway,Birds,Stær,0
+norway,Birds,Grågås,0
+norway,Birds,Storspove,0
+norway,Birds,Polarjo,0
+norway,Rivers,Glomma,0
+norway,Rivers,Drammenselva,0
+norway,Rivers,Numedalslågen,0
+norway,Rivers,Skienselva,0
+norway,Rivers,Otra,0
+norway,Rivers,Tovdalselva,0
+norway,Rivers,Mandalselva,0
+norway,Rivers,Kvina,0
+norway,Rivers,Sira,0
+norway,Rivers,Suldalslågen,0
+norway,Rivers,Etna,0
+norway,Rivers,Vinstra,0
+norway,Rivers,Lågen,0
+norway,Rivers,Vorma,0
+norway,Rivers,Rena,0
+norway,Rivers,Flisa,0
+norway,Rivers,Trysilelva,0
+norway,Rivers,Gausa,0
+norway,Rivers,Sjoa,0
+norway,Rivers,Otta,0
+norway,Rivers,Rauma,0
+norway,Rivers,Driva,0
+norway,Lakes,Mjøsa,0
+norway,Lakes,Røssvatnet,0
+norway,Lakes,Femunden,0
+norway,Lakes,Randsfjorden,0
+norway,Lakes,Tyrifjorden,0
+norway,Lakes,Snåsavatnet,0
+norway,Lakes,Sperillen,0
+norway,Lakes,Krøderen,0
+norway,Lakes,Selbusjøen,0
+norway,Lakes,Nisser,0
+norway,Lakes,Tinnsjø,0
+norway,Lakes,Bandak,0
+norway,Lakes,Seljordsvatnet,0
+norway,Lakes,Norsjø,0
+norway,Lakes,Heddalsvatnet,0
+norway,Lakes,Byglandsfjord,0
+norway,Lakes,Fyresvatnet,0
+norway,Lakes,Bygdin,0
+norway,Lakes,Gjende,0
+norway,Lakes,Vågåvatnet,0
+norway,Streams,Utla,0
+norway,Streams,Aurland,0
+norway,Streams,Flåm,0
+norway,Streams,Valldøla,0
+norway,Streams,Eira,0
+norway,Streams,Imsa,0
+norway,Streams,Opo,0
+norway,Streams,Kinso,0
+norway,Streams,Etne,0
+norway,Streams,Hellelandselva,0
+norway,Streams,Suldalselva,0
+norway,Streams,Fusa,0
+norway,Streams,Ulla,0
+norway,Streams,Lygna,0
+norway,Streams,Nidelva,0
+norway,Streams,Aelva,0
+norway,Streams,Bøvra,0
+norway,Streams,Sjodøla,0
+norway,Streams,Rottua,0
+norway,Streams,Sjøaelva,0
+norway,Towns,Flekkefjord,0
+norway,Towns,Farsund,0
+norway,Towns,Mandal,0
+norway,Towns,Grimstad,0
+norway,Towns,Risør,0
+norway,Towns,Kragerø,0
+norway,Towns,Brevik,0
+norway,Towns,Larvik,0
+norway,Towns,Sandefjord,0
+norway,Towns,Åsgårdstrand,0
+norway,Towns,Son,0
+norway,Towns,Drøbak,0
+norway,Towns,Hvaler,0
+norway,Towns,Rjukan,0
+norway,Towns,Notodden,0
+norway,Towns,Kviteseid,0
+norway,Towns,Seljord,0
+norway,Towns,Dalen,0
+norway,Towns,Egersund,0
+norway,Towns,Bryne,0
+norway,Towns,Nærbø,0
+norway,Towns,Lofthus,0
+norway,Towns,Ulvik,0
+norway,Towns,Voss,0
+norway,Towns,Aurland,0
+# Sweden
+sweden,Heroes,Gustavus Adolphus,0
+sweden,Heroes,Charles XII,0
+sweden,Heroes,Birger Jarl,0
+sweden,Heroes,Gustav Vasa,0
+sweden,Heroes,Axel Oxenstierna,0
+sweden,Heroes,Karl XIV Johan,0
+sweden,Heroes,Alfred Nobel,0
+sweden,Heroes,Carl Linnaeus,0
+sweden,Cities,Stockholm,0
+sweden,Cities,Gothenburg,0
+sweden,Cities,Malmö,0
+sweden,Cities,Uppsala,0
+sweden,Cities,Västerås,0
+sweden,Cities,Örebro,0
+sweden,Cities,Linköping,0
+sweden,Cities,Helsingborg,0
+sweden,Cities,Jönköping,0
+sweden,Cities,Norrköping,0
+sweden,Cities,Lund,0
+sweden,Cities,Umeå,0
+sweden,Cities,Gävle,0
+sweden,Cities,Borås,0
+sweden,Cities,Karlstad,0
+sweden,Cities,Visby,0
+sweden,Regions,Götaland,0
+sweden,Regions,Svealand,0
+sweden,Regions,Norrland,0
+sweden,Regions,Skåne,0
+sweden,Regions,Västergötland,0
+sweden,Regions,Östergötland,0
+sweden,Regions,Småland,0
+sweden,Regions,Dalarna,0
+sweden,Regions,Västerbotten,0
+sweden,Regions,Norrbotten,0
+sweden,Regions,Gotland,0
+sweden,Rivers,Ångermanälven,0
+sweden,Rivers,Ljusnan,0
+sweden,Rivers,Dalälven,0
+sweden,Rivers,Klarälven,0
+sweden,Rivers,Göta älv,0
+sweden,Lakes,Vänern,0
+sweden,Lakes,Vättern,0
+sweden,Lakes,Mälaren,0
+sweden,Lakes,Hjälmaren,0
+sweden,Lakes,Storsjön,0
+sweden,Battles,Breitenfeld,0
+sweden,Battles,Lützen,0
+sweden,Battles,Narva,0
+sweden,Battles,Poltava,0
+sweden,Battles,Lund,0
+sweden,Birds,Havsörn,0
+sweden,Birds,Pilgrimsfalk,0
+sweden,Birds,Kungsörn,0
+sweden,Birds,Fiskgjuse,0
+sweden,Birds,Vit Stork,0
+sweden,Birds,Häger,0
+sweden,Birds,Silltrut,0
+sweden,Birds,Lund,0
+sweden,Birds,Storskrake,0
+sweden,Birds,Ejder,0
+sweden,Birds,Sule,0
+sweden,Birds,Alfågel,0
+sweden,Birds,Snöuggla,0
+sweden,Birds,Berguv,0
+sweden,Birds,Kattuggla,0
+sweden,Birds,Rödhake,0
+sweden,Birds,Koltrast,0
+sweden,Birds,Bofink,0
+sweden,Birds,Blåmes,0
+sweden,Birds,Talgoxe,0
+sweden,Birds,Tornseglare,0
+sweden,Birds,Laduvipa,0
+sweden,Birds,Storspov,0
+sweden,Birds,Sjöorre,0
+sweden,Birds,Knipa,0
+sweden,Birds,Grågås,0
+sweden,Birds,Gråsparv,0
+sweden,Birds,Lövsångare,0
+sweden,Birds,Skogsduva,0
+sweden,Streams,Emån,0
+sweden,Streams,Mörrumsån,0
+sweden,Streams,Helge å,0
+sweden,Streams,Rönne å,0
+sweden,Streams,Lagan,0
+sweden,Streams,Nissan,0
+sweden,Streams,Viskan,0
+sweden,Streams,Ätran,0
+sweden,Streams,Säveån,0
+sweden,Streams,Fylleån,0
+sweden,Streams,Kungsbackaån,0
+sweden,Streams,Mölndalsån,0
+sweden,Streams,Ängerån,0
+sweden,Streams,Indalsälven,0
+sweden,Streams,Ljungan,0
+sweden,Streams,Ljusnan,0
+sweden,Streams,Dalälven,0
+sweden,Streams,Klarälven,0
+sweden,Streams,Råneälven,0
+sweden,Streams,Kalixälven,0
+sweden,Streams,Piteälven,0
+sweden,Streams,Luleälven,0
+sweden,Mountains,Kebnekaise,0
+sweden,Mountains,Sarektjåkkå,0
+sweden,Mountains,Kaskasatjåkkå,0
+sweden,Mountains,Akka,0
+sweden,Mountains,Njulla,0
+sweden,Mountains,Nallo,0
+sweden,Mountains,Skierffe,0
+sweden,Mountains,Nammatj,0
+sweden,Mountains,Tjaktjapakte,0
+sweden,Mountains,Sielmatjåkkå,0
+sweden,Mountains,Pårtetjåkkå,0
+sweden,Mountains,Ruotestjåkkå,0
+sweden,Mountains,Snasahögarna,0
+sweden,Mountains,Sylarna,0
+sweden,Mountains,Helags,0
+sweden,Mountains,Städjan,0
+sweden,Mountains,Hamra,0
+sweden,Mountains,Idre,0
+sweden,Mountains,Funäsdalsberget,0
+sweden,Mountains,Flatruet,0
+sweden,Towns,Sigtuna,0
+sweden,Towns,Vadstena,0
+sweden,Towns,Mariestad,0
+sweden,Towns,Lidköping,0
+sweden,Towns,Skara,0
+sweden,Towns,Falköping,0
+sweden,Towns,Tidaholm,0
+sweden,Towns,Hjo,0
+sweden,Towns,Karlsborg,0
+sweden,Towns,Askersund,0
+sweden,Towns,Nora,0
+sweden,Towns,Kopparberg,0
+sweden,Towns,Rättvik,0
+sweden,Towns,Leksand,0
+sweden,Towns,Mora,0
+sweden,Towns,Malung,0
+sweden,Towns,Hudiksvall,0
+sweden,Towns,Söderhamn,0
+sweden,Towns,Bollnäs,0
+sweden,Towns,Edsbyn,0
+sweden,Towns,Ljusdal,0
+sweden,Towns,Sveg,0
+sweden,Towns,Hede,0
+sweden,Towns,Åre,0
+sweden,Towns,Järpen,0
+# Korea
+korea,Heroes,Yi Sun-sin,0
+korea,Heroes,Sejong the Great,0
+korea,Heroes,Gwanggaeto,0
+korea,Heroes,Wang Geon,0
+korea,Heroes,Eulji Mundeok,0
+korea,Heroes,Gang Gam-chan,0
+korea,Heroes,Kang Jo,0
+korea,Heroes,Won Gyun,0
+korea,Heroes,Kim Yu-sin,0
+korea,Heroes,Yun Gwan,0
+korea,Cities,Seoul,0
+korea,Cities,Busan,0
+korea,Cities,Incheon,0
+korea,Cities,Daegu,0
+korea,Cities,Daejeon,0
+korea,Cities,Gwangju,0
+korea,Cities,Ulsan,0
+korea,Cities,Pyongyang,0
+korea,Cities,Kaesong,0
+korea,Cities,Wonsan,0
+korea,Cities,Hamhung,0
+korea,Cities,Chongjin,0
+korea,Cities,Nampo,0
+korea,Cities,Jeonju,0
+korea,Cities,Suwon,0
+korea,Provinces,Gyeonggi,0
+korea,Provinces,Gangwon,0
+korea,Provinces,Chungcheong,0
+korea,Provinces,Jeolla,0
+korea,Provinces,Gyeongsang,0
+korea,Provinces,Hwanghae,0
+korea,Provinces,Pyongan,0
+korea,Provinces,Hamgyong,0
+korea,Rivers,Han,0
+korea,Rivers,Nakdong,0
+korea,Rivers,Geum,0
+korea,Rivers,Yeongsan,0
+korea,Rivers,Imjin,0
+korea,Rivers,Taedong,0
+korea,Rivers,Yalu,0
+korea,Rivers,Tumen,0
+korea,Mountains,Baekdu,0
+korea,Mountains,Halla,0
+korea,Mountains,Jiri,0
+korea,Mountains,Seorak,0
+korea,Mountains,Taebaek,0
+korea,Battles,Hansan,0
+korea,Battles,Myeongnyang,0
+korea,Battles,Salsu,0
+korea,Battles,Gwiju,0
+korea,Battles,Noryang,0
+korea,Birds,Doksuri,0
+korea,Birds,Hwangse,0
+korea,Birds,Durumi,0
+korea,Birds,Waegari,0
+korea,Birds,Solgae,0
+korea,Birds,Mulsuri,0
+korea,Birds,Mae,0
+korea,Birds,Bueongyi,0
+korea,Birds,Kkamagwi,0
+korea,Birds,Kkachi,0
+korea,Birds,Chamsae,0
+korea,Birds,Kkoikkori,0
+korea,Birds,Bbeokguggi,0
+korea,Birds,Jebi,0
+korea,Birds,Ttagsae,0
+korea,Birds,Baksae,0
+korea,Birds,Jikbakguri,0
+korea,Birds,Wonang,0
+korea,Birds,Cheongdungo,0
+korea,Birds,Girogi,0
+korea,Birds,Baengno,0
+korea,Birds,Goni,0
+korea,Birds,Biori,0
+korea,Birds,Mulchongsae,0
+korea,Birds,Hututti,0
+korea,Birds,Parangsae,0
+korea,Birds,Halmisae,0
+korea,Birds,Baepsae,0
+korea,Birds,Ttakdaguri,0
+korea,Birds,Suri,0
+korea,Lakes,Soyang-ho,0
+korea,Lakes,Chungju-ho,0
+korea,Lakes,Daecheong-ho,0
+korea,Lakes,Andong-ho,0
+korea,Lakes,Imha-ho,0
+korea,Lakes,Hapcheon-ho,0
+korea,Lakes,Namgang-ho,0
+korea,Lakes,Boryeong-ho,0
+korea,Lakes,Seomjingang-ho,0
+korea,Lakes,Juam-ho,0
+korea,Lakes,Unmun-ho,0
+korea,Lakes,Yongdam-ho,0
+korea,Lakes,Milyang-ho,0
+korea,Lakes,Hwacheon-ho,0
+korea,Lakes,Cheongpyeong-ho,0
+korea,Streams,Seolma,0
+korea,Streams,Anyang,0
+korea,Streams,Tan,0
+korea,Streams,Jungnang,0
+korea,Streams,Gyeongan,0
+korea,Streams,Gapyeong,0
+korea,Streams,Yangpyeong,0
+korea,Streams,Hongcheon,0
+korea,Streams,Hwang,0
+korea,Streams,Sapgyo,0
+korea,Streams,Anseong,0
+korea,Streams,Mangyeong,0
+korea,Streams,Dongjin,0
+korea,Streams,Tamjin,0
+korea,Streams,Ilsong,0
+korea,Streams,Seomjin,0
+korea,Streams,Yeongsan,0
+korea,Streams,Nakdong,0
+korea,Streams,Geum,0
+korea,Towns,Gyeongju,0
+korea,Towns,Andong,0
+korea,Towns,Jeonju,0
+korea,Towns,Kongju,0
+korea,Towns,Buyeo,0
+korea,Towns,Naju,0
+korea,Towns,Yeosu,0
+korea,Towns,Suncheon,0
+korea,Towns,Boseong,0
+korea,Towns,Haenam,0
+korea,Towns,Gangjin,0
+korea,Towns,Wando,0
+korea,Towns,Jinju,0
+korea,Towns,Sacheon,0
+korea,Towns,Namhae,0
+korea,Towns,Hadong,0
+korea,Towns,Hamyang,0
+korea,Towns,Geochang,0
+korea,Towns,Seongju,0
+korea,Towns,Gimcheon,0
+korea,Towns,Yeongcheon,0
+korea,Towns,Cheongdo,0
+korea,Towns,Yeongju,0
+korea,Towns,Mungyeong,0

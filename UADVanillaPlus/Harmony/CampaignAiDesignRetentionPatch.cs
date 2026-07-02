@@ -7,10 +7,13 @@ using UADVanillaPlus.GameData;
 
 namespace UADVanillaPlus.Harmony;
 
-// Patch intent: vanilla design cleanup is age/buildability based and can erase
-// an AI nation's last strong same-type design. While Arms Race is active, keep
-// vanilla cleanup from deleting the best buildable competitive design per
-// surface type, without affecting manual deletes or Arms Race rejection deletes.
+// AI arms-race retention. Vanilla design cleanup (CampaignController.DeleteOldDesigns) is
+// age/buildability based and can erase an AI nation's last strong same-type design. While
+// Arms Race is active we keep the cull from deleting the best buildable competitive design
+// per surface type, without affecting manual deletes or Arms Race rejection deletes. This is
+// done by snapshotting the protected designs when the AI's cull window opens (BeginCleanup)
+// and suppressing only those specific erases (ShouldSuppressDelete). Applies to AI players
+// only; the main human player's cull runs vanilla.
 internal static class CampaignAiDesignRetentionPatch
 {
     private const string LogPrefix = "UADVP AI Design retention";
@@ -22,6 +25,7 @@ internal static class CampaignAiDesignRetentionPatch
     internal static void BeginCleanup(Player? player)
     {
         activeContext = null;
+
         if (!ModSettings.AiArmsRaceEnabled || !IsAiPlayer(player))
             return;
 
@@ -34,12 +38,21 @@ internal static class CampaignAiDesignRetentionPatch
     }
 
     internal static void EndCleanup()
-        => activeContext = null;
+    {
+        activeContext = null;
+    }
 
+    // Suppress an erase only when it targets an AI design we snapshotted as protected at the
+    // start of THIS player's cull window. When no AI cull window is open (activeContext == null)
+    // nothing is suppressed -- so the main player's refit-save archival and manual deletes always
+    // go through, and the main player's own cull is handled by skipping it outright (above).
     internal static bool ShouldSuppressDelete(Ship? design)
     {
+        if (design == null)
+            return false;
+
         CleanupContext? context = activeContext;
-        if (context == null || design == null)
+        if (context == null)
             return false;
 
         if (!SamePlayer(design.player, context.PlayerPointer))
@@ -212,6 +225,14 @@ internal static class CampaignAiDesignRetentionPatch
         return Safe(() => player.isAi && !player.isMain, false);
     }
 
+    private static bool IsMainHumanPlayer(Player? player)
+    {
+        if (player == null)
+            return false;
+
+        return Safe(() => player.isMain && !player.isAi, false);
+    }
+
     private static T Safe<T>(Func<T> read, T fallback)
     {
         try
@@ -290,4 +311,30 @@ internal static class CampaignAiDesignRetentionDeleteDesignPatch
     [HarmonyPriority(Priority.Last)]
     private static bool Prefix(Ship ship)
         => !CampaignAiDesignRetentionPatch.ShouldSuppressDelete(ship);
+}
+
+// The AI obsolescence cull erases designs via Ship.Erase() (logged as "[Ship] DeleteDesign ..."),
+// which the DeleteDesign guard above doesn't cover. Suppress those too, but ONLY inside an AI cull
+// window (activeContext set by BeginCleanup) for that AI's protected designs. With no window open
+// nothing is suppressed, so the main player's erases (refit-save archival, manual deletes, sinking)
+// are never blocked here.
+[HarmonyPatch]
+internal static class CampaignAiDesignRetentionShipErasePatch
+{
+    private static bool Prepare()
+    {
+        bool available = TargetMethod() != null;
+        if (!available)
+            Melon<UADVanillaPlusMod>.Logger.Warning("UADVP AI Design retention: Ship.Erase target not found; erase guard disabled.");
+
+        return available;
+    }
+
+    private static MethodBase? TargetMethod()
+        => AccessTools.Method(typeof(Ship), nameof(Ship.Erase), Type.EmptyTypes);
+
+    [HarmonyPrefix]
+    [HarmonyPriority(Priority.Last)]
+    private static bool Prefix(Ship __instance)
+        => !CampaignAiDesignRetentionPatch.ShouldSuppressDelete(__instance);
 }

@@ -526,7 +526,71 @@ internal static class ShipEffectivePowerCalculator
             string.Empty);
     }
 
+    // VP throw-weight power model — replaces vanilla Ship.EstimatePower as the display
+    // BasePower. Vanilla badly misranks ships: confirmed on a live fleet, light fast-firing
+    // cruisers read HIGHER than every capital ship (a 13.5k-ton CL at ~1.9M vs a 33.6k-ton
+    // BB with the most guns at ~480k). This model scores by per-salvo throw-weight (the
+    // game's own per-shell damage dmgMod, which ≈ caliber^3) times a hull survivability/
+    // presence term, so capital ships dominate and "fewer, bigger guns" RAISES power.
+    // Influence (Ship.PowerProjection) is a separate native formula, already ranks
+    // capitals > cruisers > DDs, and is intentionally left UNTOUCHED. See memory:
+    // uadvp-ship-power-pwr. Constants are tuned to keep the display near the familiar
+    // ~1-2M range for capitals; adjust and compare against vanillaEstimate in the probe log.
+    internal static bool UseThrowWeightModel = true;
+    internal static float ModelScale = 1.0f;       // overall scale knob (tune so a strong BB reads ~1-1.5M)
+    internal static float ModelHullWeight = 3f;    // gunless/light-ship offense floor (throw-weight units)
+    internal static float ModelRofExponent = 0f;   // rate-of-fire credit on offense: 0 = pure per-salvo throw-weight
+    internal static float ModelOffenseExp = 0.5f;  // <1 compresses raw gun throw-weight so guns don't dominate
+    internal static float ModelArmorFloor = 50f;   // base durability for an unarmored hull (so DDs aren't ~0)
+
     private static float EstimateBasePower(Ship design)
+    {
+        if (UseThrowWeightModel)
+        {
+            try
+            {
+                return ComputeModelPower(design);
+            }
+            catch (Exception ex)
+            {
+                LogFailureOnce("model:" + ex.GetType().Name, $"UADVP effective power: throw-weight model failed, using vanilla: {ex.Message}");
+            }
+        }
+
+        return VanillaEstimatePower(design);
+    }
+
+    // Capability = compressed gun throw-weight (offense) x hull-size-and-armor (durability).
+    // Offense^0.5 keeps guns from dominating; durability = sqrt(tonnage) x (floor + armor) so
+    // protection/up-armor refits register and tougher ships rate higher. dmgMod already encodes
+    // gun/shell tech grade, so gun-tech upgrades show up via offense; armor upgrades via durability.
+    private static float ComputeModelPower(Ship design)
+    {
+        float offense = ModelHullWeight;
+        foreach (GunGroupDiagnostic g in DescribeGunGroups(design))
+        {
+            float salvo = g.Count * g.Barrels * Math.Max(0.01f, g.DamageMod);
+            if (ModelRofExponent > 0f)
+            {
+                float rpm = g.Reload > 0f ? 60f / g.Reload : 0f;
+                salvo *= (float)Math.Pow(Math.Max(0.01f, rpm), ModelRofExponent);
+            }
+
+            offense += salvo;
+        }
+
+        float tonnage = Math.Max(1f, SafeFloat(() => design.tonnage, 1f));
+        // Only Belt + Deck are reliable: the Barbette (and some Turret) zones carry garbage
+        // sentinel values on light/fast hulls (e.g. barbette=29337mm), which would blow up
+        // durability and put cruisers back above capitals. Belt + deck read clean on all hulls.
+        (float belt, float deck, _, _) = ArmorZones(design);
+        float protection = belt + (0.7f * deck);
+        float durability = (float)Math.Sqrt(tonnage) * (ModelArmorFloor + protection);
+
+        return ModelScale * (float)Math.Pow(Math.Max(0.01f, offense), ModelOffenseExp) * durability;
+    }
+
+    private static float VanillaEstimatePower(Ship design)
     {
         try
         {
@@ -539,6 +603,83 @@ internal static class ShipEffectivePowerCalculator
             LogFailureOnce("base:" + ex.GetType().Name, $"UADVP effective power: vanilla EstimatePower failed: {ex.Message}");
             return 0f;
         }
+    }
+
+    // ship.armor is a per-zone Dictionary<Ship.A, float> (values in mm). Read the citadel
+    // zones we care about by key — light hulls carry garbage values in inner/superstructure
+    // zones, so do NOT max/avg across the whole dictionary.
+    private static (float Belt, float Deck, float Turret, float Barbette) ArmorZones(Ship ship)
+    {
+        float belt = 0f, deck = 0f, turret = 0f, barbette = 0f;
+        try
+        {
+            var armor = ship.armor;
+            if (armor != null)
+            {
+                foreach (var kv in armor)
+                {
+                    float v = kv.Value;
+                    if (float.IsNaN(v) || float.IsInfinity(v) || v <= 0f)
+                        continue;
+
+                    switch (kv.Key)
+                    {
+                        case Ship.A.Belt: belt = v; break;
+                        case Ship.A.Deck: deck = v; break;
+                        case Ship.A.TurretTop: turret = v; break;
+                        case Ship.A.Barbette: barbette = v; break;
+                    }
+                }
+            }
+        }
+        catch
+        {
+        }
+
+        return (belt, deck, turret, barbette);
+    }
+
+    // Enumerates each gun group with the fields the power model needs (caliber, barrels,
+    // count, reload, range, throw-weight, dmgMod).
+    internal static IReadOnlyList<GunGroupDiagnostic> DescribeGunGroups(Ship design)
+    {
+        List<GunGroupDiagnostic> rows = new();
+        if (design == null)
+            return rows;
+
+        try
+        {
+            foreach ((PartData data, int count) in GunGroups(design))
+            {
+                if (data == null || count <= 0)
+                    continue;
+
+                int barrels = Math.Max(1, SafeInt(() => data.barrels, 1));
+                float caliberInches = CaliberInches(SafeFloat(() => data.caliber, 1f));
+                float reload = SafeWeaponReload(data, design);
+                float range = GunRange(design, data);
+                float weight = GunWeight(design, data, count);
+
+                float damageMod = 1f;
+                GunData? gunData = GetGunData(design, data);
+                if (gunData != null)
+                    damageMod = Math.Max(0.25f, SafeFloat(() => gunData.DamageMod(design, data), SafeFloat(() => gunData.damageMod, 1f)));
+
+                string name = SafeString(() => data.nameUi);
+                if (string.IsNullOrWhiteSpace(name))
+                    name = SafeString(() => data.name);
+                if (string.IsNullOrWhiteSpace(name))
+                    name = "gun";
+
+                rows.Add(new GunGroupDiagnostic(name, caliberInches, barrels, count, reload, range, weight, damageMod));
+            }
+        }
+        catch (Exception ex)
+        {
+            LogFailureOnce("describe:guns:" + ex.GetType().Name, $"UADVP power probe: gun-group describe failed: {ex.Message}");
+        }
+
+        return rows;
     }
 
     private static GunProfile BuildGunProfile(Ship ship)
@@ -1254,4 +1395,15 @@ internal static class ShipEffectivePowerCalculator
         float ReloadScore,
         float AccuracyScore,
         int TubeCount);
+
+    // Per-gun-group row used by the throw-weight power model.
+    internal readonly record struct GunGroupDiagnostic(
+        string Name,
+        float CaliberInches,
+        int Barrels,
+        int Count,
+        float Reload,
+        float Range,
+        float Weight,
+        float DamageMod);
 }

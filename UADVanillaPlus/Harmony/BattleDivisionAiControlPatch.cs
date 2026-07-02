@@ -334,7 +334,7 @@ internal static class BattleDivisionAiControlPatch
         catch { return 0; }
     }
 
-    private sealed class OrderButtonContext
+    internal sealed class OrderButtonContext
     {
         internal OrderButtonContext(GameObject root, Transform parent, Button template, Button? anchor, string sourceName)
         {
@@ -352,7 +352,7 @@ internal static class BattleDivisionAiControlPatch
         internal string SourceName { get; }
     }
 
-    private static OrderButtonContext? ResolveOrderButtonContext(IReadOnlyList<(string SourceName, GameObject Root)> roots)
+    internal static OrderButtonContext? ResolveOrderButtonContext(IReadOnlyList<(string SourceName, GameObject Root)> roots)
     {
         foreach ((string sourceName, GameObject root) in roots)
         {
@@ -396,7 +396,7 @@ internal static class BattleDivisionAiControlPatch
         return null;
     }
 
-    private static IEnumerable<(string SourceName, GameObject Root)> CandidateOrderRoots(Ui ui)
+    internal static IEnumerable<(string SourceName, GameObject Root)> CandidateOrderRoots(Ui ui)
     {
         foreach ((string sourceName, MemberInfo? member) in OrderRootMembers())
         {
@@ -572,7 +572,7 @@ internal static class BattleDivisionAiControlPatch
                name.Contains(preferredName, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static void PositionAiControlButton(Button button, OrderButtonContext orderContext)
+    internal static void PositionAiControlButton(Button button, OrderButtonContext orderContext)
     {
         if (button == null)
             return;
@@ -702,7 +702,7 @@ internal static class BattleDivisionAiControlPatch
         }
     }
 
-    private static void TryRemoveInheritedHotkeyIndicators(GameObject buttonObject)
+    internal static void TryRemoveInheritedHotkeyIndicators(GameObject buttonObject)
     {
         try
         {
@@ -746,7 +746,7 @@ internal static class BattleDivisionAiControlPatch
            text.Trim().Length == 1 &&
            (char.IsDigit(text.Trim()[0]) || text.Trim()[0] is '-' or '=');
 
-    private static void TryRemoveInheritedPointerHandlers(GameObject buttonObject)
+    internal static void TryRemoveInheritedPointerHandlers(GameObject buttonObject)
     {
         try { RemoveComponent<OnClickH>(buttonObject); } catch { }
         try { RemoveComponent<OnEnter>(buttonObject); } catch { }
@@ -788,7 +788,7 @@ internal static class BattleDivisionAiControlPatch
         }
     }
 
-    private static void SetButtonText(GameObject buttonObject, string text)
+    internal static void SetButtonText(GameObject buttonObject, string text)
     {
         Text[] uiTexts = buttonObject.GetComponentsInChildren<Text>(true);
         Text? primaryUiText = uiTexts.FirstOrDefault(t => t != null && t.gameObject.name == "Text") ?? uiTexts.FirstOrDefault();

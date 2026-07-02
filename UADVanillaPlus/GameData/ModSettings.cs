@@ -19,9 +19,19 @@ internal static class ModSettings
     private const string RealisticShellDamageModeKey = "uadvp_realistic_shell_damage_mode";
     private const string DesignAccuracyPenaltyModeKey = "uadvp_design_accuracy_penalty_mode";
     private const string MajorShipTorpedoesRestrictedKey = "uadvp_major_ship_torpedoes_restricted";
-    private const string ObsoleteDesignRetentionEnabledKey = "uadvp_obsolete_design_retention_enabled";
+    private const string BattleReverseMethodKey = "uadvp_battle_reverse_method";
+    private const string FollowSteerDampingEnabledKey = "uadvp_follow_steer_damping_enabled";
+    private const string ParallelStationAbreastKey = "uadvp_parallel_station_abreast";
+    private const string AiEconomyPrioritiesKey = "uadvp_ai_economy_priorities";
+    private const string ShipResupplyOverrideKey = "uadvp_ship_resupply_override";
+    private const string ShipServiceRecordsKey = "uadvp_ship_service_records";
     private const string SuperstructureRefitsEnabledKey = "uadvp_superstructure_refits_enabled";
     private const string ShipyardCapacityBalancedKey = "uadvp_shipyard_capacity_balanced";
+    private const string MultiYearShipyardRebuildKey = "uadvp_multiyear_shipyard_rebuild";
+    private const string VanquishedSpoilsKey = "uadvp_vanquished_spoils";
+    private const string RebuildOverseasWeightKey = "uadvp_rebuild_overseas_weight";
+    private const string VanquishedSpoilsShareKey = "uadvp_vanquished_spoils_share";
+    private const string ClassNamingThemesKey = "uadvp_class_naming_themes";
     private const string MineWarfareDisabledKey = "uadvp_mine_warfare_disabled";
     private const string SubmarineWarfareDisabledKey = "uadvp_submarine_warfare_disabled";
     private const string CampaignMapWraparoundEnabledKey = "uadvp_campaign_map_wraparound_enabled";
@@ -46,13 +56,25 @@ internal static class ModSettings
     private static BattleDamageMode? battleDamageMode;
     private static RealisticShellDamageMode? realisticShellDamageMode;
     private static AccuracyPenaltyMode? designAccuracyPenaltyMode;
+    private static BattleTurnMethod? battleReverseMethod;
+    private static bool? followSteerDampingEnabled;
+    private static bool? parallelStationAbreast;
+    private static bool? aiEconomyPrioritiesEnabled;
+    private static bool? shipResupplyOverrideEnabled;
+    private static bool? shipServiceRecordsEnabled;
     private static bool? majorShipTorpedoesRestricted;
-    private static bool? obsoleteDesignRetentionEnabled;
     private static bool? superstructureRefitsEnabled;
     private static bool? shipyardCapacityBalanced;
+    private static bool? multiYearShipyardRebuild;
+    private static bool? vanquishedSpoils;
+    private static bool? classNamingThemes;
+    private static LevelSetting? rebuildOverseasWeightLevel;
+    private static LevelSetting? vanquishedSpoilsShareLevel;
     private static bool? mineWarfareDisabled;
     private static bool? submarineWarfareDisabled;
-    private static bool? campaignMapWraparoundEnabled;
+    internal enum MapGeometryMode { Flat = 0, Disc = 1, Globe = 2 }
+    private const string MapGeometryKey = "uadvp_map_geometry_mode";
+    private static MapGeometryMode? mapGeometry;
     private static bool? earlyCanalOpeningsEnabled;
     private static TechnologySpreadMode? technologySpreadMode;
     private static bool? campaignEndDateEnabled;
@@ -66,6 +88,15 @@ internal static class ModSettings
         Div5 = 5,
         Div2 = 2,
         Vanilla = 1,
+    }
+
+    // Strategy the R/T battle reverse-course hotkeys use to turn a division 180.
+    internal enum BattleTurnMethod
+    {
+        Single180 = 1,         // immediate reorder + single MoveDir(~179 to the chosen side)
+        NinetySwapNinety = 2,  // MoveDir(90); swap column once the turn is initiated; finish MoveDir(180)
+        SplitRejoin = 3,       // split each ship to its own division, turn together, rejoin reversed once initiated
+        Rudder = 4,            // direct hard-over rudder per ship (experimental)
     }
 
     internal enum BattleSpottingRangeMode
@@ -95,6 +126,14 @@ internal static class ModSettings
         Vanilla = 0,
         Balanced = 1,
         Heavy = 2,
+    }
+
+    // Shared Low/Medium/High level for VP weighting options.
+    internal enum LevelSetting
+    {
+        Low = 0,
+        Medium = 1,
+        High = 2,
     }
 
     internal enum AiArmsRaceMode
@@ -206,6 +245,97 @@ internal static class ModSettings
         }
     }
 
+    internal static BattleTurnMethod BattleReverseMethod
+    {
+        get => battleReverseMethod ??= (BattleTurnMethod)PlayerPrefs.GetInt(BattleReverseMethodKey, (int)BattleTurnMethod.NinetySwapNinety);
+        set
+        {
+            battleReverseMethod = value;
+            PlayerPrefs.SetInt(BattleReverseMethodKey, (int)value);
+            PlayerPrefs.Save();
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: Battle Reverse-Course method {BattleTurnMethodText(value)}.");
+        }
+    }
+
+    internal static string BattleTurnMethodText(BattleTurnMethod mode) => mode switch
+    {
+        BattleTurnMethod.Single180 => "Single 180",
+        BattleTurnMethod.NinetySwapNinety => "90 / swap / 90",
+        BattleTurnMethod.SplitRejoin => "Split & rejoin",
+        BattleTurnMethod.Rudder => "Rudder",
+        _ => mode.ToString(),
+    };
+
+    // Experimental: damp the per-frame yaw rate of division FOLLOWERS to kill the S-pattern weave
+    // that fast / slow-rudder ships show while station-keeping. Off = vanilla follow steering.
+    internal static bool FollowSteerDampingEnabled
+    {
+        get => followSteerDampingEnabled ??= PlayerPrefs.GetInt(FollowSteerDampingEnabledKey, 0) != 0;
+        set
+        {
+            followSteerDampingEnabled = value;
+            PlayerPrefs.SetInt(FollowSteerDampingEnabledKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: Follow Steering Damping {(value ? "On" : "Off")}.");
+        }
+    }
+
+    // Offset preset for the station-keeping "Parallel" order: false = Astern (behind + disengaged
+    // side, a trailing screen), true = Abreast (beside the anchor on the beam, for parallel battle
+    // lines). (True within-division abreast formation isn't achievable — the native follow-steer
+    // bypasses managed patches — so abreast is delivered as this cross-division station-keep offset.)
+    internal static bool ParallelStationAbreast
+    {
+        get => parallelStationAbreast ??= PlayerPrefs.GetInt(ParallelStationAbreastKey, 0) != 0;
+        set
+        {
+            parallelStationAbreast = value;
+            PlayerPrefs.SetInt(ParallelStationAbreastKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: Parallel Station {(value ? "Abreast" : "Astern")}.");
+        }
+    }
+
+    // When on, AI majors fund their economy by the priority ladder: transport capacity up to 200%,
+    // then technology, then crew training (reallocating their own naval budget). Off = vanilla.
+    internal static bool AiEconomyPrioritiesEnabled
+    {
+        get => aiEconomyPrioritiesEnabled ??= PlayerPrefs.GetInt(AiEconomyPrioritiesKey, 1) != 0;
+        set
+        {
+            aiEconomyPrioritiesEnabled = value;
+            PlayerPrefs.SetInt(AiEconomyPrioritiesKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: AI Economy Priorities {(value ? "On" : "Vanilla")}.");
+        }
+    }
+
+    // Records each ship's battle history (damage dealt/received, kills, wrecks, survived) per campaign.
+    internal static bool ShipServiceRecordsEnabled
+    {
+        get => shipServiceRecordsEnabled ??= PlayerPrefs.GetInt(ShipServiceRecordsKey, 1) != 0;
+        set
+        {
+            shipServiceRecordsEnabled = value;
+            PlayerPrefs.SetInt(ShipServiceRecordsKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: Ship Service Records {(value ? "On" : "Off")}.");
+        }
+    }
+
+    // Debug override: enables manual refuel/rearm of the player's ships. Off (vanilla) by default.
+    internal static bool ShipResupplyOverrideEnabled
+    {
+        get => shipResupplyOverrideEnabled ??= PlayerPrefs.GetInt(ShipResupplyOverrideKey, 0) != 0;
+        set
+        {
+            shipResupplyOverrideEnabled = value;
+            PlayerPrefs.SetInt(ShipResupplyOverrideKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: Ship Resupply Override {(value ? "On" : "Off")}.");
+        }
+    }
+
     internal static bool MajorShipTorpedoesRestricted
     {
         get => majorShipTorpedoesRestricted ??= PlayerPrefs.GetInt(MajorShipTorpedoesRestrictedKey, 1) != 0;
@@ -260,19 +390,6 @@ internal static class ModSettings
         }
     }
 
-    internal static bool ObsoleteDesignRetentionEnabled
-    {
-        get => obsoleteDesignRetentionEnabled ??= PlayerPrefs.GetInt(ObsoleteDesignRetentionEnabledKey, 0) != 0;
-        set
-        {
-            obsoleteDesignRetentionEnabled = value;
-            PlayerPrefs.SetInt(ObsoleteDesignRetentionEnabledKey, value ? 1 : 0);
-            PlayerPrefs.Save();
-            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: Obsolete Tech & Hulls mode {(value ? "Retain" : "Vanilla")}.");
-            LogCurrentSettings("after Obsolete Tech & Hulls change");
-        }
-    }
-
     internal static bool SuperstructureRefitsEnabled
     {
         get => superstructureRefitsEnabled ??= PlayerPrefs.GetInt(SuperstructureRefitsEnabledKey, 0) != 0;
@@ -297,6 +414,214 @@ internal static class ModSettings
             Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: Suspend Dock Overcapacity mode {(value ? "Automatic" : "Manual")}.");
             LogCurrentSettings("after Suspend Dock Overcapacity change");
         }
+    }
+
+    // Balance: tie national shipyard (build) capacity to territory — on conquest the
+    // loser instantly loses a captured province's proportional share of its shipyard
+    // and the captor rebuilds it over a development-scaled number of years. Default on.
+    internal static bool MultiYearShipyardRebuildEnabled
+    {
+        get => multiYearShipyardRebuild ??= PlayerPrefs.GetInt(MultiYearShipyardRebuildKey, 1) != 0;
+        set
+        {
+            multiYearShipyardRebuild = value;
+            PlayerPrefs.SetInt(MultiYearShipyardRebuildKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: Multi-year shipyard rebuild {(value ? "On" : "Vanilla")}.");
+            LogCurrentSettings("after Multi-year shipyard rebuild change");
+        }
+    }
+
+    // Balance: on full conquest of a major, distribute its fleet + a cash indemnity to
+    // the victors (instead of vanilla scrapping the fleet and stranding the treasury).
+    // Default on.
+    internal static bool VanquishedSpoilsEnabled
+    {
+        get => vanquishedSpoils ??= PlayerPrefs.GetInt(VanquishedSpoilsKey, 1) != 0;
+        set
+        {
+            vanquishedSpoils = value;
+            PlayerPrefs.SetInt(VanquishedSpoilsKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: Vanquished spoils {(value ? "On" : "Vanilla")}.");
+            LogCurrentSettings("after Vanquished spoils change");
+        }
+    }
+
+    // Weighting: how much overseas/colonial territory counts toward shipbuilding
+    // capacity relative to home territory (1.0). Low=0.1, Medium=0.25, High=0.5.
+    internal static LevelSetting RebuildOverseasWeightLevel
+    {
+        get => rebuildOverseasWeightLevel ??= LoadLevel(RebuildOverseasWeightKey, LevelSetting.Medium);
+        set
+        {
+            rebuildOverseasWeightLevel = value;
+            PlayerPrefs.SetInt(RebuildOverseasWeightKey, (int)value);
+            PlayerPrefs.Save();
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: Overseas capacity weight {LevelText(value)}.");
+            LogCurrentSettings("after Overseas capacity weight change");
+        }
+    }
+
+    internal static double RebuildOverseasWeight => RebuildOverseasWeightLevel switch
+    {
+        LevelSetting.Low => 0.1,
+        LevelSetting.High => 0.5,
+        _ => 0.25,
+    };
+
+    // Weighting: how generous vanquished spoils are — Low keeps less (more scuttled,
+    // smaller indemnity), High keeps more.
+    internal static LevelSetting VanquishedSpoilsShareLevel
+    {
+        get => vanquishedSpoilsShareLevel ??= LoadLevel(VanquishedSpoilsShareKey, LevelSetting.Medium);
+        set
+        {
+            vanquishedSpoilsShareLevel = value;
+            PlayerPrefs.SetInt(VanquishedSpoilsShareKey, (int)value);
+            PlayerPrefs.Save();
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: Vanquished spoils share {LevelText(value)}.");
+            LogCurrentSettings("after Vanquished spoils share change");
+        }
+    }
+
+    internal static double VanquishedScuttleFraction => VanquishedSpoilsShareLevel switch
+    {
+        LevelSetting.Low => 0.6,
+        LevelSetting.High => 0.2,
+        _ => 0.4,
+    };
+
+    internal static double VanquishedCashSeizeFraction => VanquishedSpoilsShareLevel switch
+    {
+        LevelSetting.Low => 0.25,
+        LevelSetting.High => 0.75,
+        _ => 0.5,
+    };
+
+    // QoL: let the player assign a naming theme per ship class; new ships of that class
+    // draw from the theme pool instead of the generic per-nation list. Default on (no
+    // effect until a class is given a theme in the constructor).
+    internal static bool ClassNamingThemesEnabled
+    {
+        get => classNamingThemes ??= PlayerPrefs.GetInt(ClassNamingThemesKey, 1) != 0;
+        set
+        {
+            classNamingThemes = value;
+            PlayerPrefs.SetInt(ClassNamingThemesKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: Class naming themes {(value ? "On" : "Off")}.");
+            LogCurrentSettings("after Class naming themes change");
+        }
+    }
+
+    // Balance: raise total shipbuilding capacity for ALL players. Vanilla's home-port-derived
+    // limit is restrictively low (a single 40k-ton design eats a third of a ~120k cap), so
+    // multiply Player.ShipbuildingCapacityLimit. Default 2x; tunable or vanilla in options.
+    private const string ShipbuildingCapacityBoostKey = "uadvp_shipbuilding_capacity_boost";
+    private static ShipbuildingCapacityBoostMode? shipbuildingCapacityBoost;
+
+    internal enum ShipbuildingCapacityBoostMode
+    {
+        Vanilla = 100,
+        Plus50 = 150,
+        Double = 200,
+        Triple = 300,
+    }
+
+    internal static ShipbuildingCapacityBoostMode ShipbuildingCapacityBoost
+    {
+        get => shipbuildingCapacityBoost ??= LoadShipbuildingCapacityBoost();
+        set
+        {
+            shipbuildingCapacityBoost = value;
+            PlayerPrefs.SetInt(ShipbuildingCapacityBoostKey, (int)value);
+            PlayerPrefs.Save();
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: Shipbuilding Capacity {ShipbuildingCapacityBoostText(value)}.");
+            LogCurrentSettings("after Shipbuilding Capacity change");
+        }
+    }
+
+    internal static float ShipbuildingCapacityBoostMultiplier => (int)ShipbuildingCapacityBoost / 100f;
+
+    internal static string ShipbuildingCapacityBoostText(ShipbuildingCapacityBoostMode mode)
+        => mode == ShipbuildingCapacityBoostMode.Vanilla ? "Vanilla" : $"{(int)mode / 100f:0.##}x";
+
+    private static ShipbuildingCapacityBoostMode LoadShipbuildingCapacityBoost()
+    {
+        int stored = PlayerPrefs.GetInt(ShipbuildingCapacityBoostKey, (int)ShipbuildingCapacityBoostMode.Double);
+        return Enum.IsDefined(typeof(ShipbuildingCapacityBoostMode), stored)
+            ? (ShipbuildingCapacityBoostMode)stored
+            : ShipbuildingCapacityBoostMode.Double;
+    }
+
+    // Balance: at campaign battle end the VP-winner takes all surrendered ships (captures
+    // the loser's, recovers its own). Default on; vanilla leaves surrendered ships as losses.
+    private const string SurrenderedShipCaptureKey = "uadvp_surrendered_ship_capture";
+    private static bool? surrenderedShipCapture;
+
+    internal static bool SurrenderedShipCaptureEnabled
+    {
+        get => surrenderedShipCapture ??= PlayerPrefs.GetInt(SurrenderedShipCaptureKey, 1) != 0;
+        set
+        {
+            surrenderedShipCapture = value;
+            PlayerPrefs.SetInt(SurrenderedShipCaptureKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: Surrendered ship capture {(value ? "On" : "Vanilla")}.");
+            LogCurrentSettings("after Surrendered ship capture change");
+        }
+    }
+
+    // QoL: auto-apply the player's preferred PER-SHIP-TYPE settings at battle start so they
+    // don't redo them every fight (BBs want different ammo/behavior than DDs/TBs). The master
+    // toggle lives here; the per-type values live in GameData/BattleStartDefaults. Leave = don't
+    // touch that setting (vanilla).
+    internal enum BattleAmmoMode { Leave = 0, Auto = 1, AP = 2, HE = 3 }
+    internal enum BattleToggle { Leave = 0, On = 1, Off = 2 }
+    internal enum BattleFormation { Leave = 0, Column = 1, Line = 2 }
+
+    private const string BattleStartEnabledKey = "uadvp_battle_start_defaults";
+    private static bool? battleStartDefaults;
+
+    internal static bool BattleStartDefaultsEnabled
+    {
+        get => battleStartDefaults ??= PlayerPrefs.GetInt(BattleStartEnabledKey, 0) != 0;
+        set
+        {
+            battleStartDefaults = value;
+            PlayerPrefs.SetInt(BattleStartEnabledKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: Battle start defaults {(value ? "On" : "Off")}.");
+        }
+    }
+
+    private const string BattleSpeedSyncKey = "uadvp_battle_speed_sync";
+    private static bool? battleSpeedSync;
+
+    internal static bool BattleSpeedSyncEnabled
+    {
+        get => battleSpeedSync ??= PlayerPrefs.GetInt(BattleSpeedSyncKey, 1) != 0; // default On
+        set
+        {
+            battleSpeedSync = value;
+            PlayerPrefs.SetInt(BattleSpeedSyncKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: Division speed-sync {(value ? "On" : "Off")}.");
+        }
+    }
+
+    internal static string LevelText(LevelSetting level) => level switch
+    {
+        LevelSetting.Low => "Low",
+        LevelSetting.High => "High",
+        _ => "Medium",
+    };
+
+    private static LevelSetting LoadLevel(string key, LevelSetting fallback)
+    {
+        int stored = PlayerPrefs.GetInt(key, (int)fallback);
+        return Enum.IsDefined(typeof(LevelSetting), stored) ? (LevelSetting)stored : fallback;
     }
 
     internal static bool MineWarfareDisabled
@@ -325,18 +650,31 @@ internal static class ModSettings
         }
     }
 
-    internal static bool CampaignMapWraparoundEnabled
+    // Tri-state campaign map geometry: Flat (vanilla), Disc (Pacific-seam wrap), Globe (3D sphere skin).
+    internal static MapGeometryMode MapGeometry
     {
-        get => campaignMapWraparoundEnabled ??= PlayerPrefs.GetInt(CampaignMapWraparoundEnabledKey, 0) != 0;
+        get => mapGeometry ??= LoadMapGeometry();
         set
         {
-            campaignMapWraparoundEnabled = value;
-            PlayerPrefs.SetInt(CampaignMapWraparoundEnabledKey, value ? 1 : 0);
+            mapGeometry = value;
+            PlayerPrefs.SetInt(MapGeometryKey, (int)value);
             PlayerPrefs.Save();
-            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: Map Geometry {(value ? "Disc World" : "Flat Earth")}.");
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: Map Geometry {value}.");
             LogCurrentSettings("after Map Geometry change");
         }
     }
+
+    private static MapGeometryMode LoadMapGeometry()
+    {
+        if (PlayerPrefs.HasKey(MapGeometryKey))
+            return (MapGeometryMode)PlayerPrefs.GetInt(MapGeometryKey);
+        // Migrate the previous Disc/Flat bool key.
+        return PlayerPrefs.GetInt(CampaignMapWraparoundEnabledKey, 0) != 0 ? MapGeometryMode.Disc : MapGeometryMode.Flat;
+    }
+
+    // Back-compat shims so existing Disc reads (CampaignMapWrapVisualPatch) keep compiling unchanged.
+    internal static bool CampaignMapWraparoundEnabled => MapGeometry == MapGeometryMode.Disc;
+    internal static bool CampaignGlobeEnabled => MapGeometry == MapGeometryMode.Globe;
 
     internal static bool EarlyCanalOpeningsEnabled
     {
@@ -616,9 +954,8 @@ internal static class ModSettings
            $"Mine Warfare={MineWarfareModeText(MineWarfareDisabled)}; " +
            $"Submarine Warfare={SubmarineWarfareModeText(SubmarineWarfareDisabled)}; " +
            $"CA+ Torpedoes={MajorShipTorpedoesModeText(MajorShipTorpedoesRestricted)}; " +
-           $"Obsolete Tech & Hulls={ObsoleteDesignRetentionModeText(ObsoleteDesignRetentionEnabled)}; " +
            $"Superstructure Compatibility={SuperstructureRefitsModeText(SuperstructureRefitsEnabled)}; " +
-           $"Map Geometry={CampaignMapModeText(CampaignMapWraparoundEnabled)}; " +
+           $"Map Geometry={CampaignMapModeText(MapGeometry)}; " +
            $"Experimental Nation Ship Paints={ExperimentalNationShipPaintsModeText(ExperimentalNationShipPaintsEnabled)}; " +
            $"Battle Runtime Diagnostics={BattleRuntimeDiagnosticsModeText(BattleRuntimeDiagnosticsEnabled)}";
 
@@ -643,14 +980,11 @@ internal static class ModSettings
     internal static string MajorShipTorpedoesModeText(bool restricted)
         => restricted ? "Disallowed" : "Vanilla";
 
-    internal static string ObsoleteDesignRetentionModeText(bool enabled)
-        => enabled ? "Retain" : "Vanilla";
-
     internal static string SuperstructureRefitsModeText(bool enabled)
         => enabled ? "Unrestricted" : "Vanilla";
 
-    internal static string CampaignMapModeText(bool enabled)
-        => enabled ? "Disc World" : "Flat Earth";
+    internal static string CampaignMapModeText(MapGeometryMode mode)
+        => mode switch { MapGeometryMode.Disc => "Disc World", MapGeometryMode.Globe => "Globe", _ => "Flat Earth" };
 
     internal static string ExperimentalNationShipPaintsModeText(bool enabled)
         => enabled ? "On" : "Off";
@@ -760,4 +1094,51 @@ internal static class ModSettings
         string normalized = new(chars, 0, count);
         return normalized.Trim('_').Length == 0 ? "unknown" : normalized.Trim('_');
     }
+
+    // ===== Buy Ships from an Allied Major (default OFF) =====
+    private const string AllyShipPurchaseKey = "uadvp_ally_ship_purchase";
+    private static bool? allyShipPurchase;
+
+    internal static bool AllyShipPurchaseEnabled
+    {
+        get => allyShipPurchase ??= PlayerPrefs.GetInt(AllyShipPurchaseKey, 0) != 0;
+        set
+        {
+            allyShipPurchase = value;
+            PlayerPrefs.SetInt(AllyShipPurchaseKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: Ally Ship Purchase {(value ? "On" : "Off")}.");
+        }
+    }
+
+    // Premium band the ally charges over the design's build cost (Low/Med/High); each order's roll is
+    // further scaled up by the seller's dock pressure. Medium ~= +50%..+120%.
+    private const string AllyPremiumLevelKey = "uadvp_ally_premium_level";
+    private static LevelSetting? allyPremiumLevel;
+
+    internal static LevelSetting AllyPremiumLevel
+    {
+        get => allyPremiumLevel ??= LoadLevel(AllyPremiumLevelKey, LevelSetting.Medium);
+        set
+        {
+            allyPremiumLevel = value;
+            PlayerPrefs.SetInt(AllyPremiumLevelKey, (int)value);
+            PlayerPrefs.Save();
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: Ally Build Premium {LevelText(value)}.");
+        }
+    }
+
+    internal static double AllyPremiumMinFraction => AllyPremiumLevel switch
+    {
+        LevelSetting.Low => 0.30,
+        LevelSetting.High => 0.70,
+        _ => 0.50,
+    };
+
+    internal static double AllyPremiumMaxFraction => AllyPremiumLevel switch
+    {
+        LevelSetting.Low => 0.80,
+        LevelSetting.High => 1.60,
+        _ => 1.20,
+    };
 }

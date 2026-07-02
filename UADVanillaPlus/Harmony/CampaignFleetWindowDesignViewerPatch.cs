@@ -81,6 +81,9 @@ internal static class CampaignFleetWindowDesignViewerPatch
         if (designViewerToolbar != null)
             designViewerToolbar.SetActive(false);
 
+        if (designViewerPurchaseButton != null)
+            designViewerPurchaseButton.SetActive(false);
+
         SelectedViewedDesign = null;
         DesignPowerTextCache.Clear();
         RestoreDesignViewerContentLayout(G.ui?.FleetWindow);
@@ -1141,6 +1144,162 @@ internal static class CampaignFleetWindowDesignViewerPatch
         return null;
     }
 
+    // ===== Buy-from-ally: a "Buy Ship" action on an ALLIED nation's design viewer =====
+    // When you browse an allied major's designs (clicked their flag), this clone of the Build button
+    // appears (named "UADVP_DesignViewer*" so it survives SetForeignDesignButtonsInteractable's disable
+    // pass) and lets you commission that class from them. Clicking opens a confirm dialog with the
+    // price + premium; the native "View" button is also re-enabled so you can inspect the ally's ship.
+    private const string DesignViewerPurchaseButtonName = "UADVP_DesignViewerPurchase";
+    private static GameObject? designViewerPurchaseButton;
+    private static TMP_Text? designViewerPurchaseLabel;
+
+    private static void EnsureDesignViewerPurchaseButton(CampaignFleetWindow window)
+    {
+        if (window?.DesignButtonsRoot == null || window.BuildShip == null)
+            return;
+
+        bool stale = designViewerPurchaseButton == null
+            || designViewerPurchaseButton.transform == null
+            || designViewerPurchaseButton.transform.parent != window.DesignButtonsRoot.transform;
+        if (!stale)
+            return;
+
+        GameObject clone = UnityEngine.Object.Instantiate(window.BuildShip.gameObject, window.DesignButtonsRoot.transform);
+        clone.name = DesignViewerPurchaseButtonName; // MUST start with "UADVP_DesignViewer" (exemption in SetForeignDesignButtonsInteractable)
+        clone.transform.SetAsLastSibling();
+
+        designViewerPurchaseLabel = clone.GetComponentInChildren<TMP_Text>(true);
+        if (designViewerPurchaseLabel != null)
+            RemoveComponent<LocalizeText>(designViewerPurchaseLabel.gameObject); // else localization overwrites our text
+
+        Button button = clone.GetComponent<Button>();
+        if (button == null)
+            button = clone.AddComponent<Button>();
+        button.onClick.RemoveAllListeners();
+        button.onClick.AddListener(new System.Action(() => OnDesignViewerPurchaseClicked(window)));
+
+        designViewerPurchaseButton = clone;
+    }
+
+    private static void UpdateDesignViewerPurchaseButton(CampaignFleetWindow window)
+    {
+        try
+        {
+            if (!ModSettings.AllyShipPurchaseEnabled)
+            {
+                if (designViewerPurchaseButton != null)
+                    designViewerPurchaseButton.SetActive(false);
+                return;
+            }
+
+            EnsureDesignViewerPurchaseButton(window);
+            if (designViewerPurchaseButton == null)
+                return;
+
+            Player buyer = ExtraGameData.MainPlayer();
+            Player seller = GetCurrentDesignViewerPlayer();
+            bool allied = IsViewingForeignDesigns
+                && buyer != null && seller != null
+                && seller.isMajor && seller.isAi
+                && CampaignInvasionActions.IsAllied(buyer, seller);
+
+            designViewerPurchaseButton.SetActive(allied);
+            if (!allied)
+                return;
+
+            Ship selected = GetSelectedViewedDesign(window);
+            bool buyable = selected != null && !selected.isErased && (selected.isDesign || selected.isRefitDesign);
+
+            Button button = designViewerPurchaseButton.GetComponent<Button>();
+            if (button != null)
+                button.interactable = buyable;
+
+            // Allies are inspectable: re-enable the native "View" button the disable pass greyed out.
+            if (window.DesignView != null)
+                window.DesignView.interactable = selected != null;
+
+            if (designViewerPurchaseLabel != null)
+                designViewerPurchaseLabel.text = "Buy Ship";
+        }
+        catch (System.Exception ex)
+        {
+            Melon<UADVanillaPlusMod>.Logger.Warning($"UADVP design viewer purchase button update failed. {ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+    private static void OnDesignViewerPurchaseClicked(CampaignFleetWindow window)
+    {
+        try
+        {
+            if (!ModSettings.AllyShipPurchaseEnabled)
+                return;
+
+            Player buyer = ExtraGameData.MainPlayer();
+            Player seller = GetCurrentDesignViewerPlayer();
+            Ship design = GetSelectedViewedDesign(window);
+            if (buyer == null || seller == null || design == null
+                || !IsViewingForeignDesigns
+                || !CampaignInvasionActions.IsAllied(buyer, seller))
+                return;
+
+            AlliedShipPurchase.Quote q = AlliedShipPurchase.GetQuote(seller, design);
+            string cls = DesignDisplayName(design);
+            string nation = SellerDisplayName(seller);
+
+            // Quantity cap: how many deposits you can afford, bounded by a sane per-order limit.
+            // We deliberately do NOT cap by the seller's free dock — offloading onto their (possibly
+            // overbooked) yard is the point; the premium + longer build time already price that in.
+            float cash = buyer.cash;
+            int maxByCash = q.Deposit > 1f ? (int)Math.Floor(cash / q.Deposit) : 99;
+            int willing = AlliedShipPurchase.WillingnessCap(seller, design); // ally's appetite (random + free capacity)
+            int maxCount = Math.Max(1, Math.Min(Math.Min(99, maxByCash), willing));
+
+            Player sellerC = seller;
+            Ship designC = design;
+            CampaignFleetWindow windowC = window;
+            AllyBuyCountDialog.Open(cls, nation, maxCount, q, new System.Action<int>(n =>
+            {
+                try
+                {
+                    var orders = AlliedShipPurchase.PlaceOrder(sellerC, designC, n, q);
+                    if (orders.Count > 0)
+                    {
+                        windowC.Refresh(true);
+                        // "pick the delivery port when ordering": apply one chosen port to the whole batch.
+                        CampaignFleetIncomingPurchasesPatch.OpenPortPickerForOrders(windowC, orders);
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    Melon<UADVanillaPlusMod>.Logger.Warning($"UADVP purchase confirm failed. {ex.GetType().Name}: {ex.Message}");
+                }
+            }));
+        }
+        catch (System.Exception ex)
+        {
+            Melon<UADVanillaPlusMod>.Logger.Warning($"UADVP design viewer purchase click failed. {ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+    private static string DesignDisplayName(Ship design)
+    {
+        try { string n = design.Name(false, false, false, false, true); if (!string.IsNullOrEmpty(n)) return n; } catch { }
+        try { return design.shipType?.name ?? "ship"; } catch { return "ship"; }
+    }
+
+    private static string SellerDisplayName(Player seller)
+    {
+        try { return seller.Name(false) ?? "ally"; } catch { return "ally"; }
+    }
+
+    private static string Money(float v)
+    {
+        float a = v < 0f ? -v : v;
+        if (a >= 1e9f) return $"${v / 1e9f:0.0}B";
+        if (a >= 1e6f) return $"${v / 1e6f:0.0}M";
+        return $"${v:0}";
+    }
+
     private static void InstallDesignDeleteButtonHandler(CampaignFleetWindow window, bool allowActions, Ship capturedTarget = null)
     {
         // The rebuilt design list can desync vanilla's selectedElements target.
@@ -1391,6 +1550,7 @@ internal static class CampaignFleetWindowDesignViewerPatch
         UpdateDesignSelectionActions(window, GetCurrentDesignViewerPlayer(), ship, allowActions);
         RebuildDesignRefitButton(window, allowActions);
         InstallDesignDeleteButtonHandler(window, allowActions, ship);
+        UpdateDesignViewerPurchaseButton(window);
     }
 
     private static void RebuildDesignRefitButton(CampaignFleetWindow window, bool allowActions)
@@ -1513,6 +1673,9 @@ internal static class CampaignFleetWindowDesignViewerPatch
 
             if (isDesign && !IsViewingForeignDesigns)
                 DisableDesignSelectionActionsIfNothingSelected(__instance);
+
+            if (isDesign)
+                UpdateDesignViewerPurchaseButton(__instance);
         }
         catch (Exception ex)
         {

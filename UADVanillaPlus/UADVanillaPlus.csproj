@@ -70,6 +70,11 @@
     </Reference>
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Ship-naming theme name pool, embedded so there is no loose config file. -->
+    <EmbeddedResource Include="ShipNames\ship_names.csv" />
+  </ItemGroup>
+
   <!--
     Kill any running UAD instance before the DLL copy so the new mod can be
     written. The cmd wrapper redirects both stdout and stderr to nul so
