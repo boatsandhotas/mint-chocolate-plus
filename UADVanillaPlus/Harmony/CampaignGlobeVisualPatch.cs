@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using HarmonyLib;
 using Il2Cpp;
+using Il2CppTMPro;
 using MelonLoader;
 using UADVanillaPlus.GameData;
 using UnityEngine;
@@ -69,8 +70,14 @@ internal static class CampaignGlobeVisualPatch
     private static GameObject? battleArrowObj;    // our drawn battle-arrow line mesh
     private static int lastBattleCount = -1;
     private static int battleFrame;
+    private static bool battleArrowProbed;        // one-shot: log battle-line geometry to diagnose stubby shafts
+    private static GameObject? reinforceCircleObj;       // cyan border rings marking committed reinforcement coasts
+    private static GameObject? reinforceFillObj;         // translucent tinted fill inside those rings
+    internal static ProvinceBattle? CurrentHoverBattle;  // the battle under the cursor on the globe (for commit)
+    private static int lastReinforceClickFrame = -1;     // de-dupe the click-to-reinforce toggle within a frame
+    private static readonly Color ReinforceCircleColor = new(0.25f, 0.7f, 1f, 1f);       // naval cyan (border)
+    private static readonly Color ReinforceFillColor = new(0.25f, 0.7f, 1f, 0.18f);      // translucent tinted fill
     private static int battleDiagFrame; // throttle for the battle-flags/arrows state diagnostic
-    private static int routeLogFrame;   // throttle for the route-reprojection diagnostic
     private static int flatRouteFrame;  // throttle for the catch-all flat-route reprojection pass
     private static readonly Color BattleArrowColor = new(0.88f, 0.38f, 0.32f, 1f); // game invasion-arrow salmon-red
     private static readonly Dictionary<int, Vector3[]> battleLineFlat = new(); // cached flat verts per battle line (persistent: avoids re-caching sphere pos as flat)
@@ -78,6 +85,7 @@ internal static class CampaignGlobeVisualPatch
     private static CampaignProvinceBattlePopupUI? battlePopup; // the native land-battle tooltip we drive on globe hover
     private static string battleHoverShown = "";  // id (flag-name suffix) currently shown, "" = none
     private static string lastHoverLogged = "\x01"; // last hover-id we logged (log on change, to diagnose "same battle")
+    private static int battleShowIdStrategy = -1;   // cached winning id-form index for Show()/GetBattleFromUi (-1 = unprobed)
     private static int markerScaleLog;          // limits the native-scale diagnostic
     private static int lastEnsureFrame = -100;   // throttle the self-heal rebuild
     private static bool circleProbed;            // one-shot circle-root diagnostic
@@ -190,7 +198,7 @@ internal static class CampaignGlobeVisualPatch
             // across map in/outs (we leave them on the sphere), so clearing made re-entry cache the sphere pos
             // as "flat" and reproject it again -> labels clumped/compounded. Persistent cache = recorded once.
             zoneRingObj = null; lastZoneCount = -1; zoneColorLogged = false; // ring mesh is a GlobeRoot child (destroyed with it); force rebuild
-            battleArrowObj = null; lastBattleCount = -1; provinceBattlesRoot = null; // re-find + rebuild battle arrows
+            battleArrowObj = null; reinforceCircleObj = null; reinforceFillObj = null; lastBattleCount = -1; provinceBattlesRoot = null; // re-find + rebuild battle arrows
             battleHoverShown = ""; lastHoverLogged = "\x01"; // clear globe battle-hover state + re-arm the diagnostic
             fillColorFrame = Time.frameCount + 120;
             circleProbed = false;
@@ -790,6 +798,8 @@ internal static class CampaignGlobeVisualPatch
             L.Msg("=== UADVP_GLOBE STATE ===");
             Vector3 gc = GlobeRoot != null ? GlobeRoot.transform.position : Vector3.zero;
             L.Msg($"globe root={(GlobeRoot != null)} radius={radius:0} center={gc} landLift={LandLiftFactor} genBorders={DrawGeneratedBorders}");
+            DumpZoneChildren("denial", denialZoneRoot);      // F9 while looking at a port with mines -> find the minefield objects
+            DumpZoneChildren("minesweep", mineSweepRoot);
 
             int landCount = 0; string cols = "";
             Transform? borderMesh = null;
@@ -1392,7 +1402,7 @@ internal static class CampaignGlobeVisualPatch
             BuildBattleArrows(); // our own surface-conforming ribbons (native LineRenderer can't lie flat on the sphere)
             ReprojectBattleFlags(); // native attacker flag at each arrow's origin (the tail)
             HandleBattleHover(); // drive the native land-battle tooltip when hovering a battle on the globe
-            if (Time.frameCount >= flatRouteFrame) { flatRouteFrame = Time.frameCount + 15; ReprojectFlatRoutes(); } // catch routes SetRoutePath missed (multi-select change-port)
+            if (Time.frameCount >= flatRouteFrame) { flatRouteFrame = Time.frameCount + 3; ReprojectFlatRoutes(); } // catch flat routes fast (fingerprint makes reruns cheap)
             if (Time.frameCount >= fillColorFrame) { fillColorFrame = Time.frameCount + 120; UpdateFillColors(); } // recolor on ownership change
         }
         catch { }
@@ -1463,8 +1473,9 @@ internal static class CampaignGlobeVisualPatch
         // Group ring segments by the zone's OWN color so each ring inherits its zone's tint (an invasion zone
         // colored like its diamond -> the ring matches; mine/denial zones keep their color).
         var byColor = new Dictionary<Color, List<Vector3>>();
-        AddZoneRings(denialZoneRoot, byColor);
-        AddZoneRings(mineSweepRoot, byColor);
+        var byColorFill = new Dictionary<Color, FillBucket>();
+        AddZoneRings(denialZoneRoot, byColor, byColorFill);
+        AddZoneRings(mineSweepRoot, byColor, byColorFill);
 
         if (zoneRingObj != null) UnityEngine.Object.Destroy(zoneRingObj);
         zoneRingObj = null;
@@ -1472,7 +1483,25 @@ internal static class CampaignGlobeVisualPatch
         zoneRingObj = new GameObject("UADVP_GlobeZoneRings");
         zoneRingObj.layer = GlobeRoot.layer;
         zoneRingObj.transform.SetParent(GlobeRoot.transform, false);
-        if (!zoneColorLogged) { zoneColorLogged = true; foreach (KeyValuePair<Color, List<Vector3>> kv in byColor) Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP_GLOBE zone-ring color=({kv.Key.r:0.00},{kv.Key.g:0.00},{kv.Key.b:0.00}) segs={kv.Value.Count / 2}"); }
+        if (!zoneColorLogged)
+        {
+            zoneColorLogged = true;
+            foreach (KeyValuePair<Color, List<Vector3>> kv in byColor) Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP_GLOBE zone-ring color=({kv.Key.r:0.00},{kv.Key.g:0.00},{kv.Key.b:0.00}) segs={kv.Value.Count / 2}");
+            // Mine-zone diagnostic: log the zone roots' contents + any scene object named 'mine' so we can find
+            // the port minefields the user can't see on the globe (they may live under a root we don't draw).
+            try { Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP_GLOBE zone roots: denial={CircleInfo(denialZoneRoot)} minesweep={CircleInfo(mineSweepRoot)} events={CircleInfo(eventsRoot)}"); } catch { }
+            DumpZoneChildren("denial", denialZoneRoot);
+            DumpZoneChildren("minesweep", mineSweepRoot);
+        }
+        // translucent fill inside each zone (invasion rings -> red fill), parented under the ring object so it
+        // rebuilds/cleans up together.
+        foreach (KeyValuePair<Color, FillBucket> kv in byColorFill)
+        {
+            FillBucket fb = kv.Value;
+            if (fb.V.Count < 3) continue;
+            GameObject? fgo = BuildFillObject(fb.V, fb.T, new Color(kv.Key.r, kv.Key.g, kv.Key.b, 0.16f), "UADVP_GlobeZoneFill");
+            if (fgo != null) fgo.transform.SetParent(zoneRingObj.transform, false);
+        }
         foreach (KeyValuePair<Color, List<Vector3>> kv in byColor)
         {
             List<Vector3> vlist = kv.Value;
@@ -1487,12 +1516,15 @@ internal static class CampaignGlobeVisualPatch
             go.layer = GlobeRoot.layer;
             go.transform.SetParent(zoneRingObj.transform, false);
             go.AddComponent<MeshFilter>().mesh = mesh;
-            go.AddComponent<MeshRenderer>().sharedMaterial = CreateUnlitColorMaterial(kv.Key, "UADVP_GlobeZoneRing_Mat");
+            Material rmat = CreateUnlitColorMaterial(kv.Key, "UADVP_GlobeZoneRing_Mat");
+            try { rmat.renderQueue = 3001; } catch { } // on top of the coplanar fill (3000)
+            go.AddComponent<MeshRenderer>().sharedMaterial = rmat;
         }
     }
 
-    // Adds each active zone's ring (sampled center+radius, reprojected) into the per-color segment lists.
-    private static void AddZoneRings(Transform? root, Dictionary<Color, List<Vector3>> byColor)
+    // Adds each active zone's ring (sampled center+radius, reprojected) into the per-color segment lists,
+    // plus a translucent fill disc into byColorFill.
+    private static void AddZoneRings(Transform? root, Dictionary<Color, List<Vector3>> byColor, Dictionary<Color, FillBucket> byColorFill)
     {
         if (root == null || GlobeRoot == null) return;
         Vector3 c = GlobeRoot.transform.position;
@@ -1515,19 +1547,49 @@ internal static class CampaignGlobeVisualPatch
                 col = new Color(Mathf.Round(col.r * 16f) / 16f, Mathf.Round(col.g * 16f) / 16f, Mathf.Round(col.b * 16f) / 16f, 1f);
                 if (!byColor.TryGetValue(col, out List<Vector3>? list)) { list = new List<Vector3>(); byColor[col] = list; }
 
+                // translucent fill disc (same tint) reprojected from the flat center + radius, COPLANAR with the
+                // ring below (both at +0.002; the ring draws on top via renderQueue).
+                if (!byColorFill.TryGetValue(col, out FillBucket? fb)) { fb = new FillBucket(); byColorFill[col] = fb; }
+                AddDiscFlat(fb.V, fb.T, c, center, rad, LandLiftFactor + 0.002f);
+
                 const int N = 48;
                 Vector3 prev = default;
                 for (int s = 0; s <= N; s++)
                 {
                     float a = s / (float)N * Mathf.PI * 2f;
                     Vector3 rim = new(center.x + Mathf.Cos(a) * rad, center.y, center.z + Mathf.Sin(a) * rad);
-                    Vector3 sp = c + WorldToSphereLocal(rim, radius * (LandLiftFactor + 0.006f));
+                    Vector3 sp = c + WorldToSphereLocal(rim, radius * (LandLiftFactor + 0.002f));
                     if (s > 0) { list.Add(prev); list.Add(sp); }
                     prev = sp;
                 }
             }
             catch { }
         }
+    }
+
+    // One-shot diagnostic: log a zone root's ACTIVE children (name / renderer / bounds-radius / color) so we
+    // can see whether the port minefields are present + active + big enough (AddZoneRings skips rad<0.05).
+    private static void DumpZoneChildren(string tag, Transform? root)
+    {
+        if (root == null) { Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP_GLOBE {tag}-children: root null"); return; }
+        try
+        {
+            int active = 0, shown = 0;
+            for (int i = 0; i < root.childCount; i++)
+            {
+                Transform ch = root.GetChild(i);
+                if (!ch.gameObject.activeSelf) continue;
+                active++;
+                if (shown >= 16) continue;
+                shown++;
+                Renderer r = null!; try { r = ch.GetComponentInChildren<Renderer>(); } catch { }
+                float rad = -1f; Color mc = default;
+                if (r != null) { try { Bounds b = r.bounds; rad = Mathf.Max(b.extents.x, b.extents.z); } catch { } try { if (r.sharedMaterial != null) mc = r.sharedMaterial.color; } catch { } }
+                Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP_GLOBE {tag}-child '{ch.gameObject.name}' rend={(r != null ? r.GetType().Name : "none")} rad={rad:0.000} col=({mc.r:0.00},{mc.g:0.00},{mc.b:0.00},{mc.a:0.00})");
+            }
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP_GLOBE {tag}-children: active={active}/{root.childCount}");
+        }
+        catch (Exception ex) { Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP_GLOBE {tag}-children err {ex.GetType().Name}: {ex.Message}"); }
     }
 
     private static void EnsureProvinceBattlesRoot()
@@ -1722,19 +1784,59 @@ internal static class CampaignGlobeVisualPatch
             }
             if (hoverId.Length > 0)
             {
-                // hoverId = the flag-name suffix (FANCY display key, e.g. "Serbia_Montenegro" — matches the Battles
-                // dict key). But Show()/GetBattleFromUi want the ALL-LOWERCASE province-id form ("serbia_montenegro").
-                // Resolve the battle by the fancy key, then rebuild the id from the province .Id (lowercase);
-                // fall back to just lowercasing the suffix if the battle isn't found.
+                // hoverId = the flag-name suffix (== the Battles dict key, e.g. "Serbia_Montenegro"). Show()
+                // resolves its battle via GetBattleFromUi(id) internally, but the exact id FORM it wants has
+                // been a moving target (raw fancy? lowercased? province-id?), and the live log shows the
+                // lowercased form now leaves shownFor='' for EVERY battle (empty popup). Instead of hard-coding
+                // a form, PROBE the public read-only GetBattleFromUi with each candidate and use whichever
+                // actually resolves — that is exactly the id Show() will accept. The winning form is cached.
                 ProvinceBattle pb = null!;
                 try { foreach (var kv in ProvinceBattleManager.Battles) { if (kv.Key == hoverId) { pb = kv.Value; break; } } } catch { }
-                // Show() wants the fancy Battles key LOWERCASED with spaces->underscores. The province .Id form
-                // was wrong for some (e.g. "Western Poland" has .Id "poland" -> "poland_eastern_poland" != key).
-                string showId = hoverId.ToLowerInvariant().Replace(' ', '_');
+                CurrentHoverBattle = pb; // so Ctrl+Shift+N reinforces the battle UNDER THE CURSOR, not the first one
+
+                // Click-to-reinforce: a clean left-click (no drag) over a battle YOU'RE in toggles naval
+                // reinforcement. Detected HERE (frame-based, reading Input directly) rather than via
+                // CampaignMap.OnClickDetected, because a click ON the battle marker is consumed by the UI
+                // EventSystem and never reaches OnClickDetected — that was why "click to reinforce" did nothing.
+                // Frame-guarded so a double RuntimeUpdate in one frame can't toggle twice; dragOccurred stays
+                // set for the whole press, so a drag-release (globe rotate) that ends over a battle won't fire.
+                if (pb != null && Input.GetMouseButtonUp(0) && !dragOccurred
+                    && Time.frameCount != lastReinforceClickFrame
+                    && ModSettings.NavalReinforcementEnabled
+                    && LandInvasionSupport.PlayerSideInBattle(pb) != null)
+                {
+                    lastReinforceClickFrame = Time.frameCount;
+                    try
+                    {
+                        bool added = LandInvasionSupport.ToggleCommitment(pb);
+                        InvalidateBattleArrows();               // (re)draw the reinforcement circle now
+                        try { AnnotateReinforceOnPopup(pb); } catch { } // refresh the popup label immediately
+                        Melon<UADVanillaPlusMod>.Logger.Msg(
+                            $"UADVP_REINFORCE click-toggle -> {(added ? "reinforcing" : "stopped")} " +
+                            $"{(pb.DefenderProvince != null ? pb.DefenderProvince.Id : "?")}; " +
+                            $"coast tonnage={LandInvasionSupport.MeasureTonnage(pb):0} troops=+{LandInvasionSupport.SoldiersFor(pb):0}");
+                    }
+                    catch (Exception ex) { Melon<UADVanillaPlusMod>.Logger.Warning($"UADVP_REINFORCE click err {ex.GetType().Name}: {ex.Message}"); }
+                }
+
+                // Native Show() gives the game's own formatting when we can find the id it wants, but the live
+                // log shows GetBattleFromUi resolves NO id form (strat=-1) for ANY battle -> Show() renders the
+                // panel blank. So: try Show() only if a form actually resolved; otherwise POPULATE the popup's
+                // text fields OURSELVES from the ProvinceBattle we already picked. The popup is visible-but-blank
+                // today (Update only repositions, it doesn't hide on empty shownFor), so manually-set text sticks.
+                string showId = ResolveBattleShowId(hoverId, pb, out int usedStrategy);
+                bool nativeShown = false, manual = false;
                 try
                 {
                     battlePopup.gameObject.SetActive(true);         // Show() may not self-activate
-                    battlePopup.Show(showId);
+                    if (usedStrategy >= 0) battlePopup.Show(showId);
+                    try { nativeShown = !string.IsNullOrEmpty(battlePopup.shownFor); } catch { }
+                    if (!nativeShown && pb != null) { PopulateBattlePopupManually(battlePopup, pb); manual = true; }
+                    // Append a reinforcement suffix to the attacker's force line: committed -> "(+X% navy)",
+                    // reinforceable-but-not-committed -> a "[Ctrl+Shift+N]" prompt. Strip any prior suffix first
+                    // (from the first '(' or '[' — native force values are only digits/commas) so it can't
+                    // accumulate; native Show() doesn't reset the text every frame.
+                    if (pb != null) { try { AnnotateReinforceOnPopup(pb); } catch { } }
                     try { RectTransform lr = battlePopup.LayoutRoot; if (lr != null) lr.position = mouse; } catch { } // pin to cursor
                 }
                 catch { }
@@ -1742,16 +1844,232 @@ internal static class CampaignGlobeVisualPatch
                 if (hoverId != lastHoverLogged)
                 {
                     lastHoverLogged = hoverId;
-                    Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP_GLOBE battle-hover suffix='{hoverId}' pbFound={(pb != null)} showId='{showId}' shownFor='{battlePopup.shownFor}'");
+                    string flagName = "", getName = ""; float rawAdv = 0f;
+                    try { if (pb != null && pb.Flag != null) flagName = pb.Flag.name; } catch { }
+                    try { if (pb != null) getName = ProvinceBattleManager.GetName(pb); } catch { }
+                    try { if (pb != null) rawAdv = pb.Advance; } catch { }
+                    Melon<UADVanillaPlusMod>.Logger.Msg(
+                        $"UADVP_GLOBE battle-hover suffix='{hoverId}' pbFound={(pb != null)} strat={usedStrategy} " +
+                        $"nativeShown={nativeShown} manual={manual} rawAdvance={rawAdv:0.000} flag='{flagName}' getName='{getName}'" +
+                        BattleDebugString(pb));
                 }
             }
             else if (battleHoverShown.Length > 0)
             {
                 try { battlePopup.Hide(); } catch { }
                 battleHoverShown = "";
+                CurrentHoverBattle = null;
             }
         }
         catch { }
+    }
+
+    // Find the id FORM that GetBattleFromUi actually resolves (== what Show() wants). Reuses the cached
+    // winning strategy if it still resolves, else probes every candidate and caches the first that resolves.
+    // usedStrategy = the candidate index chosen (-1 = none resolved; falls back to the old lowercased form).
+    private static string ResolveBattleShowId(string hoverId, ProvinceBattle? pb, out int usedStrategy)
+    {
+        if (battleShowIdStrategy >= 0)
+        {
+            string cached = BattleShowIdCandidate(battleShowIdStrategy, hoverId, pb);
+            if (cached.Length > 0)
+            {
+                bool ok = false;
+                try { ok = ProvinceBattleManager.GetBattleFromUi(cached) != null; } catch { }
+                if (ok) { usedStrategy = battleShowIdStrategy; return cached; }
+                battleShowIdStrategy = -1; // cached form stopped resolving — re-probe
+            }
+        }
+        for (int s = 0; s < BattleShowIdStrategyCount; s++)
+        {
+            string cand = BattleShowIdCandidate(s, hoverId, pb);
+            if (cand.Length == 0) continue;
+            bool resolves = false;
+            try { resolves = ProvinceBattleManager.GetBattleFromUi(cand) != null; } catch { }
+            if (resolves) { battleShowIdStrategy = s; usedStrategy = s; return cand; }
+        }
+        usedStrategy = -1;
+        return hoverId.ToLowerInvariant().Replace(' ', '_');
+    }
+
+    private const int BattleShowIdStrategyCount = 6;
+
+    // Candidate id forms Show()/GetBattleFromUi might key on. Returns "" when a candidate can't be built
+    // (e.g. pb null, or a province missing) so the probe skips it.
+    private static string BattleShowIdCandidate(int strategy, string hoverId, ProvinceBattle? pb)
+    {
+        try
+        {
+            switch (strategy)
+            {
+                case 0: return "province_battle_line_" + hoverId;             // CONFIRMED: the id native passes to Show()
+                case 1: return hoverId;                                       // raw fancy suffix (== Battles key / flag name)
+                case 2: return hoverId.ToLowerInvariant().Replace(' ', '_');  // fancy lowercased (the failing 0.5.272 form)
+                case 3: return pb != null ? ProvinceBattleManager.GetName(pb) : ""; // canonical GetName
+                case 4:
+                    if (pb == null || pb.AttackerProvince == null || pb.DefenderProvince == null) return "";
+                    return pb.AttackerProvince.Id + "_" + pb.DefenderProvince.Id;                    // raw province ids
+                case 5:
+                    if (pb == null || pb.AttackerProvince == null || pb.DefenderProvince == null) return "";
+                    return (pb.AttackerProvince.Id + "_" + pb.DefenderProvince.Id).ToLowerInvariant(); // province ids lowercased
+                default: return "";
+            }
+        }
+        catch { return ""; }
+    }
+
+    // Fill the land-battle popup's text fields directly from the ProvinceBattle, for when native Show()
+    // can't resolve the id (GetBattleFromUi returns null for every id form we can build). Update() only
+    // repositions the popup, so these values stick. Attacker/defender name + army force + advance + losses.
+    private static void PopulateBattlePopupManually(CampaignProvinceBattlePopupUI popup, ProvinceBattle pb)
+    {
+        try
+        {
+            // Derive combatants from the PROVINCES' controllers, NOT pb.Attacker/pb.Defender: AI-created
+            // battles leave those fields as a placeholder (observed reading as the main player on every AI
+            // battle), while AttackerProvince/DefenderProvince are always the real staging/target provinces
+            // (getName already confirmed them). Our own player-launched battles set both consistently.
+            Player? atk = BattleAttacker(pb);
+            Player? def = BattleDefender(pb);
+
+            float af = 0f, df = 0f;
+            try
+            {
+                var d = pb.PlayerArmyForce;
+                if (d != null) { if (atk != null) d.TryGetValue(atk, out af); if (def != null) d.TryGetValue(def, out df); }
+            }
+            catch { }
+
+            string atkName = "", defName = "";
+            try { if (atk != null) atkName = atk.Name(false); } catch { }
+            try { if (def != null) defName = def.Name(false); } catch { }
+
+            SetPopupText(popup.AttackerText, atkName);
+            SetPopupText(popup.DefenderText, defName);
+            SetPopupText(popup.AttackerArmyForceText, FormatForce(af));
+            SetPopupText(popup.DefenderArmyForceText, FormatForce(df));
+            // Advance is a PERCENTAGE already (0..100, negative when the defender pushes back — Serbia battle
+            // logged 61.6, the cripple-spike hit -11.7), so show it directly, NOT x100.
+            try { SetPopupText(popup.Advance, Mathf.RoundToInt(pb.Advance) + "%"); } catch { }
+            try { SetPopupText(popup.AttackerLosses, pb.AttackerLosses.ToString("N0")); } catch { }
+            try { SetPopupText(popup.DefenderLosses, pb.DefenderLosses.ToString("N0")); } catch { }
+            // Flags: native Show() would set these, but it never resolves the id, so they keep the stale
+            // default (the main player's — hence the Union Jack on every battle). Set from the combatants'
+            // own Flag() sprite (Player.Flag(bool naval) -> Sprite).
+            try { var fa = popup.AttackerFlag; if (fa != null && atk != null) fa.sprite = atk.Flag(false); } catch { }
+            try { var fd = popup.DefenderFlag; if (fd != null && def != null) fd.sprite = def.Flag(false); } catch { }
+            // Make sure the force rows are visible (native may leave them hidden until a successful Show()).
+            try { if (popup.AttackerArmyForce != null) popup.AttackerArmyForce.SetActive(true); } catch { }
+            try { if (popup.DefenderArmyForce != null) popup.DefenderArmyForce.SetActive(true); } catch { }
+        }
+        catch (Exception ex)
+        {
+            Melon<UADVanillaPlusMod>.Logger.Warning($"UADVP_GLOBE manual popup populate failed. {ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+    private static void SetPopupText(TMP_Text t, string s)
+    {
+        try { if (t != null && t.text != s) t.text = s; } catch { }
+    }
+
+    private static string FormatForce(float f) => f <= 0f ? "-" : f.ToString("N0");
+
+    // Annotate the player's OWN force line in the battle popup with the naval reinforcement. For a committed
+    // battle we compute the soldier-equivalent of the internal force boost using THIS battle's own
+    // native<->PlayerArmyForce ratio (native displayed army / natural PlayerArmyForce), so it's consistent with
+    // the shown numbers, and append "(+N navy = TOTAL)" so the effective force is obvious. For an uncommitted
+    // own-battle, show the Ctrl+Shift+N prompt. We APPEND (don't replace the number) and strip any prior
+    // "(" / "[" first, so native Show() re-writes don't cause drift/accumulation.
+    private static void AnnotateReinforceOnPopup(ProvinceBattle pb)
+    {
+        if (battlePopup == null || !ModSettings.NavalReinforcementEnabled) return;
+        Player? side = LandInvasionSupport.PlayerSideInBattle(pb);
+        if (side == null) return; // not your battle
+
+        bool playerIsDefender = false; try { playerIsDefender = side == pb.Defender; } catch { }
+        TMP_Text t = playerIsDefender ? battlePopup.DefenderArmyForceText : battlePopup.AttackerArmyForceText;
+        if (t == null) return;
+
+        string cur = t.text ?? "";
+        int cut = cur.Length;
+        int p1 = cur.IndexOf('('); if (p1 >= 0 && p1 < cut) cut = p1;
+        int p2 = cur.IndexOf('['); if (p2 >= 0 && p2 < cut) cut = p2;
+        string baseText = cur.Substring(0, cut).TrimEnd();
+
+        string want;
+        if (!LandInvasionSupport.IsCommitted(pb))
+            want = baseText + "  [click to reinforce w/ navy]";
+        else if (LandInvasionSupport.MeasureTonnage(pb) <= 0f)
+            want = baseText + "  (navy: no ships at coast — click to cancel)";
+        else
+            // The native "Army Force" shown here already INCLUDES the navy boost (it reads the postfixed
+            // ArmyForceForProvince). Tag the navy contribution + the per-turn supply cost.
+            want = baseText + $"  (incl. +{LandInvasionSupport.SoldiersFor(pb):N0} navy · {Money(LandInvasionSupport.CostPerTurnFor(pb))}/turn — click to stop)";
+        if (t.text != want) t.text = want;
+    }
+
+    // Compact money format for the popup (e.g. $2.5B, $500M).
+    private static string Money(float v)
+    {
+        float a = Mathf.Abs(v);
+        if (a >= 1e9f) return $"${v / 1e9f:0.#}B";
+        if (a >= 1e6f) return $"${v / 1e6f:0.#}M";
+        if (a >= 1e3f) return $"${v / 1e3f:0.#}K";
+        return $"${v:0}";
+    }
+
+    // Real combatants of a province battle = the controllers of the attacker/defender provinces. Falls back
+    // to the pb.Attacker/pb.Defender fields if a province or its controller is missing.
+    private static Player? BattleAttacker(ProvinceBattle pb)
+    {
+        Player? p = null;
+        try { if (pb.AttackerProvince != null) p = pb.AttackerProvince.ControllerPlayer; } catch { }
+        if (p == null) { try { p = pb.Attacker; } catch { } }
+        return p;
+    }
+
+    private static Player? BattleDefender(ProvinceBattle pb)
+    {
+        Player? p = null;
+        try { if (pb.DefenderProvince != null) p = pb.DefenderProvince.ControllerPlayer; } catch { }
+        if (p == null) { try { p = pb.Defender; } catch { } }
+        return p;
+    }
+
+    private static string PlayerNameSafe(Player? p)
+    {
+        try { return p == null ? "<null>" : p.Name(false); } catch { return "<err>"; }
+    }
+
+    // One-line dump so I can confirm which combatant source is right + how PlayerArmyForce is keyed/valued
+    // (diagnoses the "all Britain" + "numbers far off" reports).
+    private static string BattleDebugString(ProvinceBattle? pb)
+    {
+        if (pb == null) return "";
+        var sb = new System.Text.StringBuilder();
+        try
+        {
+            Player? fAtk = null, fDef = null;
+            try { fAtk = pb.Attacker; } catch { }
+            try { fDef = pb.Defender; } catch { }
+            sb.Append($" | fieldAtk='{PlayerNameSafe(fAtk)}' fieldDef='{PlayerNameSafe(fDef)}'");
+            sb.Append($" ctrlAtk='{PlayerNameSafe(BattleAttacker(pb))}' ctrlDef='{PlayerNameSafe(BattleDefender(pb))}'");
+            sb.Append(" force[");
+            try
+            {
+                var d = pb.PlayerArmyForce;
+                if (d != null)
+                {
+                    int i = 0;
+                    foreach (var kv in d) { if (i++ > 0) sb.Append(", "); sb.Append($"{PlayerNameSafe(kv.Key)}={kv.Value:0}"); if (i >= 6) break; }
+                }
+            }
+            catch { }
+            sb.Append("]");
+        }
+        catch { }
+        return sb.ToString();
     }
 
     // 2D distance from point p to segment [a,b] (screen space, for arrow-shaft hover picking).
@@ -1777,10 +2095,11 @@ internal static class CampaignGlobeVisualPatch
         lastBattleCount = count;
         battleFrame = Time.frameCount + 90;
 
+        bool doProbe = !battleArrowProbed; int probed = 0;
         var verts = new List<Vector3>();
         var tris = new List<int>();
         Vector3 c = GlobeRoot.transform.position;
-        float hw = radius * 0.0045f;  // ribbon half-width
+        float hw = radius * 0.003f;  // ribbon half-width (thin, clean battle-arrow line)
         int n = provinceBattlesRoot.childCount;
         for (int i = 0; i < n; i++)
         {
@@ -1806,23 +2125,59 @@ internal static class CampaignGlobeVisualPatch
                     pts.Add(sp);
                 }
                 if (pts.Count < 2) continue;
-                // shorten the shaft so the arrowhead sits at the tip without overlap
-                float headLen = radius * 0.022f;
+                if (doProbe && probed < 6)
+                {
+                    probed++;
+                    float arc = 0f; for (int q = 0; q + 1 < pts.Count; q++) arc += Vector3.Distance(pts[q], pts[q + 1]);
+                    Vector3 f0 = lr.GetPosition(0); Vector3 fN = lr.GetPosition(pc - 1);
+                    Melon<UADVanillaPlusMod>.Logger.Msg(
+                        $"UADVP_GLOBE battle-arrow '{ch.gameObject.name}' pc={pc} ws={ws} " +
+                        $"flat0={f0} flatN={fN} flatDist={Vector3.Distance(f0, fN):0.00} " +
+                        $"pts={pts.Count} arcLen={arc:0.000} d(0,1)={Vector3.Distance(pts[0], pts[1]):0.0000} " +
+                        $"d(0,tip)={Vector3.Distance(pts[0], pts[pts.Count - 1]):0.000} headLen={radius * 0.022f:0.000} hw={hw:0.000}");
+                }
+                // Native battle lines are SHORT (adjacent provinces; logged arc 0.8..2.9 units) and the fixed
+                // 0.88-unit arrowhead swallowed the whole shaft -> "just a triangle, no tail". Rebuild the arrow
+                // as a great-circle segment ending at the defender tip, with a READABLE minimum length and a
+                // head sized so it never eats the shaft.
                 Vector3 tip = pts[pts.Count - 1];
-                Vector3 beforeTip = pts[pts.Count - 2];
-                // ribbon along the arc (stop slightly before the tip)
-                for (int p = 0; p + 1 < pts.Count; p++) AddRibbonQuad(verts, tris, c, pts[p], pts[p + 1], hw);
-                // solid arrowhead triangle at the tip
-                AddArrowhead(verts, tris, c, beforeTip, tip, headLen, hw * 3.2f);
-                // fletching tail at the origin so the arrow reads as an arrow (sized clearly, ~arrowhead scale)
-                if (pts.Count >= 2) AddTailFletch(verts, tris, c, pts[0], pts[1], radius * 0.03f, hw * 4f, hw * 1.4f);
+                Vector3 origin0 = pts[0];
+                Vector3 radialTip = (tip - c).normalized;
+                Vector3 fwd = tip - origin0;
+                fwd -= Vector3.Dot(fwd, radialTip) * radialTip; // tangent at the tip, pointing origin->tip
+                if (fwd.sqrMagnitude < 1e-9f) continue;
+                fwd.Normalize();
+
+                float arcLen = 0f; for (int q = 0; q + 1 < pts.Count; q++) arcLen += Vector3.Distance(pts[q], pts[q + 1]);
+                float wantLen = Mathf.Max(arcLen, radius * 0.045f);    // modest readable minimum (less overshoot into neighbours)
+                float rTip = (tip - c).magnitude;
+                Vector3 tail = c + (tip - fwd * wantLen - c).normalized * rTip;
+
+                float headLen = Mathf.Min(radius * 0.016f, wantLen * 0.35f); // never swallow the shaft
+                Vector3 headBase = c + (tip - fwd * headLen - c).normalized * rTip;
+
+                // shaft: tail -> headBase, slerp-subdivided to hug the sphere
+                int seg = Mathf.Clamp((int)(Vector3.Angle(tail - c, headBase - c) / 4f) + 1, 1, 16);
+                Vector3 aRel = tail - c, bRel = headBase - c, prevPt = tail;
+                for (int s = 1; s <= seg; s++)
+                {
+                    Vector3 cur = c + Vector3.Slerp(aRel, bRel, s / (float)seg);
+                    AddRibbonQuad(verts, tris, c, prevPt, cur, hw);
+                    prevPt = cur;
+                }
+                AddArrowhead(verts, tris, c, headBase, tip, headLen, hw * 3f);
+                // No fletch: user wants a plain arrow  -->  not  >-->  (shaft + head only).
             }
             catch { }
         }
 
+        if (doProbe && probed > 0) battleArrowProbed = true; // only spend the one-shot once we actually logged a line
+
+        BuildReinforceCircles(c); // cyan thin-border + tinted-fill circles at each committed coast
+
         if (battleArrowObj != null) UnityEngine.Object.Destroy(battleArrowObj);
         battleArrowObj = null;
-        if (verts.Count < 3) return;
+        if (verts.Count < 3) { if (doProbe && probed > 0) Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP_GLOBE battle-arrows MESH: verts={verts.Count} tris={tris.Count} -> too few, NO mesh"); return; }
         var mesh = new Mesh { indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
         mesh.vertices = verts.ToArray();
         mesh.triangles = tris.ToArray();
@@ -1835,6 +2190,8 @@ internal static class CampaignGlobeVisualPatch
         Material amat = CreateUnlitColorMaterial(BattleArrowColor, "UADVP_GlobeBattleArrow_Mat");
         try { amat.renderQueue = 2600; } catch { } // over the fills/terrain
         battleArrowObj.AddComponent<MeshRenderer>().sharedMaterial = amat;
+        if (doProbe && probed > 0)
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP_GLOBE battle-arrows MESH built: verts={verts.Count} tris={tris.Count} obj=True rq={amat.renderQueue} radius={radius:0.0}");
     }
 
     // A flat quad (2 tris) lying on the sphere tangent plane between A and B, widened ±hw perpendicular to the arc.
@@ -1851,6 +2208,10 @@ internal static class CampaignGlobeVisualPatch
             verts.Add(A - pA); verts.Add(A + pA); verts.Add(B + pB); verts.Add(B - pB);
             tris.Add(i0); tris.Add(i0 + 1); tris.Add(i0 + 2);
             tris.Add(i0); tris.Add(i0 + 2); tris.Add(i0 + 3);
+            // DOUBLE-SIDED: the ribbon (shaft + fletch) winding can face AWAY from the camera and get
+            // backface-culled while the arrowhead (opposite winding) shows -> "just a triangle, no tail".
+            tris.Add(i0); tris.Add(i0 + 2); tris.Add(i0 + 1);
+            tris.Add(i0); tris.Add(i0 + 3); tris.Add(i0 + 2);
         }
         catch { }
     }
@@ -1892,9 +2253,208 @@ internal static class CampaignGlobeVisualPatch
             int it = verts.Count;
             verts.Add(tip); verts.Add(w1); verts.Add(w2);
             tris.Add(it); tris.Add(it + 1); tris.Add(it + 2);
+            tris.Add(it); tris.Add(it + 2); tris.Add(it + 1); // double-sided (match the ribbons)
         }
         catch { }
     }
+
+    // A ring band (double-sided) lying on the sphere tangent plane at `center`, radius `rr`, band half-width
+    // `bw`. Used to mark a committed naval-reinforcement target.
+    private static void AddRing(List<Vector3> v, List<int> t, Vector3 c, Vector3 center, float rr, float bw)
+    {
+        try
+        {
+            Vector3 radial = (center - c).normalized;
+            Vector3 u = Vector3.Cross(radial, Vector3.up);
+            if (u.sqrMagnitude < 1e-6f) u = Vector3.Cross(radial, Vector3.right);
+            u.Normalize();
+            Vector3 w = Vector3.Cross(radial, u);
+            float r0 = (center - c).magnitude;
+            const int seg = 48;
+            Vector3 prevIn = default, prevOut = default;
+            for (int i = 0; i <= seg; i++)
+            {
+                float a = i / (float)seg * Mathf.PI * 2f;
+                Vector3 dir = u * Mathf.Cos(a) + w * Mathf.Sin(a);
+                Vector3 inner = c + (center + dir * (rr - bw) - c).normalized * r0;
+                Vector3 outer = c + (center + dir * (rr + bw) - c).normalized * r0;
+                if (i > 0)
+                {
+                    int i0 = v.Count;
+                    v.Add(prevIn); v.Add(prevOut); v.Add(outer); v.Add(inner);
+                    t.Add(i0); t.Add(i0 + 1); t.Add(i0 + 2);
+                    t.Add(i0); t.Add(i0 + 2); t.Add(i0 + 3);
+                    t.Add(i0); t.Add(i0 + 2); t.Add(i0 + 1); // double-sided
+                    t.Add(i0); t.Add(i0 + 3); t.Add(i0 + 2);
+                }
+                prevIn = inner; prevOut = outer;
+            }
+        }
+        catch { }
+    }
+
+    // A filled disc (double-sided triangle fan) on the sphere at `center`, radius `rr`.
+    private static void AddDisc(List<Vector3> v, List<int> t, Vector3 c, Vector3 center, float rr)
+    {
+        try
+        {
+            Vector3 radial = (center - c).normalized;
+            Vector3 u = Vector3.Cross(radial, Vector3.up);
+            if (u.sqrMagnitude < 1e-6f) u = Vector3.Cross(radial, Vector3.right);
+            u.Normalize();
+            Vector3 w = Vector3.Cross(radial, u);
+            float r0 = (center - c).magnitude;
+            const int seg = 48;
+            int centerIdx = v.Count;
+            v.Add(center);
+            int firstRim = v.Count;
+            for (int i = 0; i <= seg; i++)
+            {
+                float a = i / (float)seg * Mathf.PI * 2f;
+                Vector3 dir = u * Mathf.Cos(a) + w * Mathf.Sin(a);
+                v.Add(c + (center + dir * rr - c).normalized * r0);
+            }
+            for (int i = 0; i < seg; i++)
+            {
+                t.Add(centerIdx); t.Add(firstRim + i); t.Add(firstRim + i + 1);
+                t.Add(centerIdx); t.Add(firstRim + i + 1); t.Add(firstRim + i); // double-sided
+            }
+        }
+        catch { }
+    }
+
+    // A 1px ring outline (MeshTopology.Lines segment pairs) on the sphere at `center`, radius `rr`.
+    private static void AddRingLine(List<Vector3> segs, Vector3 c, Vector3 center, float rr)
+    {
+        try
+        {
+            Vector3 radial = (center - c).normalized;
+            Vector3 u = Vector3.Cross(radial, Vector3.up);
+            if (u.sqrMagnitude < 1e-6f) u = Vector3.Cross(radial, Vector3.right);
+            u.Normalize();
+            Vector3 w = Vector3.Cross(radial, u);
+            float r0 = (center - c).magnitude;
+            const int N = 72;
+            Vector3 prev = default;
+            for (int s = 0; s <= N; s++)
+            {
+                float a = s / (float)N * Mathf.PI * 2f;
+                Vector3 dir = u * Mathf.Cos(a) + w * Mathf.Sin(a);
+                Vector3 sp = c + (center + dir * rr - c).normalized * r0;
+                if (s > 0) { segs.Add(prev); segs.Add(sp); }
+                prev = sp;
+            }
+        }
+        catch { }
+    }
+
+    // A filled disc reprojected from a FLAT center + FLAT radius (matches how AddZoneRings reprojects a
+    // native circle's rim). liftR = full lift multiplier applied via WorldToSphereLocal.
+    private static void AddDiscFlat(List<Vector3> v, List<int> t, Vector3 c, Vector3 flatCenter, float flatRad, float liftR)
+    {
+        try
+        {
+            const int N = 48;
+            int centerIdx = v.Count;
+            v.Add(c + WorldToSphereLocal(flatCenter, radius * liftR));
+            int firstRim = v.Count;
+            for (int s = 0; s <= N; s++)
+            {
+                float a = s / (float)N * Mathf.PI * 2f;
+                Vector3 rim = new(flatCenter.x + Mathf.Cos(a) * flatRad, flatCenter.y, flatCenter.z + Mathf.Sin(a) * flatRad);
+                v.Add(c + WorldToSphereLocal(rim, radius * liftR));
+            }
+            for (int s = 0; s < N; s++)
+            {
+                t.Add(centerIdx); t.Add(firstRim + s); t.Add(firstRim + s + 1);
+                t.Add(centerIdx); t.Add(firstRim + s + 1); t.Add(firstRim + s);
+            }
+        }
+        catch { }
+    }
+
+    private sealed class FillBucket { public readonly List<Vector3> V = new(); public readonly List<int> T = new(); }
+
+    private static GameObject? BuildLineLoopObject(List<Vector3> segs, Color color, string name)
+    {
+        if (segs.Count < 2 || GlobeRoot == null) return null;
+        var m = new Mesh { indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
+        m.vertices = segs.ToArray();
+        var idx = new int[segs.Count]; for (int i = 0; i < idx.Length; i++) idx[i] = i;
+        m.SetIndices(idx, MeshTopology.Lines, 0);
+        m.bounds = new Bounds(Vector3.zero, Vector3.one * (radius * 4f));
+        var go = new GameObject(name); go.layer = GlobeRoot.layer;
+        go.transform.SetParent(GlobeRoot.transform, false);
+        go.AddComponent<MeshFilter>().mesh = m;
+        Material mat = CreateUnlitColorMaterial(color, name + "_Mat");
+        try { mat.renderQueue = 3001; } catch { } // draw the outline just after the translucent fill (3000), on top
+        go.AddComponent<MeshRenderer>().sharedMaterial = mat;
+        return go;
+    }
+
+    private static GameObject? BuildFillObject(List<Vector3> v, List<int> t, Color color, string name)
+    {
+        if (v.Count < 3 || GlobeRoot == null) return null;
+        var m = new Mesh { indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
+        m.vertices = v.ToArray(); m.triangles = t.ToArray();
+        m.bounds = new Bounds(Vector3.zero, Vector3.one * (radius * 4f));
+        var go = new GameObject(name); go.layer = GlobeRoot.layer;
+        go.transform.SetParent(GlobeRoot.transform, false);
+        go.AddComponent<MeshFilter>().mesh = m;
+        go.AddComponent<MeshRenderer>().sharedMaterial = CreateTranslucentMaterial(color, name + "_Mat");
+        return go;
+    }
+
+    // Build the naval-reinforcement circles: a crisp 1px cyan border outline + a translucent tinted fill at
+    // each committed coast (landlocked targets sit on the nearest reachable coast).
+    private static void BuildReinforceCircles(Vector3 c)
+    {
+        try
+        {
+            if (reinforceCircleObj != null) UnityEngine.Object.Destroy(reinforceCircleObj);
+            if (reinforceFillObj != null) UnityEngine.Object.Destroy(reinforceFillObj);
+            reinforceCircleObj = null; reinforceFillObj = null;
+            if (GlobeRoot == null) return;
+
+            var borderSegs = new List<Vector3>();
+            var fillV = new List<Vector3>(); var fillT = new List<int>();
+            float rr = radius * 0.032f;
+
+            foreach (var cm in LandInvasionSupport.AllCommitments())
+            {
+                if (cm == null || (cm.CenterX == 0f && cm.CenterZ == 0f)) continue; // no reachable coast
+                // Border + fill COPLANAR (same lift, close to the surface); the border draws on top via a
+                // higher renderQueue, not by floating above (which read as a raised/parallaxed ring).
+                Vector3 center = c + WorldToSphereLocal(cm.Center, radius * (LandLiftFactor + 0.002f));
+                AddDisc(fillV, fillT, c, center, rr);
+                AddRingLine(borderSegs, c, center, rr);
+            }
+
+            reinforceFillObj = BuildFillObject(fillV, fillT, ReinforceFillColor, "UADVP_GlobeReinforceFill");
+            reinforceCircleObj = BuildLineLoopObject(borderSegs, ReinforceCircleColor, "UADVP_GlobeReinforceBorder");
+        }
+        catch (Exception ex) { Melon<UADVanillaPlusMod>.Logger.Warning($"UADVP_GLOBE reinforce circles failed. {ex.GetType().Name}: {ex.Message}"); }
+    }
+
+    // Translucent tinted material (Sprites/Default honours _Color alpha over a default white texture, so a
+    // flat translucent tint renders without a texture).
+    private static Material CreateTranslucentMaterial(Color color, string name)
+    {
+        Shader? s = Shader.Find("Sprites/Default");
+        if (s == null) s = Shader.Find("UI/Default");
+        if (s == null) s = Shader.Find("Unlit/Transparent");
+        Material m = s != null ? new Material(s) : CreateUnlitColorMaterial(color, name);
+        m.name = name;
+        try { m.color = color; } catch { }
+        try { if (m.HasProperty("_Color")) m.SetColor("_Color", color); } catch { }
+        try { if (m.HasProperty("_Cull")) m.SetFloat("_Cull", 0f); } catch { }
+        try { m.renderQueue = 3000; } catch { } // transparent queue, over the opaque fills/terrain
+        return m;
+    }
+
+    // Force the battle arrows + reinforcement circles to rebuild on the next frame (call after a commitment
+    // toggles so the circle appears/disappears immediately instead of after the ~90-frame refresh).
+    internal static void InvalidateBattleArrows() { lastBattleCount = -1; battleFrame = 0; }
 
     private static void ReprojectCircles()
     {
@@ -1955,6 +2515,17 @@ internal static class CampaignGlobeVisualPatch
     {
         if (!GlobeMarkerActive) return true;   // not globe -> native as-is
         if (dragOccurred) return false;        // drag-release = camera rotate, not an order/select
+        // Clicked at/near a land battle YOU'RE in: the toggle itself happens frame-based in HandleBattleHover
+        // (a marker click is eaten by the UI EventSystem and never reaches OnClickDetected, so we can't rely on
+        // this path to fire). Here we only SUPPRESS the native move-order so clicking by a battle you're in
+        // doesn't scatter selected ships to that coordinate.
+        try
+        {
+            ProvinceBattle? hb = CurrentHoverBattle;
+            if (ModSettings.NavalReinforcementEnabled && hb != null && LandInvasionSupport.PlayerSideInBattle(hb) != null)
+                return false;
+        }
+        catch { }
         if (TryGlobeClickToFlat(out Vector3 flat)) { position = flat; return true; }
         return false;                          // clicked off the globe -> ignore
     }
@@ -2051,6 +2622,13 @@ internal static class CampaignGlobeVisualPatch
     // Reproject a task-force route line onto the globe as a GREAT-CIRCLE arc: each native waypoint is
     // projected to the sphere, and consecutive waypoints are slerped (constant radius) so the segment
     // hugs the surface. World-space LineRenderer, so it stays on the globe as the camera orbits.
+    // Fingerprint (count + first + last, world-space) of the sphere positions WE last wrote to each route line,
+    // so ReprojectFlatRoutes can tell "unchanged (we set it)" from "native re-set it flat" reliably — the old
+    // distance-band heuristic false-skipped flat routes whose first waypoint happened to sit ~radius from center
+    // (that was the "paths not rendering after a turn/reload" bug).
+    private static readonly Dictionary<IntPtr, (int n, Vector3 a, Vector3 b)> routeSphereFP = new(); // sphere positions WE wrote
+    private static readonly Dictionary<IntPtr, Vector3[]> routeFlat = new();                          // the FLAT source per line
+
     internal static void ProjectRouteToGlobe(LineRenderer line)
     {
         try
@@ -2058,26 +2636,32 @@ internal static class CampaignGlobeVisualPatch
             if (GlobeRoot == null || line == null)
                 return;
             int n = line.positionCount;
-            if (Time.frameCount >= routeLogFrame) { routeLogFrame = Time.frameCount + 20; Vector3 f0 = n > 0 ? line.GetPosition(0) : Vector3.zero; bool ws0 = true; try { ws0 = line.useWorldSpace; } catch { } Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP_GLOBE route-reproj n={n} ws={ws0} first={f0}"); }
             if (n < 2)
                 return;
             Vector3 c = GlobeRoot.transform.position;
-            float routeR = radius * (LandLiftFactor + 0.004f); // just above the land shell
+            IntPtr key = line.Pointer;
 
-            // Read waypoints in WORLD space (a route line may be local-space), then force world space so
-            // our sphere positions apply correctly.
             bool wasWorld = true; try { wasWorld = line.useWorldSpace; } catch { }
             Transform lt = line.transform;
-            var flat = new Vector3[n];
-            for (int i = 0; i < n; i++)
-            {
-                Vector3 p = line.GetPosition(i);
-                flat[i] = wasWorld ? p : lt.TransformPoint(p);
-            }
-            try { line.useWorldSpace = true; } catch { }
+            var cur = new Vector3[n];
+            for (int i = 0; i < n; i++) { Vector3 p = line.GetPosition(i); cur[i] = wasWorld ? p : lt.TransformPoint(p); }
 
+            // Reproject from the FLAT SOURCE, never from our own sphere output. If the current positions are
+            // what WE last wrote (fingerprint match) and we have the flat cached, reproject from the cache —
+            // this stops double-projection when something reprojects an already-projected route (e.g. after a
+            // globe rebuild). Otherwise the current positions ARE a fresh flat path from the game.
+            Vector3[] flat;
+            if (routeSphereFP.TryGetValue(key, out var fp) && fp.n == n
+                && (fp.a - cur[0]).sqrMagnitude < 0.01f && (fp.b - cur[n - 1]).sqrMagnitude < 0.01f
+                && routeFlat.TryGetValue(key, out var cached) && cached.Length >= 2)
+                flat = cached;
+            else { flat = cur; routeFlat[key] = cur; }
+
+            int m = flat.Length;
+            if (m < 2) return;
+            float routeR = radius * (LandLiftFactor + 0.004f); // just above the land shell
             var pts = new List<Vector3>();
-            for (int i = 0; i < n - 1; i++)
+            for (int i = 0; i < m - 1; i++)
             {
                 Vector3 a = WorldToSphereLocal(flat[i], routeR);
                 Vector3 b = WorldToSphereLocal(flat[i + 1], routeR);
@@ -2085,11 +2669,13 @@ internal static class CampaignGlobeVisualPatch
                 for (int s = 0; s < steps; s++)
                     pts.Add(c + Vector3.Slerp(a, b, s / (float)steps));
             }
-            pts.Add(c + WorldToSphereLocal(flat[n - 1], routeR));
+            pts.Add(c + WorldToSphereLocal(flat[m - 1], routeR));
 
+            try { line.useWorldSpace = true; } catch { }
             line.positionCount = pts.Count;
             for (int i = 0; i < pts.Count; i++)
                 line.SetPosition(i, pts[i]);
+            try { routeSphereFP[key] = (pts.Count, pts[0], pts[pts.Count - 1]); } catch { } // remember what WE set
         }
         catch { }
     }
@@ -2106,8 +2692,6 @@ internal static class CampaignGlobeVisualPatch
             MapUI? ui = map != null ? map.UIMap : null;
             Transform? root = ui != null ? ui.RouteLineRoot : null;
             if (root == null) return;
-            Vector3 c = GlobeRoot.transform.position;
-            float lo = radius * 0.85f, hi = radius * 1.2f;
             var lines = root.GetComponentsInChildren<LineRenderer>(true);
             for (int i = 0; i < lines.Length; i++)
             {
@@ -2116,10 +2700,15 @@ internal static class CampaignGlobeVisualPatch
                     LineRenderer lr = lines[i];
                     if (lr == null || lr.positionCount < 2) continue;
                     bool ws = true; try { ws = lr.useWorldSpace; } catch { }
-                    Vector3 p0 = lr.GetPosition(0); if (!ws) p0 = lr.transform.TransformPoint(p0);
-                    float d = (p0 - c).magnitude;
-                    if (d > lo && d < hi) continue; // already reprojected onto the sphere shell
-                    ProjectRouteToGlobe(lr);        // still flat -> reproject
+                    int n = lr.positionCount;
+                    Transform lt = lr.transform;
+                    Vector3 a = lr.GetPosition(0), b = lr.GetPosition(n - 1);
+                    if (!ws) { a = lt.TransformPoint(a); b = lt.TransformPoint(b); }
+                    // Skip ONLY if the current positions match what we last wrote (native hasn't touched it).
+                    if (routeSphereFP.TryGetValue(lr.Pointer, out var fp) && fp.n == n
+                        && (fp.a - a).sqrMagnitude < 0.01f && (fp.b - b).sqrMagnitude < 0.01f)
+                        continue;
+                    ProjectRouteToGlobe(lr); // new route or native re-set it flat -> reproject
                 }
                 catch { }
             }

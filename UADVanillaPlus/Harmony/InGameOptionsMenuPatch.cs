@@ -51,6 +51,7 @@ internal static class InGameOptionsMenuPatch
     private const string RebuildOverseasWeightOptionName = "UADVP_Option_RebuildOverseasWeight";
     private const string VanquishedSpoilsOptionName = "UADVP_Option_VanquishedSpoils";
     private const string VanquishedSpoilsShareOptionName = "UADVP_Option_VanquishedSpoilsShare";
+    private const string NavalReinforcementOptionName = "UADVP_Option_NavalReinforcement";
     private const string ClassNamingThemesOptionName = "UADVP_Option_ClassNamingThemes";
     private const string ShipbuildingCapacityBoostOptionName = "UADVP_Option_ShipbuildingCapacityBoost";
     private const string SurrenderedShipCaptureOptionName = "UADVP_Option_SurrenderedShipCapture";
@@ -645,6 +646,16 @@ internal static class InGameOptionsMenuPatch
                     ("High", ModSettings.VanquishedSpoilsShareLevel == ModSettings.LevelSetting.High, () => SetVanquishedSpoilsShare(ModSettings.LevelSetting.High)));
                 AddSegmentedOption(
                     pane.transform,
+                    NavalReinforcementOptionName,
+                    "Naval Reinforcement",
+                    "Reinforce with Navy: naval tonnage parked in a land battle's target waters adds army force to that battle (attacking OR defending your own coast). Higher settings add more force per ton — a large fleet commitment scales all the way up, no cap. Off disables it.",
+                    true,
+                    ("Off", ModSettings.NavalReinforcement == ModSettings.NavalReinforcementMode.Off, () => SetNavalReinforcement(ModSettings.NavalReinforcementMode.Off)),
+                    ("Modest", ModSettings.NavalReinforcement == ModSettings.NavalReinforcementMode.Modest, () => SetNavalReinforcement(ModSettings.NavalReinforcementMode.Modest)),
+                    ("Strong", ModSettings.NavalReinforcement == ModSettings.NavalReinforcementMode.Strong, () => SetNavalReinforcement(ModSettings.NavalReinforcementMode.Strong)),
+                    ("Decisive", ModSettings.NavalReinforcement == ModSettings.NavalReinforcementMode.Decisive, () => SetNavalReinforcement(ModSettings.NavalReinforcementMode.Decisive)));
+                AddSegmentedOption(
+                    pane.transform,
                     ClassNamingThemesOptionName,
                     "Class Naming Themes",
                     "On shows a theme button in the ship constructor: assign a naming theme to a class and new ships of that class draw from that name pool (or a sequential <Class>-N scheme) instead of the generic per-nation list. Off hides the button and uses vanilla naming.",
@@ -1157,6 +1168,15 @@ internal static class InGameOptionsMenuPatch
     {
         if (ModSettings.VanquishedSpoilsEnabled != enabled)
             ModSettings.VanquishedSpoilsEnabled = enabled;
+
+        RefreshMenu();
+        RefreshLauncherButton();
+    }
+
+    private static void SetNavalReinforcement(ModSettings.NavalReinforcementMode mode)
+    {
+        if (ModSettings.NavalReinforcement != mode)
+            ModSettings.NavalReinforcement = mode;
 
         RefreshMenu();
         RefreshLauncherButton();

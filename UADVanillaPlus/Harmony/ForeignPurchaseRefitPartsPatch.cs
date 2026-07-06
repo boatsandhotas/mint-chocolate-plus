@@ -24,7 +24,8 @@ internal static class ForeignPurchaseRefitPartsPatch
     private static void PartInstance(Ship __instance, PartData part, ref bool __result)
     {
         if (__result || __instance == null) return;
-        if (IsPurchased(__instance) && IsShipHull(__instance, part)) __result = true;
+        if (IsPurchased(__instance) && IsShipHull(__instance, part))
+            __result = true;
     }
 
     [HarmonyPostfix]
@@ -33,7 +34,8 @@ internal static class ForeignPurchaseRefitPartsPatch
     private static void PartStatic(PartData part, Ship ship, ref bool __result)
     {
         if (__result || ship == null) return;
-        if (IsPurchased(ship) && IsShipHull(ship, part)) __result = true;
+        if (IsPurchased(ship) && IsShipHull(ship, part))
+            __result = true;
     }
 
     // --- IsComponentAvailable (1-arg): only free the ship's OWN installed components ---
@@ -43,7 +45,8 @@ internal static class ForeignPurchaseRefitPartsPatch
     private static void CompInstance(Ship __instance, ComponentData component, ref bool __result)
     {
         if (__result || __instance == null) return;
-        if (PurchasedAndUses(__instance, component)) __result = true;
+        if (PurchasedAndUses(__instance, component))
+            __result = true;
     }
 
     // Combined check used by both this class and the by-ref overload patch below.
@@ -118,6 +121,7 @@ internal static class ForeignPurchaseRefitComponentReasonPatch
     private static void Postfix(Ship __instance, ComponentData component, ref bool __result)
     {
         if (__result || __instance == null) return;
-        if (ForeignPurchaseRefitPartsPatch.PurchasedAndUses(__instance, component)) __result = true;
+        if (ForeignPurchaseRefitPartsPatch.PurchasedAndUses(__instance, component))
+            __result = true;
     }
 }

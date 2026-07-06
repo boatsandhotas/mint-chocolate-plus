@@ -28,6 +28,10 @@ internal static class CampaignPerTurnDispatchPatch
         // Ally ship purchase: deliver completed contract hulls + resolve any broken-alliance orders.
         try { if (ModSettings.AllyShipPurchaseEnabled) { AlliedShipPurchase.EnsureOrderedBuildsRunning(); AlliedShipPurchase.DeliverCompleted(); AlliedShipPurchase.ProcessBreaks(); AlliedShipPurchase.AdoptOwnedPurchasedDesigns(); } }
         catch (Exception ex) { Melon<UADVanillaPlusMod>.Logger.Warning($"UADVP ally-purchase turn: {ex.GetType().Name}: {ex.Message}"); }
+        // Naval reinforcement: drop commitments whose battle has resolved/vanished, then charge the per-turn
+        // supply cost for the ones still active.
+        try { LandInvasionSupport.PurgeStale(); } catch (Exception ex) { Melon<UADVanillaPlusMod>.Logger.Warning($"UADVP reinforce purge: {ex.GetType().Name}: {ex.Message}"); }
+        try { LandInvasionSupport.ChargeTurnCosts(); } catch (Exception ex) { Melon<UADVanillaPlusMod>.Logger.Warning($"UADVP reinforce cost: {ex.GetType().Name}: {ex.Message}"); }
     }
 
     [HarmonyPostfix]
@@ -38,6 +42,7 @@ internal static class CampaignPerTurnDispatchPatch
         try { NameThemeDatabase.EnsureLoaded(); } catch { } // Phase 2 Stage 1: load + log the name DB (de-risk nation-key mapping)
         try { SurrenderedShipCapture.ReinstatePending(); } catch { } // fallback drain (one-shot) for post-battle capture
         try { AllyPurchaseState.Reconcile(); } catch (Exception ex) { Melon<UADVanillaPlusMod>.Logger.Warning($"UADVP ally-purchase reconcile: {ex.GetType().Name}: {ex.Message}"); }
+        try { LandInvasionSupport.Reconcile(); } catch (Exception ex) { Melon<UADVanillaPlusMod>.Logger.Warning($"UADVP reinforce reconcile: {ex.GetType().Name}: {ex.Message}"); }
         try { PortCapacityRebuild.Reconcile(__instance); }
         catch (Exception ex) { Melon<UADVanillaPlusMod>.Logger.Warning($"UADVP load reconcile: {ex.GetType().Name}: {ex.Message}"); }
         try { if (ModSettings.VanquishedSpoilsEnabled) VanquishedTransfer.SnapshotEmpires(__instance?.CampaignData); } catch { }

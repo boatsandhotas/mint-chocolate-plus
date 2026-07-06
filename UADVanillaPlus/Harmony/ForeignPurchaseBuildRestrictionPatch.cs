@@ -55,6 +55,20 @@ internal static class ForeignPurchaseBuildRestrictionPatch
             if (!IsRestrictedLineage(design))
                 return;
 
+            // Refit-yes / build-no. Both the refit-editor build button and the design-list "build new" go
+            // through CanBuildShipsFromDesign, so we must tell them apart by CONTEXT. The game's own live
+            // Ui.isConstructorRefitMode flag is the authoritative signal: true only while the ship designer
+            // is in refit mode (a refit COMMIT -> allow); false for any design-list build, whether of the
+            // base design OR a saved refit design (-> block, closing the buy-1-refit-build-many loophole).
+            // (Earlier attempts — a mod flag toggled on Ui.ExitFromRefitMode, then design.isRefitDesign —
+            // failed: the exit hook doesn't fire so the flag stuck true; and a saved refit design is itself
+            // isRefitDesign=true so that let new copies of refits through.)
+            if (RefitModeTracker.IsInRefitEditor())
+            {
+                LogExemptOnce(design);
+                return;
+            }
+
             __result = false;
             reason = RestrictedReason;
             LogOnce(design);
@@ -100,6 +114,7 @@ internal static class ForeignPurchaseBuildRestrictionPatch
         catch { return string.Empty; }
     }
 
+
     private static void LogOnce(Ship design)
     {
         try
@@ -107,6 +122,17 @@ internal static class ForeignPurchaseBuildRestrictionPatch
             string id = GuidStr(design);
             if (!Logged.Add(id)) return;
             Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP_ALLYBUY blocked NEW build of purchased class (designId={id}); refit still allowed.");
+        }
+        catch { }
+    }
+
+    private static void LogExemptOnce(Ship design)
+    {
+        try
+        {
+            string id = GuidStr(design);
+            if (!Logged.Add("exempt:" + id)) return;
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP_ALLYBUY refit-editor: ALLOWING build of purchased-lineage design (designId={id}) — Ui.isConstructorRefitMode=true (refit commit, not new build).");
         }
         catch { }
     }

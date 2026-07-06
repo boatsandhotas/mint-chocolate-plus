@@ -31,6 +31,7 @@ internal static class ModSettings
     private const string VanquishedSpoilsKey = "uadvp_vanquished_spoils";
     private const string RebuildOverseasWeightKey = "uadvp_rebuild_overseas_weight";
     private const string VanquishedSpoilsShareKey = "uadvp_vanquished_spoils_share";
+    private const string NavalReinforcementKey = "uadvp_naval_reinforcement";
     private const string ClassNamingThemesKey = "uadvp_class_naming_themes";
     private const string MineWarfareDisabledKey = "uadvp_mine_warfare_disabled";
     private const string SubmarineWarfareDisabledKey = "uadvp_submarine_warfare_disabled";
@@ -70,6 +71,7 @@ internal static class ModSettings
     private static bool? classNamingThemes;
     private static LevelSetting? rebuildOverseasWeightLevel;
     private static LevelSetting? vanquishedSpoilsShareLevel;
+    private static NavalReinforcementMode? navalReinforcement;
     private static bool? mineWarfareDisabled;
     private static bool? submarineWarfareDisabled;
     internal enum MapGeometryMode { Flat = 0, Disc = 1, Globe = 2 }
@@ -142,6 +144,16 @@ internal static class ModSettings
         Loose35 = 35,
         Standard60 = 60,
         Strict75 = 75,
+    }
+
+    // "Reinforce with Navy": how much army force naval tonnage in a land battle's target waters adds.
+    // Off disables the feature; the others scale the per-ton force and the maximum boost cap.
+    internal enum NavalReinforcementMode
+    {
+        Off = 0,
+        Modest = 1,   // gentle nudge, caps around +50%
+        Strong = 2,   // a full naval commitment can roughly double the attack (~+100%)
+        Decisive = 3, // bring the fleet and you basically win (~+250%)
     }
 
     internal enum TechnologySpreadMode
@@ -497,6 +509,40 @@ internal static class ModSettings
         LevelSetting.Low => 0.25,
         LevelSetting.High => 0.75,
         _ => 0.5,
+    };
+
+    // "Reinforce with Navy" strength. Off disables it. Default Strong.
+    internal static NavalReinforcementMode NavalReinforcement
+    {
+        get
+        {
+            if (navalReinforcement == null)
+            {
+                int stored = PlayerPrefs.GetInt(NavalReinforcementKey, (int)NavalReinforcementMode.Strong);
+                navalReinforcement = Enum.IsDefined(typeof(NavalReinforcementMode), stored)
+                    ? (NavalReinforcementMode)stored : NavalReinforcementMode.Strong;
+            }
+            return navalReinforcement.Value;
+        }
+        set
+        {
+            navalReinforcement = value;
+            PlayerPrefs.SetInt(NavalReinforcementKey, (int)value);
+            PlayerPrefs.Save();
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: Naval Reinforcement {value}.");
+        }
+    }
+
+    internal static bool NavalReinforcementEnabled => NavalReinforcement != NavalReinforcementMode.Off;
+
+    // Projected force (ArmyForceForProvince units) added per ton of shipping parked at the coast — no cap. A
+    // strong province defends with ~a few hundred thousand projected force, so ~1/ton means a full-fleet
+    // commitment (hundreds of thousands of tons) can overcome it; a small fleet only tips a weak province.
+    internal static float NavalReinforcementForcePerTon => NavalReinforcement switch
+    {
+        NavalReinforcementMode.Modest => 0.5f,
+        NavalReinforcementMode.Decisive => 2.0f,
+        _ => 1.0f, // Strong
     };
 
     // QoL: let the player assign a naming theme per ship class; new ships of that class
