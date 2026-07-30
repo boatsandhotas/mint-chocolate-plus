@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Reflection;
+using HarmonyLib;
 using Il2Cpp;
 using MelonLoader;
 using UADVanillaPlus.GameData;
@@ -15,6 +16,8 @@ internal sealed class MajorShipTorpedoAuditResult
     internal int CacheLaunchers { get; init; }
     internal int StoreLaunchers { get; init; } = -1;
     internal int ReloadLaunchers { get; init; } = -1;
+    internal bool HaveTorpedoes { get; init; }
+    internal int TorpedoesAllCount { get; init; }
     internal int SupportComponents { get; init; }
     internal int ExcludedTorpedoEquipment { get; init; }
 }
@@ -27,12 +30,17 @@ internal sealed class MajorShipTorpedoCleanupResult
     internal int LivePartsAfter { get; init; }
     internal int CacheBefore { get; init; }
     internal int CacheAfter { get; init; }
+    internal bool HaveTorpedoesBefore { get; init; }
+    internal bool HaveTorpedoesAfter { get; init; }
+    internal int TorpedoesAllBefore { get; init; }
+    internal int TorpedoesAllAfter { get; init; }
     internal int RemovedByRemovePart { get; init; }
     internal int RemovedStaleCache { get; init; }
     internal int RemovedSupportComponents { get; init; }
     internal int StoreNameTubes { get; init; } = -1;
     internal int ReloadTubes { get; init; } = -1;
     internal bool RecalcOk { get; init; }
+    internal bool WeaponCacheRefreshOk { get; init; }
     internal string Valid { get; init; } = "?";
     internal float TonsBefore { get; init; }
     internal float TonsAfter { get; init; }
@@ -47,6 +55,7 @@ internal static class MajorShipTorpedoCleanup
 {
     private static readonly HashSet<string> LoggedAuditKeys = new(StringComparer.Ordinal);
     private static readonly HashSet<string> LoggedCleanAuditKeys = new(StringComparer.Ordinal);
+    private static readonly MethodInfo? CWeapMethod = AccessTools.Method(typeof(Ship), "CWeap", new[] { typeof(bool) });
 
     internal static MajorShipTorpedoAuditResult Audit(
         Ship? ship,
@@ -80,9 +89,11 @@ internal static class MajorShipTorpedoCleanup
 
         int liveBefore = CountTorpedoLauncherParts(ship);
         int cacheBefore = CountTorpedoLauncherCacheEntries(ship);
+        bool haveTorpedoesBefore = HasTorpedoes(ship);
+        int torpedoesAllBefore = CountTorpedoesAllEntries(ship);
         List<string> supportBeforeTokens = new();
         int supportBefore = CountTorpedoSupportComponents(ship, supportBeforeTokens);
-        if (liveBefore <= 0 && cacheBefore <= 0 && supportBefore <= 0)
+        if (liveBefore <= 0 && cacheBefore <= 0 && supportBefore <= 0 && !haveTorpedoesBefore)
             return Skipped("no-launchers");
 
         float tonsBefore = Safe(() => ship.Tonnage(), 0f);
@@ -109,28 +120,42 @@ internal static class MajorShipTorpedoCleanup
         int removedSupport = RemoveComponents(ship, IsTorpedoSupportComponent, removedTokens, removedComponents);
 
         bool recalcOk = Recalculate(ship);
+        bool weaponCacheRefreshOk = ForceWeaponCacheRefresh(ship);
         float tonsAfter = Safe(() => ship.Tonnage(), tonsBefore);
         int liveAfter = CountTorpedoLauncherParts(ship);
         int cacheAfter = CountTorpedoLauncherCacheEntries(ship);
+        bool haveTorpedoesAfter = HasTorpedoes(ship);
+        int torpedoesAllAfter = CountTorpedoesAllEntries(ship);
         Ship.Store? store = Safe(() => ship.ToStore(false), null);
         int storeNameTubes = StoreTorpedoLauncherCount(store);
         int reloadTubes = ReloadTorpedoLauncherCount(store);
         ShipEffectivePowerCalculator.Invalidate(ship);
+        bool removedAnything = removedByRemovePart > 0 || removedStaleCache > 0 || removedSupport > 0;
+        string reason = removedAnything
+            ? "cleaned"
+            : !haveTorpedoesAfter && cacheAfter <= 0
+                ? "cache-refreshed"
+                : "cache-refresh-stale";
 
         return new MajorShipTorpedoCleanupResult
         {
             Applied = true,
-            Reason = "cleaned",
+            Reason = reason,
             LivePartsBefore = liveBefore,
             LivePartsAfter = liveAfter,
             CacheBefore = cacheBefore,
             CacheAfter = cacheAfter,
+            HaveTorpedoesBefore = haveTorpedoesBefore,
+            HaveTorpedoesAfter = haveTorpedoesAfter,
+            TorpedoesAllBefore = torpedoesAllBefore,
+            TorpedoesAllAfter = torpedoesAllAfter,
             RemovedByRemovePart = removedByRemovePart,
             RemovedStaleCache = removedStaleCache,
             RemovedSupportComponents = removedSupport,
             StoreNameTubes = storeNameTubes,
             ReloadTubes = reloadTubes,
             RecalcOk = recalcOk,
+            WeaponCacheRefreshOk = weaponCacheRefreshOk,
             Valid = BoolProbe(() => ship.IsValid(false)),
             TonsBefore = tonsBefore,
             TonsAfter = tonsAfter,
@@ -152,6 +177,8 @@ internal static class MajorShipTorpedoCleanup
 
         int live = CountTorpedoLauncherParts(ship);
         int cache = CountTorpedoLauncherCacheEntries(ship);
+        bool haveTorpedoes = HasTorpedoes(ship);
+        int torpedoesAllCount = CountTorpedoesAllEntries(ship);
         Ship.Store? store = Safe(() => ship.ToStore(false), null);
         int storeLaunchers = StoreTorpedoLauncherCount(store);
         int reload = ReloadTorpedoLauncherCount(store);
@@ -162,6 +189,7 @@ internal static class MajorShipTorpedoCleanup
         string result =
             live > 0 ? "live-leak" :
             cache > 0 ? "cache-leak" :
+            haveTorpedoes && torpedoesAllCount == 0 ? "flag-leak" :
             storeLaunchers > 0 ? "store-leak" :
             reload > 0 ? "reload-leak" :
             support > 0 ? "support-only" :
@@ -176,6 +204,8 @@ internal static class MajorShipTorpedoCleanup
             CacheLaunchers = cache,
             StoreLaunchers = storeLaunchers,
             ReloadLaunchers = reload,
+            HaveTorpedoes = haveTorpedoes,
+            TorpedoesAllCount = torpedoesAllCount,
             SupportComponents = support,
             ExcludedTorpedoEquipment = excluded,
         };
@@ -196,7 +226,7 @@ internal static class MajorShipTorpedoCleanup
         string nation = AiDesignCompetitiveness.PlayerLabel(player);
         string type = AiDesignCompetitiveness.NormalizeShipType(ship?.shipType);
         string shipName = LogToken(AiDesignCompetitiveness.ShipLabel(ship));
-        string key = $"{turn}:{nation}:{context}:{type}:{shipName}:{result.Result}:{result.LiveLaunchers}:{result.CacheLaunchers}:{result.StoreLaunchers}:{result.ReloadLaunchers}:{result.SupportComponents}";
+        string key = $"{turn}:{nation}:{context}:{type}:{shipName}:{result.Result}:{result.LiveLaunchers}:{result.CacheLaunchers}:{result.StoreLaunchers}:{result.ReloadLaunchers}:{result.HaveTorpedoes}:{result.TorpedoesAllCount}:{result.SupportComponents}";
         if (string.Equals(result.Result, "clean", StringComparison.OrdinalIgnoreCase))
         {
             string cleanKey = $"{turn}:{nation}:{context}:clean";
@@ -220,7 +250,7 @@ internal static class MajorShipTorpedoCleanup
         Ship? linkedDesign = Safe(() => ship?.design, null);
 
         Melon<UADVanillaPlusMod>.Logger.Msg(
-            $"UADVP torpedo-audit turn={turn} nation={nation} context={LogToken(context)} type={type} ship={shipName} isDesign={BoolText(Safe(() => ship?.isDesign ?? false, false))} isRefitDesign={BoolText(Safe(() => ship?.isRefitDesign ?? false, false))} isShared={BoolText(IsSharedDesignMarker(ship))} design={DesignLinkLabel(linkedDesign)} liveLaunchers={result.LiveLaunchers} cacheLaunchers={result.CacheLaunchers} storeLaunchers={TubeCountText(result.StoreLaunchers)} reloadLaunchers={TubeCountText(result.ReloadLaunchers)} supportCount={result.SupportComponents} supportComponents={FormatRemovedItems(supportComponents)} excludedTorpedoEquipment={result.ExcludedTorpedoEquipment} launcherParts={FormatRemovedItems(launcherParts)} storeParts={FormatRemovedItems(storeParts)} result={result.Result} reason={result.Reason}.");
+            $"UADVP torpedo-audit turn={turn} nation={nation} context={LogToken(context)} type={type} ship={shipName} isDesign={BoolText(Safe(() => ship?.isDesign ?? false, false))} isRefitDesign={BoolText(Safe(() => ship?.isRefitDesign ?? false, false))} isShared={BoolText(IsSharedDesignMarker(ship))} design={DesignLinkLabel(linkedDesign)} liveLaunchers={result.LiveLaunchers} cacheLaunchers={result.CacheLaunchers} haveTorpedoes={BoolText(result.HaveTorpedoes)} torpedoesAll={result.TorpedoesAllCount} storeLaunchers={TubeCountText(result.StoreLaunchers)} reloadLaunchers={TubeCountText(result.ReloadLaunchers)} supportCount={result.SupportComponents} supportComponents={FormatRemovedItems(supportComponents)} excludedTorpedoEquipment={result.ExcludedTorpedoEquipment} launcherParts={FormatRemovedItems(launcherParts)} storeParts={FormatRemovedItems(storeParts)} result={result.Result} reason={result.Reason}.");
     }
 
     internal static string FormatRemovedItems(IReadOnlyList<string> items)
@@ -588,6 +618,37 @@ internal static class MajorShipTorpedoCleanup
         catch
         {
             return 0;
+        }
+    }
+
+    private static bool HasTorpedoes(Ship ship)
+        => Safe(() => ship.haveTorpedoes, false);
+
+    private static int CountTorpedoesAllEntries(Ship ship)
+    {
+        try
+        {
+            return ship.torpedoesAll?.Count ?? 0;
+        }
+        catch
+        {
+            return 0;
+        }
+    }
+
+    private static bool ForceWeaponCacheRefresh(Ship ship)
+    {
+        if (CWeapMethod == null)
+            return false;
+
+        try
+        {
+            CWeapMethod.Invoke(ship, new object[] { true });
+            return true;
+        }
+        catch
+        {
+            return false;
         }
     }
 

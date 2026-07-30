@@ -9,8 +9,8 @@ namespace UADVanillaPlus.Harmony;
 
 // Patch intent: keep vanilla AI shipbuilding gates intact, but replace the
 // final random surface-type pick with a deficit-weighted pick when VP's AI
-// Fleet Mix profile is active. Vanilla still performs final build validation;
-// this picker only filters missing designs and VP Arms Race rejects.
+// Fleet Mix profile is active. The picker also probes vanilla buildability so
+// stale/obsolete designs do not make a ship type look selectable.
 [HarmonyPatch]
 internal static class CampaignAiWeightedBuildTypePickerPatch
 {
@@ -337,7 +337,9 @@ internal static class CampaignAiWeightedBuildTypePickerPatch
         if (validation.DesignCount <= 0)
             return "noDesign";
         if (validation.BuildableCount <= 0)
-            return "noBuildableDesign";
+            return string.IsNullOrWhiteSpace(validation.BlockReason)
+                ? "noBuildableDesign"
+                : "noBuildableDesign:" + validation.BlockReason;
         if (currentShare > desiredShare)
             return "shareSatisfied";
 
@@ -348,6 +350,7 @@ internal static class CampaignAiWeightedBuildTypePickerPatch
     {
         int designCount = 0;
         int buildableCount = 0;
+        Dictionary<string, int> failureReasons = new(StringComparer.Ordinal);
 
         foreach (Ship design in SafeShipList(player.designs))
         {
@@ -355,11 +358,53 @@ internal static class CampaignAiWeightedBuildTypePickerPatch
                 continue;
 
             designCount++;
-            if (!ModSettings.AiArmsRaceEnabled || AiDesignCompetitiveness.IsCompetitive(design, out _))
-                buildableCount++;
+            if (ModSettings.AiArmsRaceEnabled &&
+                !AiDesignCompetitiveness.IsCompetitive(design, out AiDesignCompetitiveness.CompetitivenessInfo info))
+            {
+                AddFailureReason(failureReasons, "vp-" + info.Reason);
+                continue;
+            }
+
+            if (!AiDesignBuildability.CanBuildDesign(player, design, 1, "weighted-build-type-picker", out string reason))
+            {
+                AddFailureReason(failureReasons, reason);
+                continue;
+            }
+
+            buildableCount++;
         }
 
-        return new ValidationSummary(designCount, buildableCount);
+        return new ValidationSummary(designCount, buildableCount, DominantFailureReason(failureReasons));
+    }
+
+    private static void AddFailureReason(Dictionary<string, int> reasons, string reason)
+    {
+        string normalized = CompactReason(reason);
+        reasons[normalized] = reasons.TryGetValue(normalized, out int count) ? count + 1 : 1;
+    }
+
+    private static string DominantFailureReason(Dictionary<string, int> reasons)
+        => reasons.Count == 0
+            ? string.Empty
+            : reasons
+                .OrderByDescending(static pair => pair.Value)
+                .ThenBy(static pair => pair.Key, StringComparer.Ordinal)
+                .First()
+                .Key;
+
+    private static string CompactReason(string? reason)
+    {
+        string normalized = AiDesignBuildability.NormalizeReason(reason);
+        if (string.IsNullOrWhiteSpace(normalized) || string.Equals(normalized, "unknown", StringComparison.OrdinalIgnoreCase))
+            return "unknown";
+
+        int separator = normalized.IndexOf(':');
+        if (separator > 0)
+            normalized = normalized[..separator];
+
+        return normalized
+            .Replace("|", "_", StringComparison.Ordinal)
+            .Replace(",", "_", StringComparison.Ordinal);
     }
 
     private static void LogDecision(Player player, WeightedPickDecision decision)
@@ -547,7 +592,7 @@ internal static class CampaignAiWeightedBuildTypePickerPatch
     private static void Log(string message)
         => Melon<UADVanillaPlusMod>.Logger.Msg($"{LogPrefix}: {message}");
 
-    private readonly record struct ValidationSummary(int DesignCount, int BuildableCount);
+    private readonly record struct ValidationSummary(int DesignCount, int BuildableCount, string BlockReason);
 
     private readonly record struct TypeCandidate(
         string Type,

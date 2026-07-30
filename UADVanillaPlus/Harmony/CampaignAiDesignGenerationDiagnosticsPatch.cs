@@ -6,6 +6,7 @@ using HarmonyLib;
 using Il2Cpp;
 using MelonLoader;
 using UADVanillaPlus.GameData;
+using UADVanillaPlus.Services;
 
 namespace UADVanillaPlus.Harmony;
 
@@ -15,6 +16,7 @@ namespace UADVanillaPlus.Harmony;
 internal static class CampaignAiDesignGenerationDiagnostics
 {
     private const string LogPrefix = "[AI DesignGen]";
+    private static bool VerboseDiagnostics => false;
     private const float RefreshFreshnessThresholdYears = 1f;
     private static readonly string[] SurfaceTypes = { "BB", "BC", "CA", "CL", "DD", "TB" };
     private static readonly Dictionary<long, GenerationContext> ActiveByPlayer = new();
@@ -49,8 +51,11 @@ internal static class CampaignAiDesignGenerationDiagnostics
                 DesignSnapshot.For(player!));
             ActiveByPlayer[playerPointer] = context;
 
-            Log(
-                $"start turn={context.TurnLabel} nation={context.Nation} prewarming={BoolText(context.Prewarming)} advancedAiBuilder={AdvancedAiBuilderLabel()} designUsage={context.DesignUsage} sharedUsage={context.SharedUsage} before={context.Before.CountText()} newestBefore={context.Before.NewestText()} buildableBefore={context.Before.BuildableText()} hulls={context.Before.HullAvailabilityText()}.");
+            if (VerboseDiagnostics)
+            {
+                Log(
+                    $"start turn={context.TurnLabel} nation={context.Nation} prewarming={BoolText(context.Prewarming)} advancedAiBuilder={AdvancedAiBuilderLabel()} designUsage={context.DesignUsage} sharedUsage={context.SharedUsage} before={context.Before.CountText()} newestBefore={context.Before.NewestText()} buildableBefore={context.Before.BuildableText()} hulls={context.Before.HullAvailabilityText()}.");
+            }
         }
         catch (Exception ex)
         {
@@ -89,13 +94,21 @@ internal static class CampaignAiDesignGenerationDiagnostics
             string freshCoveredTypes = context.FreshCoveredTypeText();
             string replacementAfterFresh = context.ReplacementAfterFreshText(gate);
 
-            Log(
-                $"result turn={context.TurnLabel} nation={context.Nation} prewarming={BoolText(context.Prewarming)} advancedAiBuilder={AdvancedAiBuilderLabel()} designUsage={context.DesignUsage} sharedUsage={context.SharedUsage} before={context.Before.CountText()} after={after.CountText()} newestBefore={context.Before.NewestText()} newestAfter={after.NewestText()} buildableBefore={context.Before.BuildableText()} buildableAfter={after.BuildableText()} hulls={after.HullAvailabilityText()} new={newText} source={source} missingCandidates={context.Missing.Summary()} replacementCandidates={context.Replacement.Summary()} freshCoverCandidates={context.Stale.Summary()} staleCandidates=renamedToFreshCover selectedOrAcceptedTypes={context.AcceptedCandidateText()} sharedAttempted={context.SharedAttempted} sharedAccepted={context.SharedAccepted} randomAttempted={RandomAttemptText(context, newDesigns)} randomAttempts={context.RandomAttempts} randomSuccess={context.RandomSuccesses} randomFailures={context.RandomFailures} randomErased={context.RandomErased} outcome={outcome} gateReason={gateReason} designCount={gate.DesignCount} buildableTypes={gate.BuildableTypesText()} representedTypes={gate.RepresentedTypesText()} missingAfterExisting={gate.MissingAfterExistingText()} freshCoveredTypes={freshCoveredTypes} replacementAfterFresh={replacementAfterFresh} freshCover={freshCover} selectedType={context.SelectedTypeText(gate)} state={context.StateText(gate)} tries={context.TriesText(gate)} i={context.IText(gate)} j={context.JText(gate)}.");
-
-            if (newDesigns.Count == 0)
+            if (VerboseDiagnostics)
             {
                 Log(
-                    $"gate turn={context.TurnLabel} nation={context.Nation} prewarming={BoolText(context.Prewarming)} advancedAiBuilder={AdvancedAiBuilderLabel()} reason={gateReason} designCount={gate.DesignCount} buildableTypes={gate.BuildableTypesText()} representedTypes={gate.RepresentedTypesText()} missingAfterExisting={gate.MissingAfterExistingText()} freshCoveredTypes={freshCoveredTypes} replacementAfterFresh={replacementAfterFresh} selectedType={context.SelectedTypeText(gate)} state={context.StateText(gate)} tries={context.TriesText(gate)} i={context.IText(gate)} j={context.JText(gate)} predicates=missing:{context.Missing.Summary()} replacement:{context.Replacement.Summary()} freshCover:{context.Stale.Summary()} freshCoverDetails={freshCover} sharedAttempted={context.SharedAttempted} randomAttempts={context.RandomAttempts}.");
+                    $"result turn={context.TurnLabel} nation={context.Nation} prewarming={BoolText(context.Prewarming)} advancedAiBuilder={AdvancedAiBuilderLabel()} designUsage={context.DesignUsage} sharedUsage={context.SharedUsage} before={context.Before.CountText()} after={after.CountText()} newestBefore={context.Before.NewestText()} newestAfter={after.NewestText()} buildableBefore={context.Before.BuildableText()} buildableAfter={after.BuildableText()} hulls={after.HullAvailabilityText()} new={newText} source={source} missingCandidates={context.Missing.Summary()} replacementCandidates={context.Replacement.Summary()} freshCoverCandidates={context.Stale.Summary()} staleCandidates=renamedToFreshCover selectedOrAcceptedTypes={context.AcceptedCandidateText()} sharedAttempted={context.SharedAttempted} sharedAccepted={context.SharedAccepted} randomAttempted={RandomAttemptText(context, newDesigns)} randomAttempts={context.RandomAttempts} randomSuccess={context.RandomSuccesses} randomFailures={context.RandomFailures} randomErased={context.RandomErased} outcome={outcome} gateReason={gateReason} designCount={gate.DesignCount} buildableTypes={gate.BuildableTypesText()} representedTypes={gate.RepresentedTypesText()} missingAfterExisting={gate.MissingAfterExistingText()} freshCoveredTypes={freshCoveredTypes} replacementAfterFresh={replacementAfterFresh} freshCover={freshCover} selectedType={context.SelectedTypeText(gate)} state={context.StateText(gate)} tries={context.TriesText(gate)} i={context.IText(gate)} j={context.JText(gate)}.");
+
+                if (newDesigns.Count == 0)
+                {
+                    Log(
+                        $"gate turn={context.TurnLabel} nation={context.Nation} prewarming={BoolText(context.Prewarming)} advancedAiBuilder={AdvancedAiBuilderLabel()} reason={gateReason} designCount={gate.DesignCount} buildableTypes={gate.BuildableTypesText()} representedTypes={gate.RepresentedTypesText()} missingAfterExisting={gate.MissingAfterExistingText()} freshCoveredTypes={freshCoveredTypes} replacementAfterFresh={replacementAfterFresh} selectedType={context.SelectedTypeText(gate)} state={context.StateText(gate)} tries={context.TriesText(gate)} i={context.IText(gate)} j={context.JText(gate)} predicates=missing:{context.Missing.Summary()} replacement:{context.Replacement.Summary()} freshCover:{context.Stale.Summary()} freshCoverDetails={freshCover} sharedAttempted={context.SharedAttempted} randomAttempts={context.RandomAttempts}.");
+                }
+            }
+            else if (ShouldLogCompactResult(context, newDesigns, source, outcome, gateReason))
+            {
+                Log(
+                    $"result turn={context.TurnLabel} nation={context.Nation} prewarming={BoolText(context.Prewarming)} new={newText} source={source} outcome={outcome} gateReason={gateReason} before={context.Before.CountText()} after={after.CountText()} randomAttempts={context.RandomAttempts} randomSuccess={context.RandomSuccesses} randomFailures={context.RandomFailures} randomErased={context.RandomErased}.");
             }
         }
         catch (Exception ex)
@@ -676,6 +689,8 @@ internal static class CampaignAiDesignGenerationDiagnostics
     {
         if (context.Prewarming)
             return newDesigns.Count > 0 ? "prewarm-created" : "prewarm";
+        if (newDesigns.Any(SmartAiDesignService.IsAcceptedSmartAiDesign))
+            return "created";
         if (newDesigns.Count > 0)
             return context.SharedAccepted > 0 || newDesigns.Any(IsSharedDesign) ? "shared" : "created";
         if (context.TotalPredicateCalls == 0)
@@ -683,6 +698,34 @@ internal static class CampaignAiDesignGenerationDiagnostics
         if (context.TotalFinalAccepted == 0)
             return "noCandidate";
         return "candidateNoDesign";
+    }
+
+    private static bool ShouldLogCompactResult(
+        GenerationContext context,
+        IReadOnlyCollection<Ship> newDesigns,
+        string source,
+        string outcome,
+        string gateReason)
+    {
+        if (newDesigns.Count > 0 ||
+            context.RandomFailures > 0 ||
+            context.RandomErased > 0)
+        {
+            return true;
+        }
+
+        if (context.RandomAttempts > 0 && context.RandomSuccesses == 0)
+            return true;
+
+        if (string.Equals(source, "mixed", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(outcome, "candidateNoDesign", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(gateReason, "selected-type-but-no-start", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(gateReason, "random-started-no-design", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return false;
     }
 
     private static string GateReasonFor(GenerationContext context, IReadOnlyCollection<Ship> newDesigns, GenerateGateSnapshot gate)
@@ -722,10 +765,18 @@ internal static class CampaignAiDesignGenerationDiagnostics
         if (newDesigns.Count == 0)
             return "none";
 
-        bool anyShared = context.SharedAccepted > 0 || newDesigns.Any(IsSharedDesign);
-        bool anyRandom = newDesigns.Any(design => !IsSharedDesign(design)) && context.SharedAccepted == 0;
-        if (anyShared && anyRandom)
+        bool anySmartAi = newDesigns.Any(SmartAiDesignService.IsAcceptedSmartAiDesign);
+        bool anySharedDesign = newDesigns.Any(design => IsSharedDesign(design) && !SmartAiDesignService.IsAcceptedSmartAiDesign(design));
+        bool anyShared = anySharedDesign || (context.SharedAccepted > 0 && !anySmartAi);
+        bool anyRandom = newDesigns.Any(design =>
+            !IsSharedDesign(design) &&
+            !SmartAiDesignService.IsAcceptedSmartAiDesign(design)) &&
+            context.SharedAccepted == 0;
+        int sourceKinds = (anySmartAi ? 1 : 0) + (anyShared ? 1 : 0) + (anyRandom ? 1 : 0);
+        if (sourceKinds > 1)
             return "mixed";
+        if (anySmartAi)
+            return "smart-ai";
         if (anyShared)
             return "shared";
         return "random";
@@ -869,20 +920,12 @@ internal static class CampaignAiDesignGenerationDiagnostics
 
     private static bool CanBuildDesign(Ship design)
     {
-        try
-        {
-            PlayerController? controller = PlayerController.Instance;
-            if (controller == null)
-                return false;
-
-            string reason = "unknown";
-            return CampaignAiShipbuildingDiagnosticsPatch.WithoutValidationAggregation(() =>
-                controller.CanBuildShipsFromDesign(design, 1, out reason));
-        }
-        catch
-        {
-            return false;
-        }
+        return AiDesignBuildability.CanBuildDesign(
+            Safe(() => design.player, null),
+            design,
+            1,
+            "DesignGenSnapshot",
+            out _);
     }
 
     private static List<Ship> SafeShipList(Il2CppSystem.Collections.Generic.IEnumerable<Ship>? ships)
@@ -910,6 +953,9 @@ internal static class CampaignAiDesignGenerationDiagnostics
     private static bool IsActiveDesign(Ship? design)
     {
         if (design == null || Safe(() => design.isErased, true))
+            return false;
+
+        if (CampaignSmartRefitPatch.IsBlockedAiRefitDesign(design))
             return false;
 
         return Safe(() => design.isDesign || design.isRefitDesign, false);

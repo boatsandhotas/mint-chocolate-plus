@@ -13,7 +13,7 @@
 - Before making UI layout changes, including adding buttons, toggles, text, labels, overlays, or popup/menu controls, read `plans/ui-layout-guide.md` first and follow its decision tree for choosing between native button cloning, existing-label text injection, child overlays, layout-group rows, or explicitly reserved floating panels.
 - Before every build, bump the current patch version. Update `UADVanillaPlus/ModInfo.cs` `MelonVersion`, `UADVanillaPlus/Properties/AssemblyInfo.cs` assembly/file versions, and `README.md`'s current version together. Do not add a separate build-number suffix.
 - Keep the in-game overlay version and MelonLoader metadata consistent through `ModInfo.DisplayText`.
-- After a successful build, always try the built-DLL copy immediately. Copy directly to the game `Mods` folder without first checking whether the game is running; if the DLL is locked, let the copy fail and report that.
+- After a successful build, always try the built-DLL copy immediately. Copy directly to the game `Mods` folder without first checking whether the game is running; if the DLL is locked, let the copy fail and report that. Never close, kill, restart, or otherwise interrupt the running game, Steam, MelonLoader, Unity crash handler, or related processes to unlock the DLL unless the user explicitly asks you to do that after the lock is reported.
 - When the user asks to merge, push, update GitHub, or otherwise publish completed work, commit locally, fast-forward/merge the work to `master`, and push `master` unless they explicitly limit it to local-only or ask for a different branch.
 - The GitHub CLI may be installed outside `PATH`; use its full path (e.g. `<WORKSPACE>\tools\gh\...\gh.exe`) when `gh` is not on `PATH`.
 - When creating or updating GitHub release notes, summarize the major player-facing highlights since the previous public release/tag, not only the final commit. Use the tag range, such as `previous_tag..new_tag`, and group the notes by user-facing area when helpful.
@@ -46,7 +46,7 @@ $env:NUGET_PACKAGES='<WORKSPACE>\.nuget\packages'
 <WORKSPACE>\dotnet\dotnet.exe build <WORKSPACE>\UADVanillaPlus\UADVanillaPlus.sln -c Release /p:RestoreConfigFile=<WORKSPACE>\UADVanillaPlus\NuGet.Config
 ```
 
-Copy the built DLL directly after a successful build. Do not run a process check first; if the game has the DLL locked, let the copy fail and report that:
+Copy the built DLL directly after a successful build. Do not run a process check first; if the game has the DLL locked, let the copy fail and report that. Do not close or kill the game or any related process to unlock the DLL unless the user explicitly asks for that after seeing the lock:
 
 ```powershell
 Copy-Item -LiteralPath '<WORKSPACE>\UADVanillaPlus\UADVanillaPlus\bin\Release\net6.0\UADVanillaPlus.dll' -Destination '<UAD_INSTALL>\Mods\UADVanillaPlus.dll' -Force

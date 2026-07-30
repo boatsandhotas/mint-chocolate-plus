@@ -13,10 +13,13 @@ namespace UADVanillaPlus.Harmony;
 internal static class CampaignAiShipbuildingDiagnosticsPatch
 {
     private const string LogPrefix = "UADVP ai-build";
+    private static readonly bool DetailedDiagnosticsEnabled = false;
+    private static readonly bool TurnSummaryEnabled = true;
     private static readonly string[] SurfaceTypes = { "BB", "BC", "CA", "CL", "DD", "TB" };
     private static readonly string[] FleetTypes = { "BB", "BC", "CA", "CL", "DD", "TB", "SS" };
     private static readonly Stack<BuildContext> ActiveSurfaceBuilds = new();
     private static readonly Stack<BuildContext> ActiveSubmarineBuilds = new();
+    private static readonly Dictionary<string, AiBuildTurnSummary> PendingTurnSummaries = new(StringComparer.Ordinal);
     private static readonly HashSet<string> LoggedDesignSnapshotKeys = new(StringComparer.Ordinal);
     private static bool logDesignPowerSnapshots = true;
     private static bool suppressValidationAggregation;
@@ -32,12 +35,16 @@ internal static class CampaignAiShipbuildingDiagnosticsPatch
         try
         {
             context.BeforeShipIds = SnapshotShipIds(player!.fleetAll);
-            CampaignAiWeightedBuildTypePickerPatch.LogDisabledForVanilla(player, context.DateLabel);
-            LogPlayerSummary(context);
-            LogFleetMix(context);
-            LogGateSummary(context);
-            LogSurfaceTypeDiagnostics(context);
-            LogDesignPowerSnapshot(context);
+            EnsureTurnSummaryNation(context);
+            if (DetailedDiagnosticsEnabled)
+            {
+                CampaignAiWeightedBuildTypePickerPatch.LogDisabledForVanilla(player, context.DateLabel);
+                LogPlayerSummary(context);
+                LogFleetMix(context);
+                LogGateSummary(context);
+                LogSurfaceTypeDiagnostics(context);
+                LogDesignPowerSnapshot(context);
+            }
         }
         catch (Exception ex)
         {
@@ -55,9 +62,12 @@ internal static class CampaignAiShipbuildingDiagnosticsPatch
         try
         {
             LogNewSurfaceOrders(context, player);
-            LogVanillaValidationSummary(context);
-            if (!context.ObservedOrder)
-                LogNoOrderSummary(context);
+            if (DetailedDiagnosticsEnabled)
+            {
+                LogVanillaValidationSummary(context);
+                if (!context.ObservedOrder)
+                    LogNoOrderSummary(context);
+            }
         }
         catch (Exception ex)
         {
@@ -80,7 +90,9 @@ internal static class CampaignAiShipbuildingDiagnosticsPatch
         try
         {
             context.BeforeShipIds = SnapshotSubmarineIds(player!.submarinesAll);
-            Log($"{context.Prefix} subs-start cash={Fmt(player.cash)} tempCash={Fmt(tempPlayerCash)} revenue={Fmt(context.Revenue)} income={Fmt(context.Income)} crew={context.CrewPool}/{Fmt(context.MinCrewPool)} stateBudget={Fmt(context.StateBudget)} fleetTons={Fmt(context.CurrentFleetTons)} aiShipbuilding={Fmt(context.AiShipbuilding)} phase={context.Phase}.");
+            EnsureTurnSummaryNation(context);
+            if (DetailedDiagnosticsEnabled)
+                Log($"{context.Prefix} subs-start cash={Fmt(player.cash)} tempCash={Fmt(tempPlayerCash)} revenue={Fmt(context.Revenue)} income={Fmt(context.Income)} crew={context.CrewPool}/{Fmt(context.MinCrewPool)} stateBudget={Fmt(context.StateBudget)} fleetTons={Fmt(context.CurrentFleetTons)} aiShipbuilding={Fmt(context.AiShipbuilding)} phase={context.Phase}.");
         }
         catch (Exception ex)
         {
@@ -98,7 +110,7 @@ internal static class CampaignAiShipbuildingDiagnosticsPatch
         try
         {
             LogNewSubmarineOrders(context, player);
-            if (!context.ObservedOrder)
+            if (DetailedDiagnosticsEnabled && !context.ObservedOrder)
                 Log($"{context.Prefix} subs-none likelyGate={LikelyGate(context)}.");
         }
         catch (Exception ex)
@@ -113,7 +125,7 @@ internal static class CampaignAiShipbuildingDiagnosticsPatch
 
     internal static void RecordCanBuildValidation(Ship? design, int amount, string? reason, bool result)
     {
-        if (suppressValidationAggregation || ActiveSurfaceBuilds.Count == 0 || design == null)
+        if (!DetailedDiagnosticsEnabled || suppressValidationAggregation || ActiveSurfaceBuilds.Count == 0 || design == null)
             return;
 
         BuildContext context = ActiveSurfaceBuilds.Peek();
@@ -156,7 +168,7 @@ internal static class CampaignAiShipbuildingDiagnosticsPatch
         bool fallback,
         bool suppressVanilla)
     {
-        if (ActiveSurfaceBuilds.Count == 0 || player == null)
+        if (!DetailedDiagnosticsEnabled || ActiveSurfaceBuilds.Count == 0 || player == null)
             return;
 
         BuildContext context = ActiveSurfaceBuilds.Peek();
@@ -207,7 +219,8 @@ internal static class CampaignAiShipbuildingDiagnosticsPatch
 
             List<ShipSnapshot> beforeFleet = SnapshotShipDetails(owner.fleetAll);
             List<ShipSnapshot> beforeDesigns = SnapshotShipDetails(owner.designs);
-            LogBuildSourceFlags(context, owner, design, beforeFleet.Count, beforeDesigns.Count);
+            if (DetailedDiagnosticsEnabled)
+                LogBuildSourceFlags(context, owner, design, beforeFleet.Count, beforeDesigns.Count);
 
             return new BuildAttemptState(
                 context,
@@ -263,15 +276,22 @@ internal static class CampaignAiShipbuildingDiagnosticsPatch
             float cashAfter = Safe(() => owner.cash, 0f);
             int crewAfter = Safe(() => owner.crewPool, 0);
             float buildingAfter = Safe(() => owner.ShipTonnageUnderConstruction(), 0f);
-            Log(
-                $"{context.Prefix} build-call type={state.Type} design={state.DesignLabel} amount={amount} force={force.ToString().ToLowerInvariant()} beforeShips={beforeCount} afterShips={afterCount} created={created.ToString().ToLowerInvariant()} reason={reason} cash={Fmt(state.CashBefore)}->{Fmt(cashAfter)} crew={state.CrewBefore}->{crewAfter} buildingTons={Fmt(state.BuildingTonsBefore)}->{Fmt(buildingAfter)}.");
+            if (DetailedDiagnosticsEnabled)
+            {
+                Log(
+                    $"{context.Prefix} build-call type={state.Type} design={state.DesignLabel} amount={amount} force={force.ToString().ToLowerInvariant()} beforeShips={beforeCount} afterShips={afterCount} created={created.ToString().ToLowerInvariant()} reason={reason} cash={Fmt(state.CashBefore)}->{Fmt(cashAfter)} crew={state.CrewBefore}->{crewAfter} buildingTons={Fmt(state.BuildingTonsBefore)}->{Fmt(buildingAfter)}.");
+            }
 
             foreach (Ship createdShip in afterShips.Where(ship => !state.BeforeShipIds.Contains(ShipIdentity(ship))))
             {
-                LogCreatedShipFlags(context, owner, createdShip, design);
+                if (DetailedDiagnosticsEnabled)
+                    LogCreatedShipFlags(context, owner, createdShip, design);
                 SanitizeCreatedShipClone(context, owner, createdShip, design);
-                MajorShipTorpedoCleanup.Audit(createdShip, owner, "build-created", context.DateLabel);
-                MajorShipTorpedoCleanup.Audit(Safe(() => createdShip.design, null), owner, "build-created-linked-design", context.DateLabel);
+                if (DetailedDiagnosticsEnabled)
+                {
+                    MajorShipTorpedoCleanup.Audit(createdShip, owner, "build-created", context.DateLabel);
+                    MajorShipTorpedoCleanup.Audit(Safe(() => createdShip.design, null), owner, "build-created-linked-design", context.DateLabel);
+                }
             }
         }
         catch (Exception ex)
@@ -350,8 +370,11 @@ internal static class CampaignAiShipbuildingDiagnosticsPatch
 
             string clearedText = cleared.Count == 0 ? "none" : string.Join(",", cleared.Distinct(StringComparer.Ordinal));
             string failedText = failed.Count == 0 ? "none" : string.Join(",", failed.Distinct(StringComparer.Ordinal));
-            Log(
-                $"{context.Prefix} build-created-sanitized ship={ShipLabel(ship)} id={ShipId(ship)} ptr={ShipPointerText(ship)} cleared={clearedText} failed={failedText} removedFromDesigns={BoolText(removedFromDesigns)} isDesign={BoolText(ReadBoolMember(ship, "isDesign"))} isRefitDesign={BoolText(ReadBoolMember(ship, "isRefitDesign"))} isShared={BoolText(IsSharedDesignMarker(ship))} torpedoCleanup={TorpedoCleanupText(shipTorpedoCleanup)} designTorpedoCleanup={TorpedoCleanupText(designTorpedoCleanup)} storeBefore={storeBefore} storeAfter={ShipStoreSummary(ship)} designStillShared={BoolText(IsSharedDesignMarker(Safe(() => ship.design, null)))}.");
+            if (DetailedDiagnosticsEnabled)
+            {
+                Log(
+                    $"{context.Prefix} build-created-sanitized ship={ShipLabel(ship)} id={ShipId(ship)} ptr={ShipPointerText(ship)} cleared={clearedText} failed={failedText} removedFromDesigns={BoolText(removedFromDesigns)} isDesign={BoolText(ReadBoolMember(ship, "isDesign"))} isRefitDesign={BoolText(ReadBoolMember(ship, "isRefitDesign"))} isShared={BoolText(IsSharedDesignMarker(ship))} torpedoCleanup={TorpedoCleanupText(shipTorpedoCleanup)} designTorpedoCleanup={TorpedoCleanupText(designTorpedoCleanup)} storeBefore={storeBefore} storeAfter={ShipStoreSummary(ship)} designStillShared={BoolText(IsSharedDesignMarker(Safe(() => ship.design, null)))}.");
+            }
         }
         catch (Exception ex)
         {
@@ -364,7 +387,7 @@ internal static class CampaignAiShipbuildingDiagnosticsPatch
         if (!cleanup.Applied)
             return $"skip:{cleanup.Reason}";
 
-        return $"applied:removedTorps={cleanup.RemovedLaunchers},removedSupport={cleanup.RemovedSupportComponents},removedComponents={cleanup.RemovedComponentsText},live={cleanup.LivePartsBefore}->{cleanup.LivePartsAfter},cache={cleanup.CacheBefore}->{cleanup.CacheAfter},store={MajorShipTorpedoCleanup.TubeCountText(cleanup.StoreNameTubes)},reload={MajorShipTorpedoCleanup.TubeCountText(cleanup.ReloadTubes)},valid={cleanup.Valid}";
+        return $"applied:reason={cleanup.Reason},removedTorps={cleanup.RemovedLaunchers},removedSupport={cleanup.RemovedSupportComponents},removedComponents={cleanup.RemovedComponentsText},live={cleanup.LivePartsBefore}->{cleanup.LivePartsAfter},cache={cleanup.CacheBefore}->{cleanup.CacheAfter},have={MajorShipTorpedoCleanup.BoolText(cleanup.HaveTorpedoesBefore)}->{MajorShipTorpedoCleanup.BoolText(cleanup.HaveTorpedoesAfter)},torpedoesAll={cleanup.TorpedoesAllBefore}->{cleanup.TorpedoesAllAfter},weaponCache={MajorShipTorpedoCleanup.BoolText(cleanup.WeaponCacheRefreshOk)},store={MajorShipTorpedoCleanup.TubeCountText(cleanup.StoreNameTubes)},reload={MajorShipTorpedoCleanup.TubeCountText(cleanup.ReloadTubes)},valid={cleanup.Valid}";
     }
 
     internal static T WithoutValidationAggregation<T>(Func<T> action)
@@ -379,6 +402,60 @@ internal static class CampaignAiShipbuildingDiagnosticsPatch
         {
             suppressValidationAggregation = previous;
         }
+    }
+
+    internal static void FlushPendingAiBuildTurnSummariesAfterNextTurn()
+    {
+        if (!TurnSummaryEnabled || PendingTurnSummaries.Count == 0)
+            return;
+
+        List<AiBuildTurnSummary> summaries = PendingTurnSummaries.Values
+            .OrderBy(summary => summary.TurnIndex)
+            .ThenBy(summary => summary.DateLabel, StringComparer.Ordinal)
+            .ToList();
+        PendingTurnSummaries.Clear();
+
+        foreach (AiBuildTurnSummary summary in summaries)
+        {
+            try
+            {
+                Log($"{LogPrefix} summary turn={summary.DateLabel} total={summary.Total} countries={summary.CountriesText()}");
+            }
+            catch (Exception ex)
+            {
+                Warn($"summary flush failed for {summary.DateLabel}. {ex.GetType().Name}: {ex.Message}");
+            }
+        }
+    }
+
+    private static void EnsureTurnSummaryNation(BuildContext context)
+    {
+        if (!TurnSummaryEnabled || context.InitialGeneration)
+            return;
+
+        AiBuildTurnSummary summary = GetTurnSummary(context);
+        summary.EnsureNation(context.Nation);
+    }
+
+    private static void RecordTurnSummaryOrder(BuildContext context, string type)
+    {
+        if (!TurnSummaryEnabled || context.InitialGeneration)
+            return;
+
+        AiBuildTurnSummary summary = GetTurnSummary(context);
+        summary.Add(context.Nation, NormalizeShipType(type));
+    }
+
+    private static AiBuildTurnSummary GetTurnSummary(BuildContext context)
+    {
+        string key = $"{context.Turn}|{context.DateLabel}";
+        if (!PendingTurnSummaries.TryGetValue(key, out AiBuildTurnSummary? summary))
+        {
+            summary = new AiBuildTurnSummary(context.Turn, context.DateLabel);
+            PendingTurnSummaries[key] = summary;
+        }
+
+        return summary;
     }
 
     private static BuildContext CreateContext(Player player, float tempPlayerCash, BuildKind kind)
@@ -576,14 +653,16 @@ internal static class CampaignAiShipbuildingDiagnosticsPatch
 
     private static void LogDesignPowerSnapshot(BuildContext context)
     {
-        if (!logDesignPowerSnapshots)
+        if (!DetailedDiagnosticsEnabled || !logDesignPowerSnapshots)
             return;
 
         string key = $"{context.Player.Pointer.ToInt64()}:{context.Turn}";
         if (!LoggedDesignSnapshotKeys.Add(key))
             return;
 
-        List<Ship> allDesigns = SafeShipList(context.Player.designs);
+        List<Ship> allDesigns = SafeShipList(context.Player.designs)
+            .Where(design => !CampaignSmartRefitPatch.IsBlockedAiRefitDesign(design))
+            .ToList();
         List<Ship> surfaceDesigns = allDesigns
             .Where(design => SurfaceTypes.Contains(NormalizeShipType(design.shipType), StringComparer.OrdinalIgnoreCase))
             .OrderBy(design => NormalizeShipType(design.shipType))
@@ -625,7 +704,7 @@ internal static class CampaignAiShipbuildingDiagnosticsPatch
             : "disabled";
 
         Log(
-            $"{context.Prefix} design-power type={type} name={ShipLabel(design)} created={GameDateLabel(created, -1)} year={GameDateYear(created)} tons={MetricText(() => design.Tonnage())} cost={MetricText(() => design.Cost())} buildCostMonth={MetricText(() => design.BuildingCostPerMonth())} firepower={MetricText(() => design.GetFirepower())} powerProjection={MetricText(() => design.PowerProjection(true))} basePower={ShipEffectivePowerCalculator.FormatCompactPower(power.BasePower)} adjustedPower={ShipEffectivePowerCalculator.FormatCompactPower(power.AdjustedPower)} q={Fmt(power.QualityMultiplier)} gun={Fmt(power.GunQualityMultiplier)} gunReload={Fmt(power.GunReloadFactor)} gunAcc={Fmt(power.GunIntrinsicAccuracyFactor)} shipAcc={Fmt(power.ShipAccuracyFactor)} gunRange={Fmt(power.GunRangeFactor)} torp={Fmt(power.TorpedoThreatFactor)} torpRange={Fmt(power.TorpedoRangeFactor)} torpSpeed={Fmt(power.TorpedoSpeedFactor)} torpReload={Fmt(power.TorpedoReloadFactor)} torpAcc={Fmt(power.TorpedoAccuracyFactor)} rawGunReload={Fmt(power.WeightedGunReloadScore)} rawGunRange={Fmt(power.WeightedGunRangeScore)} rawGunAcc={Fmt(power.WeightedGunAccuracyScore)} rawShipAcc={Fmt(power.ShipAccuracyScore)} rawTorpRange={Fmt(power.WeightedTorpedoRange)} rawTorpSpeed={Fmt(power.WeightedTorpedoSpeed)} rawTorpReload={Fmt(power.WeightedTorpedoReloadScore)} rawTorpAcc={Fmt(power.WeightedTorpedoAccuracyScore)} torpTubes={power.TorpedoTubeCount} benchmark={ShipEffectivePowerCalculator.FormatCompactPower(power.BenchmarkAdjustedPower)} competitive={ShipEffectivePowerCalculator.FormatRatio(power.CompetitivenessRatio)} threshold={armsRaceThreshold} canBuild={canBuild.CanBuild} reason={canBuild.Reason}.");
+            $"{context.Prefix} design-power type={type} name={ShipLabel(design)} created={GameDateLabel(created, -1)} year={GameDateYear(created)} tons={MetricText(() => design.Tonnage())} cost={MetricText(() => design.Cost())} buildCostMonth={MetricText(() => design.BuildingCostPerMonth())} firepower={MetricText(() => design.GetFirepower())} powerProjection={MetricText(() => design.PowerProjection(true))} vanillaBasePower={ShipEffectivePowerCalculator.FormatCompactPower(power.VanillaBasePower)} basePower={ShipEffectivePowerCalculator.FormatCompactPower(power.BasePower)} adjustedPower={ShipEffectivePowerCalculator.FormatCompactPower(power.AdjustedPower)} vpWeapon={Fmt(power.VpWeaponPower)} vpGun={Fmt(power.AdjustedGunPower)} vpTorp={Fmt(power.AdjustedTorpedoPower)} armorAvg={Fmt(power.ArmorAverageMm)} vpArmor={Fmt(power.VpArmorScore)} typeArmor={Fmt(power.TypeArmorFactor)} armorFactor={Fmt(power.ArmorFactor)} weaponFactor={Fmt(power.WeaponFactor)} costFactor={Fmt(power.CostFactor)} speedFactor={Fmt(power.SpeedFactor)} q={Fmt(power.QualityMultiplier)} gun={Fmt(power.GunQualityMultiplier)} gunReload={Fmt(power.GunReloadFactor)} gunAcc={Fmt(power.GunIntrinsicAccuracyFactor)} shipAcc={Fmt(power.ShipAccuracyFactor)} gunRange={Fmt(power.GunRangeFactor)} torp={Fmt(power.TorpedoThreatFactor)} torpRange={Fmt(power.TorpedoRangeFactor)} torpSpeed={Fmt(power.TorpedoSpeedFactor)} torpReload={Fmt(power.TorpedoReloadFactor)} torpAcc={Fmt(power.TorpedoAccuracyFactor)} rawGunReload={Fmt(power.WeightedGunReloadScore)} rawGunRange={Fmt(power.WeightedGunRangeScore)} rawGunAcc={Fmt(power.WeightedGunAccuracyScore)} rawShipAcc={Fmt(power.ShipAccuracyScore)} rawTorpRange={Fmt(power.WeightedTorpedoRange)} rawTorpSpeed={Fmt(power.WeightedTorpedoSpeed)} rawTorpReload={Fmt(power.WeightedTorpedoReloadScore)} rawTorpAcc={Fmt(power.WeightedTorpedoAccuracyScore)} torpTubes={power.TorpedoTubeCount} benchmark={ShipEffectivePowerCalculator.FormatCompactPower(power.BenchmarkAdjustedPower)} competitive={ShipEffectivePowerCalculator.FormatRatio(power.CompetitivenessRatio)} threshold={armsRaceThreshold} canBuild={canBuild.CanBuild} reason={canBuild.Reason}.");
 
         if (power.TorpedoTubeCount > 0)
             MajorShipTorpedoCleanup.Audit(design, context.Player, "design-snapshot", context.DateLabel, logClean: true);
@@ -730,6 +809,12 @@ internal static class CampaignAiShipbuildingDiagnosticsPatch
     private static bool IsDesignAllowedByVp(Ship design, out string reason)
     {
         reason = "none";
+        if (CampaignSmartRefitPatch.IsBlockedAiRefitDesign(design))
+        {
+            reason = "uadvpSmartRefitsAiRefitDesign";
+            return false;
+        }
+
         if (!ModSettings.AiArmsRaceEnabled)
             return true;
 
@@ -753,9 +838,13 @@ internal static class CampaignAiShipbuildingDiagnosticsPatch
 
             context.ObservedOrder = true;
             string type = NormalizeShipType(ship.shipType);
+            RecordTurnSummaryOrder(context, type);
             Ship? design = Safe(() => ship.design, null);
-            Log(
-                $"{context.Prefix} order turn={context.DateLabel} nation={context.Nation} selected={type} ship={ShipLabel(ship)} id={id} design={DesignLabel(design ?? ship)} tons={Fmt(Safe(() => ship.Tonnage(), 0f))} cost={Fmt(Safe(() => ship.Cost(), 0f))} dateCreated={GameDateLabel(ship.dateCreated, -1)} role={SafeString(() => ship.CurrentRole.ToString())} status={SafeString(() => ship.status.ToString())}.");
+            if (DetailedDiagnosticsEnabled)
+            {
+                Log(
+                    $"{context.Prefix} order turn={context.DateLabel} nation={context.Nation} selected={type} ship={ShipLabel(ship)} id={id} design={DesignLabel(design ?? ship)} tons={Fmt(Safe(() => ship.Tonnage(), 0f))} cost={Fmt(Safe(() => ship.Cost(), 0f))} dateCreated={GameDateLabel(ship.dateCreated, -1)} role={SafeString(() => ship.CurrentRole.ToString())} status={SafeString(() => ship.status.ToString())}.");
+            }
         }
     }
 
@@ -771,8 +860,12 @@ internal static class CampaignAiShipbuildingDiagnosticsPatch
                 continue;
 
             context.ObservedOrder = true;
-            Log(
-                $"{context.Prefix} sub-order turn={context.DateLabel} nation={context.Nation} type={SubmarineTypeLabel(sub.Type)} id={id} tons={Fmt(Safe(() => sub.Tonnage(), 0f))} cost={Fmt(Safe(() => sub.Cost(), 0f))} status={SafeString(() => sub.status.ToString())}.");
+            RecordTurnSummaryOrder(context, "SS");
+            if (DetailedDiagnosticsEnabled)
+            {
+                Log(
+                    $"{context.Prefix} sub-order turn={context.DateLabel} nation={context.Nation} type={SubmarineTypeLabel(sub.Type)} id={id} tons={Fmt(Safe(() => sub.Tonnage(), 0f))} cost={Fmt(Safe(() => sub.Cost(), 0f))} status={SafeString(() => sub.status.ToString())}.");
+            }
         }
     }
 
@@ -939,6 +1032,9 @@ internal static class CampaignAiShipbuildingDiagnosticsPatch
         List<Ship> designs = new();
         foreach (Ship design in SafeShipList(player.designs))
         {
+            if (CampaignSmartRefitPatch.IsBlockedAiRefitDesign(design))
+                continue;
+
             if (string.Equals(NormalizeShipType(design.shipType), type, StringComparison.OrdinalIgnoreCase))
                 designs.Add(design);
         }
@@ -1550,6 +1646,84 @@ internal static class CampaignAiShipbuildingDiagnosticsPatch
         }
     }
 
+    internal sealed class AiBuildTurnSummary
+    {
+        private readonly SortedDictionary<string, AiBuildNationSummary> nations = new(StringComparer.Ordinal);
+
+        internal AiBuildTurnSummary(int turnIndex, string dateLabel)
+        {
+            TurnIndex = turnIndex;
+            DateLabel = dateLabel;
+        }
+
+        internal int TurnIndex { get; }
+        internal string DateLabel { get; }
+        internal int Total => nations.Values.Sum(nation => nation.Total);
+
+        internal void EnsureNation(string nation)
+        {
+            if (!nations.ContainsKey(nation))
+                nations[nation] = new AiBuildNationSummary(nation);
+        }
+
+        internal void Add(string nation, string type)
+        {
+            EnsureNation(nation);
+            nations[nation].Add(type);
+        }
+
+        internal string CountriesText()
+            => nations.Count == 0
+                ? "none"
+                : string.Join(",", nations.Values.Select(nation => nation.ToSummaryText()));
+    }
+
+    internal sealed class AiBuildNationSummary
+    {
+        private readonly Dictionary<string, int> countsByType = new(StringComparer.OrdinalIgnoreCase);
+
+        internal AiBuildNationSummary(string nation)
+        {
+            Nation = nation;
+        }
+
+        internal string Nation { get; }
+        internal int Total => countsByType.Values.Sum();
+
+        internal void Add(string type)
+        {
+            string normalizedType = string.IsNullOrWhiteSpace(type) ? "UNK" : type;
+            countsByType[normalizedType] = countsByType.TryGetValue(normalizedType, out int current)
+                ? current + 1
+                : 1;
+        }
+
+        internal string ToSummaryText()
+        {
+            if (Total <= 0)
+                return $"{Nation}:0";
+
+            string details = string.Join(
+                ",",
+                countsByType
+                    .OrderBy(pair => TypeSortIndex(pair.Key))
+                    .ThenBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase)
+                    .Select(pair => $"{pair.Key}={pair.Value}"));
+            return $"{Nation}:{Total}({details})";
+        }
+
+        private static int TypeSortIndex(string type)
+        {
+            for (int i = 0; i < FleetTypes.Length; i++)
+            {
+                if (string.Equals(FleetTypes[i], type, StringComparison.OrdinalIgnoreCase))
+                    return i;
+            }
+
+            return FleetTypes.Length;
+        }
+    }
+
     internal sealed class BuildContext
     {
         internal BuildContext(
@@ -1918,5 +2092,27 @@ internal static class CampaignAiBuildShipsFromDesignDiagnosticsPatch
         CampaignAiShipbuildingDiagnosticsPatch.BuildAttemptState? __state)
     {
         CampaignAiShipbuildingDiagnosticsPatch.EndBuildShipsFromDesignCall(__state, design, amount, force, overridePlayer);
+    }
+}
+
+[HarmonyPatch]
+internal static class CampaignAiShipbuildingSummaryNextTurnCompletionPatch
+{
+    private static bool Prepare()
+    {
+        bool available = TargetMethod() != null;
+        if (!available)
+            Melon<UADVanillaPlusMod>.Logger.Warning("UADVP ai-build: NextTurn MoveNext target not found; summary flush will be skipped.");
+        return available;
+    }
+
+    private static MethodBase? TargetMethod()
+        => CampaignSharedDesignDiagnosticsPatch.NextTurnMoveNextTarget();
+
+    [HarmonyPostfix]
+    private static void Postfix(bool __result)
+    {
+        if (!__result)
+            CampaignAiShipbuildingDiagnosticsPatch.FlushPendingAiBuildTurnSummariesAfterNextTurn();
     }
 }

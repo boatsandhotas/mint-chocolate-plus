@@ -6,10 +6,10 @@ using UADVanillaPlus.GameData;
 namespace UADVanillaPlus.Harmony;
 
 // Patch intent: make major combatants feel less like torpedo boats by removing
-// torpedo launchers from the human designer part list for CA and larger designs.
-// AI/random generation remains unrestricted during shipgen because some early
-// CA hulls require placeholder torpedo parts; successful AI designs are
-// sanitized afterward by CampaignGeneratedDesignSanitizer.
+// torpedo launchers from CA and larger designs for both player and AI design
+// availability. The generated-design cleanup path remains as a defensive net
+// for existing saves, imports, store reload oddities, and any generation route
+// that bypasses Ship.IsPartAvailable.
 [HarmonyPatch(typeof(Ship))]
 internal static class DesignTorpedoRestrictionPatch
 {
@@ -21,7 +21,7 @@ internal static class DesignTorpedoRestrictionPatch
     {
         if (!__result ||
             !ModSettings.MajorShipTorpedoesRestricted ||
-            !IsHumanDesigner(player, ship) ||
+            !HasKnownOwner(player, ship) ||
             !IsTorpedo(part) ||
             !IsMajorShipType(shipType))
         {
@@ -32,21 +32,8 @@ internal static class DesignTorpedoRestrictionPatch
         LogFirstBlock(part, shipType);
     }
 
-    private static bool IsHumanDesigner(Player? player, Ship? ship)
-    {
-        Player? owner = player ?? ship?.player;
-        if (owner == null)
-            return false;
-
-        try
-        {
-            return owner.isMain && !owner.isAi;
-        }
-        catch
-        {
-            return false;
-        }
-    }
+    private static bool HasKnownOwner(Player? player, Ship? ship)
+        => player != null || ship?.player != null;
 
     private static bool IsTorpedo(PartData? part)
         => part?.isTorpedo == true
@@ -83,6 +70,6 @@ internal static class DesignTorpedoRestrictionPatch
             return;
 
         string partName = string.IsNullOrWhiteSpace(part.nameUi) ? part.name : part.nameUi;
-        Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP design balance: hiding torpedo parts for player {label} designs. First blocked part: {partName}.");
+        Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP design balance: hiding torpedo parts for {label} designs. First blocked part: {partName}.");
     }
 }

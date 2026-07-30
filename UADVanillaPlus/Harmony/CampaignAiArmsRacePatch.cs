@@ -79,6 +79,9 @@ internal static class CampaignAiArmsRacePatch
         if (design == null || design.isErased || (!design.isDesign && !design.isRefitDesign))
             return false;
 
+        if (CampaignSmartRefitPatch.IsBlockedAiRefitDesign(design))
+            return false;
+
         if (!IsAiPlayer(design.player))
             return false;
 

@@ -13,8 +13,8 @@ namespace UADVanillaPlus.Harmony;
 // runtime state instead of touching hot combat methods such as Ship.HitChance.
 internal static class BattleRuntimeAccuracyDiagnostics
 {
-    // TODO release-disable: raise or disable this diagnostic before publishing
-    // a non-investigation build. Five seconds keeps the sampler low-noise.
+    // Retained for future accuracy investigations. Normal builds hard-gate this
+    // off through ModSettings.BattleRuntimeDiagnosticsEnabled.
     private const float SampleIntervalSeconds = 5f;
     private const float FirstSampleDelaySeconds = 1f;
     private const float AimDropThreshold = 0.05f;

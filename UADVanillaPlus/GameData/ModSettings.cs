@@ -13,11 +13,20 @@ internal static class ModSettings
     private const string PortStrikeBalancedKey = "uadvp_port_strike_balanced";
     private const string AiFleetCompositionModeKey = "uadvp_ai_fleet_composition_mode";
     private const string AdvancedAiBuilderEnabledKey = "uadvp_advanced_ai_builder_enabled";
+    private const string SmartAiDesignsEnabledKey = "uadvp_smart_ai_designs_enabled";
+    private const string SharedDesignsOnlyModeKey = "uadvp_shared_designs_only_mode";
+    private const string SmartRefitsEnabledKey = "uadvp_smart_refits_enabled";
+    private const string SeaTransportLossesActiveForcesKey = "uadvp_sea_transport_losses_active_forces";
+    private const string AiTaskForceStagingEnabledKey = "uadvp_ai_task_force_staging_enabled";
+    private const string CampaignNavalMobilityModeKey = "uadvp_campaign_naval_mobility_mode";
+    private const string TaskForceSustainmentFullKey = "uadvp_task_force_sustainment_full";
     private const string BattleWeatherAlwaysSunnyKey = "uadvp_battle_weather_always_sunny";
     private const string BattleSpottingRangeModeKey = "uadvp_battle_spotting_range_mode";
     private const string BattleDamageModeKey = "uadvp_battle_damage_mode";
     private const string RealisticShellDamageModeKey = "uadvp_realistic_shell_damage_mode";
     private const string DesignAccuracyPenaltyModeKey = "uadvp_design_accuracy_penalty_mode";
+    private const string HullSpeedAdjustmentEnabledKey = "uadvp_hull_speed_adjustment_enabled";
+    private const string HullWeightAdjustmentEnabledKey = "uadvp_hull_weight_adjustment_enabled";
     private const string MajorShipTorpedoesRestrictedKey = "uadvp_major_ship_torpedoes_restricted";
     private const string BattleReverseMethodKey = "uadvp_battle_reverse_method";
     private const string FollowSteerDampingEnabledKey = "uadvp_follow_steer_damping_enabled";
@@ -33,6 +42,8 @@ internal static class ModSettings
     private const string VanquishedSpoilsShareKey = "uadvp_vanquished_spoils_share";
     private const string NavalReinforcementKey = "uadvp_naval_reinforcement";
     private const string ClassNamingThemesKey = "uadvp_class_naming_themes";
+    private const string ForeignPortCapacityModeKey = "uadvp_foreign_port_capacity_mode";
+    private const string ArmyLogisticsModeKey = "uadvp_army_logistics_mode";
     private const string MineWarfareDisabledKey = "uadvp_mine_warfare_disabled";
     private const string SubmarineWarfareDisabledKey = "uadvp_submarine_warfare_disabled";
     private const string CampaignMapWraparoundEnabledKey = "uadvp_campaign_map_wraparound_enabled";
@@ -52,6 +63,13 @@ internal static class ModSettings
     private static bool? portStrikeBalanced;
     private static AiFleetCompositionMode? aiFleetCompositionMode;
     private static bool? advancedAiBuilderEnabled;
+    private static bool? smartAiDesignsEnabled;
+    private static bool? sharedDesignsOnlyMode;
+    private static bool? smartRefitsEnabled;
+    private static bool? seaTransportLossesActiveForcesEnabled;
+    private static bool? aiTaskForceStagingEnabled;
+    private static CampaignNavalMobilityMode? campaignNavalMobilityMode;
+    private static bool? taskForceSustainmentFullEnabled;
     private static bool? battleWeatherAlwaysSunny;
     private static BattleSpottingRangeMode? battleSpottingRangeMode;
     private static BattleDamageMode? battleDamageMode;
@@ -63,6 +81,8 @@ internal static class ModSettings
     private static bool? aiEconomyPrioritiesEnabled;
     private static bool? shipResupplyOverrideEnabled;
     private static bool? shipServiceRecordsEnabled;
+    private static bool? hullSpeedAdjustmentEnabled;
+    private static bool? hullWeightAdjustmentEnabled;
     private static bool? majorShipTorpedoesRestricted;
     private static bool? superstructureRefitsEnabled;
     private static bool? shipyardCapacityBalanced;
@@ -72,6 +92,8 @@ internal static class ModSettings
     private static LevelSetting? rebuildOverseasWeightLevel;
     private static LevelSetting? vanquishedSpoilsShareLevel;
     private static NavalReinforcementMode? navalReinforcement;
+    private static ForeignPortCapacityMode? foreignPortCapacity;
+    private static ArmyLogisticsMode? armyLogistics;
     private static bool? mineWarfareDisabled;
     private static bool? submarineWarfareDisabled;
     internal enum MapGeometryMode { Flat = 0, Disc = 1, Globe = 2 }
@@ -165,6 +187,26 @@ internal static class ModSettings
         Historical = 4,
     }
 
+    internal enum ForeignPortCapacityMode
+    {
+        Vanilla = 0,
+        Half = 50,
+    }
+
+    internal enum CampaignNavalMobilityMode
+    {
+        Vanilla = 0,
+        Improved = 50,
+        Fast = 65,
+        Extended = 80,
+    }
+
+    internal enum ArmyLogisticsMode
+    {
+        Vanilla = 0,
+        Balanced = 1,
+    }
+
     internal static bool PortStrikeBalanced
     {
         get => portStrikeBalanced ??= PlayerPrefs.GetInt(PortStrikeBalancedKey, 1) != 0;
@@ -221,6 +263,96 @@ internal static class ModSettings
             PlayerPrefs.Save();
             Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: Advanced AI Builder mode {AdvancedAiBuilderModeText(value)}.");
             LogCurrentSettings("after Advanced AI Builder change");
+        }
+    }
+
+    internal static bool SmartAiDesignsEnabled
+    {
+        get => smartAiDesignsEnabled ??= PlayerPrefs.GetInt(SmartAiDesignsEnabledKey, 0) != 0;
+        set
+        {
+            smartAiDesignsEnabled = value;
+            PlayerPrefs.SetInt(SmartAiDesignsEnabledKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: Smart AI Designs mode {SmartAiDesignsModeText(value)}.");
+            LogCurrentSettings("after Smart AI Designs change");
+        }
+    }
+
+    internal static bool SharedDesignsOnlyMode
+    {
+        get => sharedDesignsOnlyMode ??= PlayerPrefs.GetInt(SharedDesignsOnlyModeKey, 0) != 0;
+        set
+        {
+            sharedDesignsOnlyMode = value;
+            PlayerPrefs.SetInt(SharedDesignsOnlyModeKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+        }
+    }
+
+    internal static bool SmartRefitsEnabled
+    {
+        get => smartRefitsEnabled ??= PlayerPrefs.GetInt(SmartRefitsEnabledKey, 1) != 0;
+        set
+        {
+            smartRefitsEnabled = value;
+            PlayerPrefs.SetInt(SmartRefitsEnabledKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: Smart Refits mode {SmartRefitsModeText(value)}.");
+            LogCurrentSettings("after Smart Refits change");
+        }
+    }
+
+    internal static bool SeaTransportLossesActiveForcesEnabled
+    {
+        get => seaTransportLossesActiveForcesEnabled ??= PlayerPrefs.GetInt(SeaTransportLossesActiveForcesKey, 1) != 0;
+        set
+        {
+            seaTransportLossesActiveForcesEnabled = value;
+            PlayerPrefs.SetInt(SeaTransportLossesActiveForcesKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: Sea Transport Losses mode {SeaTransportLossesModeText(value)}.");
+            LogCurrentSettings("after Sea Transport Losses change");
+        }
+    }
+
+    internal static bool AiTaskForceStagingEnabled
+    {
+        get => aiTaskForceStagingEnabled ??= PlayerPrefs.GetInt(AiTaskForceStagingEnabledKey, 1) != 0;
+        set
+        {
+            aiTaskForceStagingEnabled = value;
+            PlayerPrefs.SetInt(AiTaskForceStagingEnabledKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: AI Task Force Staging mode {AiTaskForceStagingModeText(value)}.");
+            LogCurrentSettings("after AI Task Force Staging change");
+        }
+    }
+
+    internal static CampaignNavalMobilityMode CampaignNavalMobility
+    {
+        get => campaignNavalMobilityMode ??= LoadCampaignNavalMobilityMode();
+        set
+        {
+            campaignNavalMobilityMode = value;
+            PlayerPrefs.SetInt(CampaignNavalMobilityModeKey, (int)value);
+            PlayerPrefs.Save();
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: Campaign Naval Mobility mode {CampaignNavalMobilityModeText(value)}.");
+            LogCurrentSettings("after Campaign Naval Mobility change");
+            CampaignNavalMobilityBalance.ApplyCurrentSetting("option change");
+        }
+    }
+
+    internal static bool TaskForceSustainmentFullEnabled
+    {
+        get => taskForceSustainmentFullEnabled ??= PlayerPrefs.GetInt(TaskForceSustainmentFullKey, 1) != 0;
+        set
+        {
+            taskForceSustainmentFullEnabled = value;
+            PlayerPrefs.SetInt(TaskForceSustainmentFullKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: Task Force Sustainment mode {TaskForceSustainmentModeText(value)}.");
+            LogCurrentSettings("after Task Force Sustainment change");
         }
     }
 
@@ -358,6 +490,36 @@ internal static class ModSettings
             PlayerPrefs.Save();
             Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: CA+ Torpedoes mode {(value ? "Disallowed" : "Vanilla")}.");
             LogCurrentSettings("after CA+ Torpedoes change");
+        }
+    }
+
+    internal static bool HullSpeedAdjustmentEnabled
+    {
+        get => hullSpeedAdjustmentEnabled ??= PlayerPrefs.GetInt(HullSpeedAdjustmentEnabledKey, 1) != 0;
+        set
+        {
+            hullSpeedAdjustmentEnabled = value;
+            PlayerPrefs.SetInt(HullSpeedAdjustmentEnabledKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: Hull Speed Adjustment mode {HullSpeedAdjustmentModeText(value)}.");
+            LogCurrentSettings("after Hull Speed Adjustment change");
+            HullSpeedAdjustment.ApplyCurrentSetting("option change");
+        }
+    }
+
+    internal static bool HullWeightAdjustmentEnabled
+    {
+        get => hullWeightAdjustmentEnabled ??= PlayerPrefs.GetInt(HullWeightAdjustmentEnabledKey, 1) != 0;
+        set
+        {
+            hullWeightAdjustmentEnabled = value;
+            PlayerPrefs.SetInt(HullWeightAdjustmentEnabledKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: Hull Weight Adjustment mode {HullWeightAdjustmentModeText(value)}.");
+            LogCurrentSettings("after Hull Weight Adjustment change");
+            HullWeightAdjustment.ApplyCurrentSetting("option change");
+            ProtectionWeightBalance.ApplyCurrentSetting("option change");
+            ShipWeightBalance.ApplyCurrentSetting("option change");
         }
     }
 
@@ -670,6 +832,32 @@ internal static class ModSettings
         return Enum.IsDefined(typeof(LevelSetting), stored) ? (LevelSetting)stored : fallback;
     }
 
+    internal static ForeignPortCapacityMode ForeignPortCapacity
+    {
+        get => foreignPortCapacity ??= LoadForeignPortCapacityMode();
+        set
+        {
+            foreignPortCapacity = value;
+            PlayerPrefs.SetInt(ForeignPortCapacityModeKey, (int)value);
+            PlayerPrefs.Save();
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: Foreign Port Capacity mode {ForeignPortCapacityModeText(value)}.");
+            LogCurrentSettings("after Foreign Port Capacity change");
+        }
+    }
+
+    internal static ArmyLogisticsMode ArmyLogistics
+    {
+        get => armyLogistics ??= LoadArmyLogisticsMode();
+        set
+        {
+            armyLogistics = value;
+            PlayerPrefs.SetInt(ArmyLogisticsModeKey, (int)value);
+            PlayerPrefs.Save();
+            Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: Army Logistics mode {ArmyLogisticsModeText(value)}.");
+            LogCurrentSettings("after Army Logistics change");
+        }
+    }
+
     internal static bool MineWarfareDisabled
     {
         get => mineWarfareDisabled ??= PlayerPrefs.GetInt(MineWarfareDisabledKey, 0) != 0;
@@ -774,8 +962,6 @@ internal static class ModSettings
         }
     }
 
-    // TODO release-disable: this temporary investigation diagnostic defaults on
-    // so current balance test builds emit battle-exit runtime summaries.
     internal static bool BattleRuntimeDiagnosticsEnabled
     {
         get => battleRuntimeDiagnosticsEnabled ??= PlayerPrefs.GetInt(BattleRuntimeDiagnosticsEnabledKey, 1) != 0;
@@ -785,7 +971,6 @@ internal static class ModSettings
             PlayerPrefs.SetInt(BattleRuntimeDiagnosticsEnabledKey, value ? 1 : 0);
             PlayerPrefs.Save();
             Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP option: Battle Runtime Diagnostics mode {BattleRuntimeDiagnosticsModeText(value)}.");
-            LogCurrentSettings("after Battle Runtime Diagnostics change");
         }
     }
 
@@ -940,6 +1125,9 @@ internal static class ModSettings
     internal static bool RealisticShellDamageEnabled
         => RealisticShellDamage == RealisticShellDamageMode.Realistic;
 
+    internal static float ForeignPortCapacityMultiplier(ForeignPortCapacityMode mode)
+        => mode == ForeignPortCapacityMode.Half ? 0.5f : 0f;
+
     internal static string AccuracyPenaltyModeText(AccuracyPenaltyMode mode)
         => mode == AccuracyPenaltyMode.Vanilla ? "Vanilla" : $"/{(int)mode}";
 
@@ -978,6 +1166,51 @@ internal static class ModSettings
     internal static string AdvancedAiBuilderModeText(bool enabled)
         => enabled ? "Enhanced" : "Vanilla";
 
+    internal static string SmartAiDesignsModeText(bool enabled)
+        => enabled ? "Experimental" : "Vanilla";
+
+    internal static string SmartRefitsModeText(bool enabled)
+        => enabled ? "Enhanced" : "Vanilla";
+
+    internal static string SeaTransportLossesModeText(bool enabled)
+        => enabled ? "Active Forces" : "Vanilla";
+
+    internal static string AiTaskForceStagingModeText(bool enabled)
+        => enabled ? "Staging" : "Vanilla";
+
+    internal static string CampaignNavalMobilityModeText(CampaignNavalMobilityMode mode)
+        => mode switch
+        {
+            CampaignNavalMobilityMode.Extended => "Extended",
+            CampaignNavalMobilityMode.Fast => "Fast",
+            CampaignNavalMobilityMode.Improved => "Improved",
+            _ => "Vanilla",
+        };
+
+    internal static string TaskForceSustainmentModeText(bool enabled)
+        => enabled ? "Full" : "Vanilla";
+
+    internal static float CampaignNavalMobilitySpeedMod(CampaignNavalMobilityMode mode)
+        => mode switch
+        {
+            CampaignNavalMobilityMode.Extended => 0.8f,
+            CampaignNavalMobilityMode.Fast => 0.65f,
+            CampaignNavalMobilityMode.Improved => 0.5f,
+            _ => 0.2975f,
+        };
+
+    internal static string HullSpeedAdjustmentModeText(bool enabled)
+        => enabled ? "Adjusted" : "Vanilla";
+
+    internal static string HullWeightAdjustmentModeText(bool enabled)
+        => enabled ? "Adjusted" : "Vanilla";
+
+    internal static string ForeignPortCapacityModeText(ForeignPortCapacityMode mode)
+        => mode == ForeignPortCapacityMode.Half ? "50%" : "Vanilla";
+
+    internal static string ArmyLogisticsModeText(ArmyLogisticsMode mode)
+        => mode == ArmyLogisticsMode.Balanced ? "Balanced" : "Vanilla";
+
     internal static void LogCurrentSettings(string context)
     {
         Melon<UADVanillaPlusMod>.Logger.Msg($"UADVP settings ({context}): {CurrentSettingsText()}.");
@@ -992,13 +1225,23 @@ internal static class ModSettings
            $"Port Strike={PortStrikeModeText(PortStrikeBalanced)}; " +
            $"AI Fleet Mix={AiFleetCompositionModeText(AiFleetComposition)}; " +
            $"Advanced AI Builder={AdvancedAiBuilderModeText(AdvancedAiBuilderEnabled)}; " +
+           $"Smart AI Designs={SmartAiDesignsModeText(SmartAiDesignsEnabled)}; " +
            $"Shared Designs={CampaignSharedDesignUsageSettings.CurrentModeText()}; " +
+           $"Smart Refits={SmartRefitsModeText(SmartRefitsEnabled)}; " +
+           $"Sea Transport Losses={SeaTransportLossesModeText(SeaTransportLossesActiveForcesEnabled)}; " +
+           $"AI Task Force Staging={AiTaskForceStagingModeText(AiTaskForceStagingEnabled)}; " +
+           $"Campaign Naval Mobility={CampaignNavalMobilityModeText(CampaignNavalMobility)}; " +
+           $"Task Force Sustainment={TaskForceSustainmentModeText(TaskForceSustainmentFullEnabled)}; " +
            $"Suspend Dock Overcapacity={ShipyardCapacityModeText(ShipyardCapacityBalanced)}; " +
+           $"Foreign Port Capacity={ForeignPortCapacityModeText(ForeignPortCapacity)}; " +
+           $"Army Logistics={ArmyLogisticsModeText(ArmyLogistics)}; " +
            $"Canal Openings={CanalOpeningModeText(EarlyCanalOpeningsEnabled)}; " +
            $"Technology Spread={TechnologySpreadModeText(TechnologySpread)}; " +
            $"Campaign End Date={CampaignEndDateModeText(CampaignEndDateEnabled)}; " +
            $"Mine Warfare={MineWarfareModeText(MineWarfareDisabled)}; " +
            $"Submarine Warfare={SubmarineWarfareModeText(SubmarineWarfareDisabled)}; " +
+           $"Hull Speed Adjustment={HullSpeedAdjustmentModeText(HullSpeedAdjustmentEnabled)}; " +
+           $"Hull Weight Adjustment={HullWeightAdjustmentModeText(HullWeightAdjustmentEnabled)}; " +
            $"CA+ Torpedoes={MajorShipTorpedoesModeText(MajorShipTorpedoesRestricted)}; " +
            $"Superstructure Compatibility={SuperstructureRefitsModeText(SuperstructureRefitsEnabled)}; " +
            $"Map Geometry={CampaignMapModeText(MapGeometry)}; " +
@@ -1103,6 +1346,30 @@ internal static class ModSettings
         return Enum.IsDefined(typeof(TechnologySpreadMode), stored)
             ? (TechnologySpreadMode)stored
             : TechnologySpreadMode.Vanilla;
+    }
+
+    private static ForeignPortCapacityMode LoadForeignPortCapacityMode()
+    {
+        int stored = PlayerPrefs.GetInt(ForeignPortCapacityModeKey, (int)ForeignPortCapacityMode.Half);
+        return Enum.IsDefined(typeof(ForeignPortCapacityMode), stored)
+            ? (ForeignPortCapacityMode)stored
+            : ForeignPortCapacityMode.Half;
+    }
+
+    private static CampaignNavalMobilityMode LoadCampaignNavalMobilityMode()
+    {
+        int stored = PlayerPrefs.GetInt(CampaignNavalMobilityModeKey, (int)CampaignNavalMobilityMode.Extended);
+        return Enum.IsDefined(typeof(CampaignNavalMobilityMode), stored)
+            ? (CampaignNavalMobilityMode)stored
+            : CampaignNavalMobilityMode.Extended;
+    }
+
+    private static ArmyLogisticsMode LoadArmyLogisticsMode()
+    {
+        int stored = PlayerPrefs.GetInt(ArmyLogisticsModeKey, (int)ArmyLogisticsMode.Balanced);
+        return Enum.IsDefined(typeof(ArmyLogisticsMode), stored)
+            ? (ArmyLogisticsMode)stored
+            : ArmyLogisticsMode.Balanced;
     }
 
     private static string NationShipPaintPreferenceKey(string nationKey)

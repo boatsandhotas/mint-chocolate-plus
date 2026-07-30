@@ -32,6 +32,9 @@ internal static class DesignRefitNamePatch
     private static readonly Regex RefitYearNameRegex = new(
         @"^\s*(?<base>.*?)\s*\((?:(?<month>[A-Za-z]{3})\.?\s+)?(?<year>\d{4})(?<letter>[A-Za-z]*)\)\s*(?:-\s*(?<number>\d+))?\s*$",
         RegexOptions.CultureInvariant | RegexOptions.Compiled);
+    private static readonly Regex GeneratedNationTagRegex = new(
+        @"^(?<base>.*?)[\s_]*\[(?<tag>[A-Za-z][A-Za-z _-]{1,32})\]\s*_?\s*$",
+        RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
     private static bool loggedRule;
     private static bool loggedConflict;
@@ -85,21 +88,25 @@ internal static class DesignRefitNamePatch
             if (design == null || design.Pointer == currentDesign.Pointer)
                 continue;
 
-            if (!TryReadRefitYearName(design.name, design,
-                    out string candidateBaseName, out int candidateYear, out int candidateMonth, out int candidateOrdinal))
-                continue;
+            foreach (string candidateName in RefitNameCandidates(design))
+            {
+                if (!TryReadRefitYearName(candidateName, design,
+                        out string candidateBaseName, out int candidateYear, out int candidateMonth, out int candidateOrdinal))
+                    continue;
 
-            if (candidateYear != refitYear || !string.Equals(candidateBaseName, baseName, StringComparison.OrdinalIgnoreCase))
-                continue;
+                if (candidateYear != refitYear || !string.Equals(candidateBaseName, baseName, StringComparison.OrdinalIgnoreCase))
+                    continue;
 
-            // Legacy year-only entries (candidateMonth == 0) collide with ANY
-            // month in the same year — we can't tell when they were designed,
-            // so treat them as overlapping to be safe. Month-tagged entries
-            // only collide with their own month.
-            if (candidateMonth != 0 && candidateMonth != refitMonth)
-                continue;
+                // Legacy year-only entries (candidateMonth == 0) collide with ANY
+                // month in the same year — we can't tell when they were designed,
+                // so treat them as overlapping to be safe. Month-tagged entries
+                // only collide with their own month.
+                if (candidateMonth != 0 && candidateMonth != refitMonth)
+                    continue;
 
-            highestOrdinal = Math.Max(highestOrdinal, Math.Max(1, candidateOrdinal));
+                highestOrdinal = Math.Max(highestOrdinal, Math.Max(1, candidateOrdinal));
+                break;
+            }
         }
 
         return highestOrdinal + 1;
@@ -121,6 +128,48 @@ internal static class DesignRefitNamePatch
                 return i + 1;
         }
         return 0;
+    }
+
+    internal static string CleanRefitBaseNameForVp(Ship? ship)
+        => CleanRefitBaseName(ship);
+
+    // Upstream's callers (CampaignSmartRefitPatch) only need base/year/ordinal;
+    // month is VP's own addition and stays internal-only here.
+    internal static bool TryReadRefitYearNameForVp(string? name, Ship? ship, out string baseName, out int year, out int ordinal)
+        => TryReadRefitYearName(name, ship, out baseName, out year, out _, out ordinal);
+
+    internal static IEnumerable<string> RefitNameCandidatesForVp(Ship? design)
+        => RefitNameCandidates(design);
+
+    // Year-only, matching what CampaignSmartRefitPatch already builds names against;
+    // it doesn't have a month value available at its call sites.
+    internal static string BuildRefitYearNameForVp(string baseName, int year, int ordinal)
+        => $"{baseName} ({year}{ConflictLetterSuffix(ordinal)})";
+
+    private static IEnumerable<string> RefitNameCandidates(Ship? design)
+    {
+        if (design == null)
+            yield break;
+
+        string? rawName = null;
+        try { rawName = design.name; } catch { }
+        if (!string.IsNullOrWhiteSpace(rawName))
+            yield return rawName;
+
+        string? vesselName = null;
+        try { vesselName = design.vesselName; } catch { }
+        if (!string.IsNullOrWhiteSpace(vesselName))
+            yield return vesselName;
+
+        string? refitName = null;
+        try { refitName = design.refitDesignName; } catch { }
+        if (!string.IsNullOrWhiteSpace(refitName))
+            yield return refitName;
+
+        string? displayName = null;
+        try { displayName = design.Name(false, false, false, false, true); } catch { }
+        if (!string.IsNullOrWhiteSpace(displayName))
+            yield return displayName;
     }
 
     private static string CleanRefitBaseName(Ship? ship)
@@ -173,7 +222,7 @@ internal static class DesignRefitNamePatch
 
     private static string StripLeadingShipTypePrefix(string baseName, Ship? ship)
     {
-        string cleaned = baseName.Trim();
+        string cleaned = TrimGeneratedSeparators(StripGeneratedNationTag(baseName));
         foreach (string typeCode in ShipTypeCodes(ship))
         {
             if (!IsCompactShipTypeCode(typeCode))
@@ -184,12 +233,14 @@ internal static class DesignRefitNamePatch
                 continue;
 
             char boundary = cleaned[token.Length];
-            if (!char.IsWhiteSpace(boundary) && boundary != '-' && boundary != ':')
+            if (!char.IsWhiteSpace(boundary) && boundary != '-' && boundary != ':' && boundary != '_')
                 continue;
 
-            string withoutType = cleaned[(token.Length + 1)..].TrimStart();
-            while (withoutType.Length > 0 && (withoutType[0] == '-' || withoutType[0] == ':'))
-                withoutType = withoutType[1..].TrimStart();
+            string withoutType = TrimGeneratedSeparators(cleaned[(token.Length + 1)..]);
+            while (withoutType.Length > 0 && (withoutType[0] == '-' || withoutType[0] == ':' || withoutType[0] == '_'))
+                withoutType = TrimGeneratedSeparators(withoutType[1..]);
+
+            withoutType = TrimGeneratedSeparators(StripGeneratedNationTag(withoutType));
 
             if (!string.IsNullOrWhiteSpace(withoutType))
                 return withoutType;
@@ -197,6 +248,18 @@ internal static class DesignRefitNamePatch
 
         return cleaned;
     }
+
+    private static string StripGeneratedNationTag(string name)
+    {
+        string cleaned = TrimGeneratedSeparators(name);
+        Match match = GeneratedNationTagRegex.Match(cleaned);
+        return match.Success ? TrimGeneratedSeparators(match.Groups["base"].Value) : cleaned;
+    }
+
+    private static string TrimGeneratedSeparators(string? value)
+        => string.IsNullOrWhiteSpace(value)
+            ? string.Empty
+            : value.Trim().Trim('_', '-', ':', ' ');
 
     private static IEnumerable<string> ShipTypeCodes(Ship? ship)
     {

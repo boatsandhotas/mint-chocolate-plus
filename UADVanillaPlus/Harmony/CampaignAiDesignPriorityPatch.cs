@@ -336,6 +336,9 @@ internal static class CampaignAiDesignPriorityPatch
         if (design == null)
             return false;
 
+        if (CampaignSmartRefitPatch.IsBlockedAiRefitDesign(design))
+            return false;
+
         return !Safe(() => design.isErased, true) && Safe(() => design.isDesign || design.isRefitDesign, false);
     }
 

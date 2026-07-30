@@ -2,7 +2,7 @@
 
 UAD Vanilla Plus (`UAD:VP`) is a lightweight mod for Ultimate Admiral: Dreadnoughts that keeps the base game feel while adding small quality-of-life improvements.
 
-Current version: `0.5.274`
+Current version: `0.6.34`
 
 ## Philosophy
 
@@ -33,6 +33,7 @@ Start the game normally after copying the DLL. If the mod loads, `UAD:VP` and th
 **QoL:**
 
 - **Campaign maintenance indicators**: show dock expansion status and transport capacity directly in the campaign country info panel.
+- **Politics capacity details**: show each nation's transport capacity, dockyard size, and shipbuilding capacity in the Politics screen row.
 - **Task force tonnage indicators**: fill campaign-map task-force icons by battle tonnage, with 100,000 tons and above shown as a full stack.
 - **Task force return shortcut**: add a `Return to <origin port>` button to task-force popups for one-click orders back to port.
 - **Fleet tab multi-select Change Port**: raise the Fleet tab's Change Port group limit so a whole multi-selected group of ships can be sent to one port in a single order.
@@ -44,16 +45,24 @@ Start the game normally after copying the DLL. If the mod loads, `UAD:VP` and th
 - **Research standing markers**: show colored badges spelling out whether each research category is ahead of, behind, or tied with the leading major nation.
 - **Direct diplomacy politics actions**: add Declare War and Force Peace buttons with confirmation to campaign politics rows, with Force Peace using the vanilla reparation flow when war victory points produce a clear winner.
 - **In-game options menu**: control UAD:VP balance options from the top-right game UI.
-- **Shared design usage control**: change the active campaign's Shared Designs mode after campaign start so future AI design needs can use `Off`, `Selective`, or `Always` without starting a new campaign.
+- **Shared design usage control**: change the active campaign's Shared Designs mode after campaign start so future AI design needs can use `Off`, `Selective`, `Always`, or VP-only `Only` without starting a new campaign. `Only` blocks random AI fallback when no shared design is accepted.
 - **Shared design browser stability**: guard the main-menu Shared Designs browser so a community design that references parts the current game data can no longer grade fails to render gracefully instead of freezing the game, letting players scroll past or back out.
 - **Shared design import adaptation**: in Advanced AI Builder's Enhanced mode, let AI shared-design imports safely downgrade armor quality, torpedo size, radio, rangefinder, steering, auxiliary-engine, and drive-shaft components, ignore safe stat-only tech baggage, and trim range or speed for slight tonnage near misses before final build validation.
 
 **Balance:**
 
 - **Port Strike balance**: scales transport losses from undefended port strikes by attacker tonnage instead of allowing small raiders to destroy large transport groups.
+- **Sea transport loss scope**: default-on `Active Forces` mode makes sea-zone transport losses ignore task forces that are only moving through a region instead of counting them as settled local raiders; `Vanilla` restores the game's original area-vessel list.
 - **AI Fleet Mix**: optional `Vanilla`, `Balanced`, and `Heavy` modes adjust AI surface-ship construction weights and, outside vanilla mode, favor the most under-target valid surface types. This defaults to `Heavy`.
 - **Advanced AI Builder**: default-on `Enhanced` mode lets VP help AI design books with shared-design blueprint adaptation, missing-type recovery, and stale-design refreshes; `Vanilla` keeps the game's original design-generation cadence and exact shared-design checks.
+- **Smart AI Designs**: experimental, default-off mode replaces vanilla's random AI new-design fallback with one deterministic VP attempt after shared and predefined designs fail.
+- **Smart Refits**: default-on `Enhanced` mode replaces vanilla AI random refits with VP's conservative refit pass and adds a player-only `Smart Refit` constructor button; `Vanilla` restores the game's original AI refit path and hides the VP button.
+- **Campaign naval mobility**: Adds an in-game campaign movement preset that defaults to faster task-force movement and a wider matching supply envelope, with a vanilla preset available from the UAD:VP options menu.
+- **Task Force Sustainment**: default-on `Full` mode keeps campaign task forces supplied and tops off campaign fuel and ammunition at movement, maintenance, and battle boundaries; `Vanilla` restores the game's original campaign supply, fuel, and ammunition attrition.
+- **AI task-force staging**: default-on `Staging` mode helps AI task forces headed to the same theater pause and rendezvous before battle generation instead of arriving as isolated piecemeal fights; `Vanilla` keeps the game's original dispatch.
 - **Suspend Dock Overcapacity**: automatically delays lower-priority repairs, builds, and refits when monthly dock work exceeds shipyard capacity; manual mode keeps vanilla overcapacity handling.
+- **Foreign port shipbuilding capacity**: controlled non-home ports can contribute 50% of their normal port-capacity share to national shipbuilding capacity, with a `Vanilla` toggle in the UAD:VP options menu.
+- **Army Logistics balance**: default-on `Balanced` mode bases army logistics on transport capacity plus navy-rating and fleet-tonnage coverage of national ports and provinces; `Vanilla` restores the game's budget/population formula and random non-major logistics rolls.
 - **Canal openings**: optional setting to open the Panama and Kiel canals from 1890 when a campaign map loads, matching early-campaign canals such as Suez; historical mode keeps vanilla's 1914 and 1895 opening years.
 - **Technology Spread**: optional `Gradual`, `Swift`, and `Unrestricted` modes that help major nations catch up faster in research categories where they trail the current leader. `Historical` grants every major nation all normal technologies by historical year and disables research spending while leaving repeatable end-techs vanilla. This defaults to vanilla.
 - **Campaign End Date**: optional setting to disable vanilla's forced 1965 retirement so campaigns can continue past the normal end date. This defaults to enabled.
@@ -65,6 +74,9 @@ Start the game normally after copying the DLL. If the mod loads, `UAD:VP` and th
 **QoL:**
 
 - **Design ship counts**: show active, building, and unavailable ships for each design.
+- **Auto Design Lite**: adds a separate designer Auto Design button that auto-places parts on the current hull without running vanilla's full spec-changing ship generator.
+- **Generate armor button**: adds a constructor action that creates a balanced armor layout from the current main guns, with a type-based fallback when no main guns are mounted.
+- **Smart new-hull defaults**: when the player picks a new hull, start from a freshly named max-range, max-tonnage, optimal-speed design with veteran crew, spacious quarters, best-available propulsion/protection components, and sensible armament defaults after the first gun is placed.
 - **Single-attempt auto design**: the designer Auto Design button now makes one generation attempt and keeps the result visible if it fails.
 - **Designs tab country viewer**: browse major AI nations' ship designs from the campaign Designs tab.
 - **Design power column**: show a compact VP effective-combat-power score in the campaign Designs tab.
@@ -73,6 +85,8 @@ Start the game normally after copying the DLL. If the mod loads, `UAD:VP` and th
 
 **Balance:**
 
+- **Hull Speed Adjustment**: default-on `Adjusted` mode lowers early TB hull speeds to 26 knots, pre-1908 destroyers to 29 knots, and delays one oversized early TB dual funnel until the small-funnel unlock; `Vanilla` restores original hull speed and funnel availability.
+- **Hull Weight Adjustment**: default-on `Adjusted` mode caps extreme hull mass ratios by ship class, softens double/triple-bottom penalties, removes direct citadel weight penalties, removes armor-quality weight reductions, removes a hidden anti-torpedo material-weight bucket, flattens crew weight, lightens early torpedo-boat towers, and gates oversized early TB towers to later tech; `Vanilla` restores original hull weights and protection-tech effects.
 - **CA+ torpedo restriction**: optionally disallow torpedo launchers on heavy cruisers, battlecruisers, and battleships.
 - **Obsolete tech and hull retention**: optional player-only setting to keep already researched obsolete hulls and components available in ship design while AI design availability stays vanilla. This defaults to vanilla.
 - **Superstructure Compatibility**: optional player-only `Unrestricted` mode that lets researched main towers, secondary towers, and funnels be used beyond their vanilla hull-family compatibility. Tech, country, ship class, mount, and placement checks still apply.
@@ -83,6 +97,7 @@ Start the game normally after copying the DLL. If the mod loads, `UAD:VP` and th
 
 - **Battle speed quality-of-life**: keep the player's selected battle speed available when the game tries to slow simulation speed near enemies.
 - **Space pause toggle**: use Space in battle to pause and resume to the previous battle speed.
+- **Weapon target range readout**: show the current target range under each battle weapon-row aim/status line.
 - **Battle division AI control**: add an `AI` division-order toggle with `6` hotkey support in battle so selected friendly divisions can be handed back to AI control, with manual right-click orders returning them to player control.
 - **Battle reverse-course hotkeys**: press `R` to reverse every selected division to port, or `T` to starboard, with the maneuver selectable in the Battle options (Reverse-Course Method): *180* (reorder + a single ~179° swing), *90·90* (turn 90°, swap the column once the turn is initiated, finish 90°), *Split* (each ship breaks into its own division and pivots at the same instant for a true simultaneous start, then rejoins reversed), or *Rudder* (direct hard-over, experimental). Split/Rudder fall back to 90·90 if they can't start.
 
