@@ -1,11 +1,11 @@
 <#
 .SYNOPSIS
-    Build, deploy, and optionally launch UAD Vanilla Plus.
+    Build, deploy, and optionally launch UAD Mint Chip Plus.
 
 .DESCRIPTION
-    Wraps `dotnet build` for UADVanillaPlus.sln. By default it builds Release
+    Wraps `dotnet build` for MintChipPlus.sln. By default it builds Release
     and deploys the DLL into the game's Mods folder (the .csproj DeployOnBuild
-    target kills a running game, then copies UADVanillaPlus.dll). Use -Run to
+    target kills a running game, then copies MintChipPlus.dll). Use -Run to
     also launch the game via Steam after a successful deploy.
 
     The build needs UAD_PATH pointing at the game install (its references live
@@ -29,7 +29,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $scriptDir = $PSScriptRoot
-$solution = Join-Path $scriptDir 'UADVanillaPlus.sln'
+$solution = Join-Path $scriptDir 'MintChipPlus.sln'
 
 # Resolve the game install path: explicit param > env var > known Steam locations.
 function Resolve-UadPath {
@@ -76,7 +76,7 @@ if ($code -ne 0) {
     exit $code
 }
 
-$dll = Join-Path $scriptDir "UADVanillaPlus\bin\$Config\net6.0\UADVanillaPlus.dll"
+$dll = Join-Path $scriptDir "MintChipPlus\bin\$Config\net6.0\MintChipPlus.dll"
 Write-Host "Build succeeded: $dll" -ForegroundColor Green
-if (-not $NoDeploy) { Write-Host "Deployed to: $($env:UAD_PATH)Mods\UADVanillaPlus.dll" -ForegroundColor Green }
+if (-not $NoDeploy) { Write-Host "Deployed to: $($env:UAD_PATH)Mods\MintChipPlus.dll" -ForegroundColor Green }
 if ($Run)           { Write-Host "Launching game via Steam..." -ForegroundColor Green }

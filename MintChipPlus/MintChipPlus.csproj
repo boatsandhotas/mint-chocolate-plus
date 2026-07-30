@@ -1,0 +1,106 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="0Harmony">
+      <HintPath>$(UAD_PATH)MelonLoader/net6/0Harmony.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(UAD_PATH)MelonLoader/Il2CppAssemblies/Assembly-CSharp.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Il2CppInterop.Runtime">
+      <HintPath>$(UAD_PATH)MelonLoader/net6/Il2CppInterop.Runtime.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Il2Cppmscorlib">
+      <HintPath>$(UAD_PATH)MelonLoader/Il2CppAssemblies/Il2Cppmscorlib.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Il2CppSystem">
+      <HintPath>$(UAD_PATH)MelonLoader/Il2CppAssemblies/Il2CppSystem.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Il2CppSystem.Core">
+      <HintPath>$(UAD_PATH)MelonLoader/Il2CppAssemblies/Il2CppSystem.Core.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="MelonLoader">
+      <HintPath>$(UAD_PATH)MelonLoader/net6/MelonLoader.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>$(UAD_PATH)MelonLoader/Il2CppAssemblies/Unity.TextMeshPro.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>$(UAD_PATH)MelonLoader/Il2CppAssemblies/UnityEngine.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(UAD_PATH)MelonLoader/Il2CppAssemblies/UnityEngine.CoreModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>$(UAD_PATH)MelonLoader/Il2CppAssemblies/UnityEngine.InputLegacyModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>$(UAD_PATH)MelonLoader/Il2CppAssemblies/UnityEngine.PhysicsModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(UAD_PATH)MelonLoader/Il2CppAssemblies/UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>$(UAD_PATH)MelonLoader/Il2CppAssemblies/UnityEngine.UI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>$(UAD_PATH)MelonLoader/Il2CppAssemblies/UnityEngine.UIModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Ship-naming theme name pool, embedded so there is no loose config file. -->
+    <EmbeddedResource Include="ShipNames\ship_names.csv" />
+  </ItemGroup>
+
+  <!--
+    Kill any running UAD instance before the DLL copy so the new mod can be
+    written. The cmd wrapper redirects both stdout and stderr to nul so
+    MSBuild's stderr-scanning doesn't flag taskkill's "process not found"
+    message (exit code 128) as a build error. IgnoreExitCode + the wrapper
+    together mean: succeeds when UAD is running (killed), silently no-ops
+    when UAD isn't running.
+  -->
+  <Target Name="KillUad" BeforeTargets="CopyMod" Condition="'$(DeployOnBuild)' == 'true'">
+    <Exec Command='cmd /c taskkill /F /IM "Ultimate Admiral Dreadnoughts.exe" /T 1&gt;nul 2&gt;nul'
+          IgnoreExitCode="true"
+          IgnoreStandardErrorWarningFormat="true" />
+  </Target>
+
+  <Target Name="CopyMod" AfterTargets="Build" Condition="'$(DeployOnBuild)' == 'true'">
+    <Copy SourceFiles="$(TargetPath)"
+          DestinationFiles="$(UAD_PATH)Mods/MintChipPlus.dll"
+          SkipUnchangedFiles="true" />
+  </Target>
+
+  <!--
+    Opt-in: launches UAD via the Steam protocol handler after a successful
+    build+deploy. Use with: dotnet build ... -p:DeployOnBuild=true -p:LaunchGame=true
+    Steam appid 1069660 = Ultimate Admiral: Dreadnoughts.
+  -->
+  <Target Name="LaunchUad" AfterTargets="CopyMod" Condition="'$(LaunchGame)' == 'true'">
+    <Exec Command='cmd /c start "" "steam://rungameid/1069660"' IgnoreExitCode="true" />
+  </Target>
+</Project>

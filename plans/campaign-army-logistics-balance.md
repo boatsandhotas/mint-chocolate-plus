@@ -19,7 +19,7 @@ but fails the campaign-story smell test.
 A later live screenshot showed the United States at 26 percent logistics despite
 745,896 tons of fleet and 136 percent transport capacity. The visible reason was
 that vanilla reported only 21 percent Navy Power Rating for the US while China
-showed 44 percent and 200 percent transport capacity. This means VP should not
+showed 44 percent and 200 percent transport capacity. This means MC should not
 use raw `Player.NavyPowerRating()` as the only navy-support input. It should
 blend effective power rating with fleet tonnage coverage so a large but
 apparently low-projection navy is not treated the same as no navy at all.
@@ -69,7 +69,7 @@ time `LogisticsFactorFinal()` is called:
 That random-per-call behavior can make non-majors look too strong and unstable
 from one UI/campaign call to another.
 
-## Agreed VP Design
+## Agreed MC Design
 
 Replace army logistics with a more legible coverage model:
 
@@ -97,7 +97,7 @@ Rationale:
 Do not jump directly to the final replacement formula. First add a diagnostic
 pass that logs the hidden inputs behind logistics and navy rating for the visible
 major powers in the current campaign. The screenshots show that `NavyPowerRating`
-can diverge sharply from visible fleet tonnage, so VP needs evidence about
+can diverge sharply from visible fleet tonnage, so MC needs evidence about
 projection, deployed status, and footprint before locking constants.
 
 Diagnostic target:
@@ -198,22 +198,22 @@ Add a Campaign option:
 
     Army Logistics: Balanced / Vanilla
 
-Default should be `Balanced`, matching VP's usual balance-feature policy.
+Default should be `Balanced`, matching MC's usual balance-feature policy.
 `Vanilla` should return the original `Player.LogisticsFactorFinal()` behavior.
 
 Likely files:
 
-- `E:\Codex\UADVanillaPlus\UADVanillaPlus\GameData\ModSettings.cs`
+- `E:\Codex\MintChipPlus\MintChipPlus\GameData\ModSettings.cs`
   - add an `ArmyLogisticsMode` enum with `Vanilla = 0`, `Balanced = 1`
-  - add a `uadvp_army_logistics_mode` PlayerPrefs key
+  - add a `uadmc_army_logistics_mode` PlayerPrefs key
   - default to `Balanced`
   - add mode text, current-settings text, and option logging
-- `E:\Codex\UADVanillaPlus\UADVanillaPlus\Harmony\InGameOptionsMenuPatch.cs`
+- `E:\Codex\MintChipPlus\MintChipPlus\Harmony\InGameOptionsMenuPatch.cs`
   - add an option row in the Campaign section
   - recommended tooltip: "Balanced bases army logistics on transport capacity and navy coverage of the national footprint. Vanilla keeps the game's budget/population formula and random non-major rolls."
   - call `RefreshCampaignCostUi("Army Logistics mode change")` after changing the mode so visible country/finance text refreshes
   - include the option in launcher tooltip and balance-option detection
-- `E:\Codex\UADVanillaPlus\UADVanillaPlus\Harmony\CampaignArmyLogisticsBalancePatch.cs`
+- `E:\Codex\MintChipPlus\MintChipPlus\Harmony\CampaignArmyLogisticsBalancePatch.cs`
   - patch `[HarmonyPatch(typeof(Player), nameof(Player.LogisticsFactorFinal))]`
   - use a prefix:
         if mode is Vanilla, return true

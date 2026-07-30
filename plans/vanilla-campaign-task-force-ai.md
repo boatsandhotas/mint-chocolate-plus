@@ -6,7 +6,7 @@ Last updated: 2026-06-07
 
 This is a working reference for how Ultimate Admiral: Dreadnoughts appears to manage campaign task forces for AI nations.
 
-The goal is to keep future VP investigation grounded in vanilla code paths before proposing changes. This note is intentionally separate from implementation planning. Update it as we decode more of the IL branches, inspect live logs, or prove assumptions wrong.
+The goal is to keep future MC investigation grounded in vanilla code paths before proposing changes. This note is intentionally separate from implementation planning. Update it as we decode more of the IL branches, inspect live logs, or prove assumptions wrong.
 
 ## Short Take
 
@@ -44,7 +44,7 @@ Primary vanilla source references:
 - `E:\Codex\cpp2il_uad_isil\IsilDump\Assembly-CSharp\BattleManager.txt`
 - `E:\Codex\cpp2il_uad_isil\IsilDump\Assembly-CSharp\MapUI.txt`
 
-Related VP reference docs:
+Related MC reference docs:
 
 - `plans/vanilla-ai-shipbuilding-designs.md`
 - `plans/vanilla-campaign-icon-painting.md`
@@ -221,7 +221,7 @@ Known removal paths:
 - `MapUI.RefreshMovingGroups()` has a defensive cleanup path for invalid groups or groups whose vessels are sunk/scrapped/invalid.
 - `CheckTaskForcceGroups(...)` can remove task forces when a player/nation is disabled, using `returnFromSea = true`.
 
-Practical implication: if VP adds persistent or player-managed task-force composition, it must either cooperate with these shared removal paths or deliberately guard specific groups from vanilla cleanup.
+Practical implication: if MC adds persistent or player-managed task-force composition, it must either cooperate with these shared removal paths or deliberately guard specific groups from vanilla cleanup.
 
 ### 5b. Automatic merging
 
@@ -351,7 +351,7 @@ Possible model:
 5. When groups naturally become close enough on a later turn, merge them under the normal surface/sub caps.
 6. If the situation changes after reload, battle, or route disruption, simply recompute the cluster next turn.
 
-This works without custom persistence if the only lasting state is vanilla task-force movement state. VP does not need to remember "this group is part of convoy plan X"; it can infer that again from current controller/type/destination/war context.
+This works without custom persistence if the only lasting state is vanilla task-force movement state. MC does not need to remember "this group is part of convoy plan X"; it can infer that again from current controller/type/destination/war context.
 
 Open design choices:
 
@@ -362,7 +362,7 @@ Open design choices:
 - Minimum value: only stage if the cluster has enough combined tonnage/crew to matter, to avoid wasting time coordinating tiny detachments.
 - Battle safety: do not stage groups that are already near hostile contact, pending battle, returning from battle, or low fuel/supply.
 
-Risk: if the hook runs after mission generation, staging will not prevent the current turn's small battles. If it runs too early, vanilla movement may overwrite VP's route. Turn-order decoding is the next required proof before choosing the hook.
+Risk: if the hook runs after mission generation, staging will not prevent the current turn's small battles. If it runs too early, vanilla movement may overwrite MC's route. Turn-order decoding is the next required proof before choosing the hook.
 
 ### Stop-And-Replan Anchor Refinement
 
@@ -381,11 +381,11 @@ A likely better staging algorithm is:
 
 This may be more vanilla-friendly than a hidden movement-skip hold. It intentionally does not preserve the original destination. Instead, it lets the AI pause long enough to consolidate, then lets normal area-pressure movement decide whether the merged force should continue toward the same theater, move somewhere else, or stop because the situation changed.
 
-This also preserves the stateless/no-save-file design. VP does not need to remember the original destination because it is deliberately discarded. The only durable state is normal vanilla task-force routing.
+This also preserves the stateless/no-save-file design. MC does not need to remember the original destination because it is deliberately discarded. The only durable state is normal vanilla task-force routing.
 
 Implementation note: prefer the cleanest possible stop, likely `Move.Position(anchor.CurrentPosition())`. Task forces do not normally vanish just because they arrive at a map destination, so this should probably be fine. If pathfinding or route lifecycle code refuses a zero-distance route, use a tiny nearby sampled legal point instead. The fallback point should be close enough to behave like a stop while still giving vanilla a normal route to process.
 
-Alternative: a transient movement-skip hold set could preserve the original route, but it would be more of a hidden VP order and may interact awkwardly with fuel, mine, supply, and arrival bookkeeping.
+Alternative: a transient movement-skip hold set could preserve the original route, but it would be more of a hidden MC order and may interact awkwardly with fuel, mine, supply, and arrival bookkeeping.
 
 ### Working Plan For A Builder Pass
 
@@ -451,7 +451,7 @@ Low confidence / still needs decoding:
 - Whether AI and player task forces diverge in any meaningful logic after group creation.
 - How special events and naval invasions override normal area-pressure movement.
 
-## Related VP Ideas And Risks
+## Related MC Ideas And Risks
 
 ### Permanent or locked task forces
 

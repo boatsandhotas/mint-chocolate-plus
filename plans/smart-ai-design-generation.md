@@ -4,7 +4,7 @@
 
 Implemented and proven in campaign samples. The original plan remains below as
 the architecture reference, but the live implementation now uses a strict
-VP-owned Smart AI pipeline with up to three same-candidate inner attempts,
+MC-owned Smart AI pipeline with up to three same-candidate inner attempts,
 Smart Parts-only placement, part-dependent post-placement defaults, armor fill,
 strict validation, and compact turn/nation summaries.
 
@@ -28,7 +28,7 @@ Recent validation evidence before the logging cleanup:
 Normal builds intentionally keep Smart AI design logs compact. To re-enable the
 heavy temporary diagnostics for a future investigation:
 
-- `UADVanillaPlus/Services/SmartAiDesignService.cs`
+- `MintChipPlus/Services/SmartAiDesignService.cs`
   - Change `VerboseDiagnostics => true`.
   - `Finish(...)` is where compact retry/reject/detail logging is emitted.
   - `RunVanillaRandomGeneratorForSmartAi(...)` gates the
@@ -39,18 +39,18 @@ heavy temporary diagnostics for a future investigation:
     `DesignAutoDesignLitePatch.TryRunPartsOnlyForAi(...)`.
   - `RecordUnmatched(...)` and `RecordFallbackClaim(...)` are the generator
     state-machine matching diagnostics.
-- `UADVanillaPlus/Harmony/DesignNewHullDefaultsPatch.cs`
+- `MintChipPlus/Harmony/DesignNewHullDefaultsPatch.cs`
   - `ApplySmartAiPartDependentDefaults(...)` is the post-parts defaults seam.
     With tracing enabled it logs component-by-component weight breadcrumbs for
     armament, equipment, and torpedo defaults only.
-- `UADVanillaPlus/Harmony/DesignAutoDesignLitePatch.cs`
+- `MintChipPlus/Harmony/DesignAutoDesignLitePatch.cs`
   - `LogDiagnosticSnapshot(...)` owns the heavy component/part/gun-row
     snapshots used by both UI Smart Place Parts and AI parts-only placement.
-- `UADVanillaPlus/Harmony/CampaignAiDesignGenerationDiagnosticsPatch.cs`
+- `MintChipPlus/Harmony/CampaignAiDesignGenerationDiagnosticsPatch.cs`
   - Change `VerboseDiagnostics => true` to restore the broad `[AI DesignGen]`
     start/result/gate diagnostics. Normal mode logs only created designs and
     unusual random failures/erases.
-- `UADVanillaPlus/Harmony/CampaignSmartAiDesignPatch.cs`
+- `MintChipPlus/Harmony/CampaignSmartAiDesignPatch.cs`
   - `CampaignSmartAiDesignSummaryNextTurnCompletionPatch` flushes
     `SmartAiDesignService` summaries when the `NextTurn` state machine
     completes.
@@ -59,12 +59,12 @@ heavy temporary diagnostics for a future investigation:
 
 Normal builds emit one compact Smart AI design line per campaign turn:
 
-- `UADVP smart AI designs summary turn=... entries=N accepted=N rejected=N retries=N totalMs=N designs=...`
+- `UADMC smart AI designs summary turn=... entries=N accepted=N rejected=N retries=N totalMs=N designs=...`
 - Each design entry includes nation, type, design name, hull display/id,
   accepted or rejected attempt count, weight/capacity, elapsed milliseconds, and
   retry first-failure text when applicable.
 - If Smart AI Designs is enabled and no Smart AI design attempt happened that
-  turn, the turn-end hook emits `UADVP smart AI designs summary turn=... entries=0`.
+  turn, the turn-end hook emits `UADMC smart AI designs summary turn=... entries=0`.
 - Heavy per-attempt payloads, generator state-machine details, component weight
   traces, and `DesignAutoDesignLitePatch.LogDiagnosticSnapshot(... "smart-ai" ...)`
   output are gated by `VerboseDiagnostics => false`.
@@ -82,18 +82,18 @@ Useful bad-pattern log searches:
 - `states=.*11/12/13/14`
 - `callback=true:true`
 
-This is the proposed direction for a future VP feature that replaces the most expensive and least controlled part of vanilla AI random ship design while keeping vanilla campaign selection, shared-design checks, and build validation as the authority.
+This is the proposed direction for a future MC feature that replaces the most expensive and least controlled part of vanilla AI random ship design while keeping vanilla campaign selection, shared-design checks, and build validation as the authority.
 
 ## Goal
 
-When an AI nation needs a fresh generated surface-ship design after shared/predefined design checks have failed or been skipped, VP should make one deterministic smart-design attempt instead of letting vanilla run a broad random retry loop.
+When an AI nation needs a fresh generated surface-ship design after shared/predefined design checks have failed or been skipped, MC should make one deterministic smart-design attempt instead of letting vanilla run a broad random retry loop.
 
 The desired behavior:
 
 1. Let the existing campaign flow decide that an AI design is needed.
 2. Let vanilla/shared-design logic run first.
 3. If the AI reaches the new-design fallback, let vanilla choose the ship type and hull.
-4. Apply VP's practical new-hull defaults/components.
+4. Apply MC's practical new-hull defaults/components.
 5. Run parts placement only.
 6. Validate the resulting design with strict vanilla validation.
 7. Apply armor fill logic.
@@ -119,9 +119,9 @@ This option is separate from `Smart Refits`. Smart AI Designs creates new AI des
 
 Likely files for a builder pass:
 
-- `UADVanillaPlus/GameData/ModSettings.cs`
-- `UADVanillaPlus/Harmony/InGameOptionsMenuPatch.cs`
-- New AI design service or patch file under `UADVanillaPlus/Harmony/` or `UADVanillaPlus/Services/`
+- `MintChipPlus/GameData/ModSettings.cs`
+- `MintChipPlus/Harmony/InGameOptionsMenuPatch.cs`
+- New AI design service or patch file under `MintChipPlus/Harmony/` or `MintChipPlus/Services/`
 - Existing helpers from `DesignNewHullDefaultsPatch`, `DesignAutoDesignLitePatch`, `DesignAutoArmorPatch`, `CampaignAiDesignGenerationDiagnosticsPatch`, `CampaignAiDesignRosterPrunePatch`, and `ShipEffectivePowerCalculator`
 
 ## Candidate Pipeline
